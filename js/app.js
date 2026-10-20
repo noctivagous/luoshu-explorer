@@ -693,6 +693,11 @@ function LoShuApp() {
         frame &&
         !frame.visibleKeys.includes(key)
       );
+  const captionFrame =
+    script && (animOn && frame ? frame : frameFor(script, 0, 1));
+  const captionText =
+    (captionFrame?.caption || "").trim() ||
+    (script ? `Play to watch: ${script.title}.` : "");
   const drawItems =
     script && (animOn && frame ? frame.draw : frameFor(script, script.steps.length - 1, 1).draw);
   const ov = renderOverlay(drawItems || [], {
@@ -715,8 +720,8 @@ function LoShuApp() {
     ),
   );
   const formLine = (() => {
-    if (!(animOn && script?.id === "N" && frame?.setValues)) return "";
-    const g = Array.from({ length: 9 }, (_, i) => frame.setValues[i]);
+    if (!(script?.id === "N" && captionFrame?.setValues)) return "";
+    const g = Array.from({ length: 9 }, (_, i) => captionFrame.setValues[i]);
     if (g.some((n) => typeof n !== "number")) return "";
     const det = determinant(g);
     const sign = det < 0 ? "−" : "+";
@@ -877,7 +882,7 @@ function LoShuApp() {
                 children: _("div", {
                   className: "relative",
                   children: [
-                    animOn &&
+                    script &&
                       h("div", {
                         className: "anim-caption",
                         role: "status",
@@ -885,9 +890,9 @@ function LoShuApp() {
                         children: [
                           h("span", {
                             className: "anim-caption-step",
-                            children: `Step ${frame.stepIndex + 1} of ${script.steps.length}`,
+                            children: `Step ${captionFrame.stepIndex + 1} of ${script.steps.length}`,
                           }),
-                          h("span", { children: frame.caption }),
+                          h("span", { children: captionText }),
                           formLine &&
                             h("span", { className: "anim-caption-note", children: formLine }),
                         ],
