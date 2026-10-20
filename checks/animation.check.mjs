@@ -18,6 +18,7 @@ need(validateScript(constructionScript).length === 0, 'construction script inval
 need(validateScript(scriptA).length === 0, 'property A script invalid');
 need(scriptFor(null) === constructionScript, 'no selection should route to construction');
 need(scriptFor(undefined) === constructionScript, 'undefined selection should route to construction');
+need(scriptFor('intro') === constructionScript, 'intro should route to construction');
 need(scriptFor('A') === scriptA, 'property A should route to script A');
 
 // Every property A-N routes to a valid, well-formed script.
@@ -37,7 +38,7 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 need(
   JSON.stringify(Object.keys(demoScripts).sort()) ===
-    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'construction']),
+    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'construction', 'intro']),
   'demoScripts should export all 14 property scripts plus construction'
 );
 

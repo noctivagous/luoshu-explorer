@@ -11,7 +11,8 @@ html,body{height:100%;overflow:hidden}
 #root aside>div[class*=overflow-auto]{overflow-y:auto}
 @media(min-width:1024px){
 #root>div>div:has(>aside){overflow:visible}
-#root aside{overflow-y:visible}
+#root aside{overflow-y:visible;width:clamp(380px,36vw,560px)}
+#root main{padding-top:8px}
 }
 /* Zebra striping: even unselected rows get a wash so items don't blend. */
 #root aside div[class*=space-y-]>button[class*=bg-transparent]:nth-child(even){background:rgba(26,26,26,.05)}
@@ -28,29 +29,38 @@ html,body{height:100%;overflow:hidden}
 #root aside::-webkit-scrollbar-track,#root aside div[class*=overflow-auto]::-webkit-scrollbar-track{background:transparent}
 #root aside::-webkit-scrollbar-thumb,#root aside div[class*=overflow-auto]::-webkit-scrollbar-thumb{background:rgba(26,26,26,.3);border-radius:8px;border:4px solid transparent;background-clip:content-box}
 #root aside::-webkit-scrollbar-thumb:hover,#root aside div[class*=overflow-auto]::-webkit-scrollbar-thumb:hover{background:rgba(26,26,26,.5);border:4px solid transparent;background-clip:content-box}
-/* Two-column sidebar grid: keep the wash on even unselected tiles. */
-#root aside div[class*="lg:grid-cols-2"]>button[class*=bg-transparent]:nth-child(even){background:rgba(26,26,26,.05)}
+/* Unselected catalog tiles share the gray wash (replaces zebra). */
+#root aside div[class*="lg:grid-cols-2"]>button[class*=bg-transparent]{background:rgba(26,26,26,.05)}
+/* 1 col on phones; 2–3 cols as the sidebar grows. */
+@media(min-width:1024px){
+#root aside div[class*="lg:grid-cols-2"]{grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}
+}
+/* Icon wells hug the 26px glyphs instead of sitting in a 40px frame. */
+#root aside span.w-10{width:32px;height:32px}
+/* Stage matches the description column. The square grows; the rail stays 92px. */
+#root main>div>.relative{width:100%;max-width:560px;display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+#root main>div>.relative:has(.anim-rail){grid-template-columns:minmax(0,1fr) 92px;column-gap:12px}
+#root main .rounded-\[22px\]{width:auto;max-width:100%;display:flex;justify-content:center}
+#root main>div>.relative>[class*="max-w-[560px]"]{grid-column:1/-1;width:100%;max-width:none}
 /* Utilities for the enlarged layout (absent from the frozen Tailwind output). */
 .text-\[42px\]{font-size:42px}
 .text-\[16px\]{font-size:16px}
 .text-\[12\.5px\]{font-size:12.5px}
 .h-10{height:2.5rem}
+.pt-4{padding-top:1rem}
+.pb-3{padding-bottom:.75rem}
 .grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}
 @media(min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
-/* Animation playback rail: sits to the right of the matrix card on wide
-   screens, stacks below it on narrow screens. Palette matches the ink/paper
-   theme; no new accent colors. */
-.anim-rail{margin-top:12px;width:100%;max-width:340px;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:10px 12px;box-shadow:0_12px_40px_rgba(0,0,0,.06)}
-.anim-rail-row{display:flex;align-items:center;gap:6px}
+/* Animation playback rail: vertical strip to the right of the matrix.
+   Phones/tablets restack it under the square (see max-width:1023px). */
+.anim-rail{width:92px;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:8px 6px;box-shadow:0_12px_40px_rgba(0,0,0,.06);display:flex;flex-direction:column;align-items:center}
+.anim-rail-row{display:flex;flex-direction:column;align-items:center;gap:6px}
 .anim-rail-btn{min-width:34px;height:34px;padding:0 8px;border-radius:9999px;border:1px solid rgba(26,26,26,.15);background:#fdf8f0;color:#1a1a1a;font-family:monospace;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
 .anim-rail-btn:hover{background:#1a1a1a;color:#fdf8f0}
 .anim-rail-play{background:#1a1a1a;color:#fdf8f0;min-width:44px}
-.anim-rail-speed{margin-left:auto;font-size:12px}
-.anim-rail-meta{margin-top:8px;font-family:monospace;font-size:10px;letter-spacing:.08em;opacity:.55}
-.anim-rail-caption{margin-top:4px;font-size:13px;line-height:1.5;opacity:.8}
-/* Float the rail only when the square, sidebar, and rail all fit.
-   Narrower desktops keep it in flow so it is not clipped. */
-@media(min-width:1360px){.anim-rail{position:absolute;left:100%;top:0;margin-top:0;margin-left:16px;width:210px}}
+.anim-rail-speed{font-size:12px}
+.anim-rail-meta{margin-top:10px;font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;text-align:center;width:100%}
+.anim-rail-caption{margin-top:8px;font-size:11px;line-height:1.35;opacity:.8;text-align:center;width:100%}
 /* Phones and tablets: square stays on screen, catalog scrolls beneath it.
    The square scales to the content width so overlays keep their positions.
    Short landscape viewports sit the catalog beside it. */
@@ -62,8 +72,12 @@ html,body{height:100%;overflow:hidden}
 #root main>div{container-type:inline-size;width:100%;max-width:100%;min-width:0}
 #root main .rounded-\[22px\]{padding:12px;max-width:100%}
 #root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 28px) / 340px));transform:scale(var(--luoshu-fit));transform-origin:top left;margin-right:calc(340px * (var(--luoshu-fit) - 1));margin-bottom:calc(340px * (var(--luoshu-fit) - 1))}
-.anim-rail{max-width:100%}
-.anim-rail-row{flex-wrap:wrap}
+#root main>div>.relative,#root main>div>.relative:has(.anim-rail){display:block;max-width:100%}
+.anim-rail{margin-top:12px;width:100%;max-width:100%;padding:10px 12px;display:block}
+.anim-rail-row{flex-direction:row;flex-wrap:wrap;align-items:center}
+.anim-rail-speed{margin-left:auto}
+.anim-rail-meta,.anim-rail-caption{text-align:left}
+.anim-rail + div{margin-top:16px}
 .anim-rail-btn{min-width:44px;height:44px}
 #root main button.w-7{width:44px;height:44px}
 #root main .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}

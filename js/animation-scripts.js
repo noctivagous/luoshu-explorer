@@ -352,6 +352,7 @@ export const scriptN = {
 
 export const demoScripts = {
   construction: constructionScript,
+  intro: constructionScript,
   A: scriptA,
   B: scriptB,
   C: scriptC,

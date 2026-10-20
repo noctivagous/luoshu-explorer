@@ -36,13 +36,14 @@ need(
   `square cells wrong: ${JSON.stringify(cells)}`
 );
 
-// Sidebar: 5 category headers + 14 property items, two-column grid,
-// square icon tiles with 26px glyphs.
-need(document.querySelectorAll('#root button').length === 24, 'expected 24 buttons');
-need(root.querySelectorAll('.lg\\:grid-cols-2').length === 5, 'two-column sidebar grid missing');
-need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 14, 'square icon tiles missing');
-need(root.querySelectorAll('svg[width="26"]').length === 14, 'icon glyphs missing');
-for (const title of ['Opposites balance', 'Zero-balanced form', 'Lines sum to 15', "Knight's tour"]) {
+// Sidebar: 6 category headers + 15 items (intro + A–N), two-column grid,
+// square icon tiles with 26px glyphs. Intro is selected on load, so the
+// detail close button is present too. 6 + 15 + 5 playback + 1 close = 27.
+need(document.querySelectorAll('#root button').length === 27, 'expected 27 buttons');
+need(root.querySelectorAll('.lg\\:grid-cols-2').length === 6, 'sidebar catalog grid missing');
+need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 15, 'square icon tiles missing');
+need(root.querySelectorAll('svg[width="26"]').length === 15, 'icon glyphs missing');
+for (const title of ['Build the square', 'Opposites balance', 'Zero-balanced form', 'Lines sum to 15', "Knight's tour"]) {
   need(text.includes(title), `missing property: ${title}`);
 }
 need(root.querySelector('style') !== null, 'font/style element missing');

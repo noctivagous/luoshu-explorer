@@ -1,5 +1,14 @@
 [
   {
+    "id": "intro",
+    "letter": "◌",
+    "category": "Introduction",
+    "title": "Build the square",
+    "shortDesc": "1 through 9 fill the 3×3",
+    "formula": "Place 1→2→3…→9 until the square is complete",
+    "longDesc": "The turtle shell revealed order. Nine cells fill in sequence — 1 through 9 — until the Lo Shu is complete. Then each property overlays a different arithmetic truth on the same 3×3. The square itself never changes — only how you see it."
+  },
+  {
     "id": "A",
     "letter": "A",
     "category": "Core Balance",

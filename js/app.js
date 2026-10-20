@@ -33,6 +33,7 @@ const h = keyed(React.createElement);
 const _ = keyed(React.createElement);
 
 const CATEGORIES = [
+    { name: "Introduction", ids: ["intro"] },
     { name: "Core Balance", ids: ["A", "E", "F", "L"] },
     { name: "Means & Zero", ids: ["G", "I"] },
     { name: "Lines & Totals", ids: ["B", "J", "K"] },
@@ -74,6 +75,25 @@ function iconGlyphs(e) {
       children: o,
     });
   }
+  if (e === "intro")
+    return PropertyIcon(
+      [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) =>
+        h(
+          "rect",
+          {
+            x: 5 + (i % 3) * 6.5,
+            y: 5 + Math.floor(i / 3) * 6.5,
+            width: "5",
+            height: "5",
+            rx: "1",
+            fill: i === 4 ? T : "none",
+            stroke: C,
+            strokeWidth: "1.1",
+          },
+          i,
+        ),
+      ),
+    );
   if (e === "A")
     return PropertyIcon([
       h("path", {
@@ -502,7 +522,7 @@ function iconGlyphs(e) {
   ]);
 }
 function LoShuApp() {
-  let [e, n] = React.useState(null),
+  let [e, n] = React.useState("intro"),
     [t, r] = React.useState(() => new Set(CATEGORIES.map((i) => i.name))),
     l = React.useRef(null),
     o = React.useMemo(() => PROPERTIES.find((i) => i.id === e) || null, [e]),
