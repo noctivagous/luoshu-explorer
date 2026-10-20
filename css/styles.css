@@ -37,3 +37,15 @@ html,body{height:100%;overflow:hidden}
 .h-10{height:2.5rem}
 .grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}
 @media(min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Animation playback rail: sits to the right of the matrix card on wide
+   screens, stacks below it on narrow screens. Palette matches the ink/paper
+   theme; no new accent colors. */
+.anim-rail{margin-top:12px;width:100%;max-width:340px;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:10px 12px;box-shadow:0_12px_40px_rgba(0,0,0,.06)}
+.anim-rail-row{display:flex;align-items:center;gap:6px}
+.anim-rail-btn{min-width:34px;height:34px;padding:0 8px;border-radius:9999px;border:1px solid rgba(26,26,26,.15);background:#fdf8f0;color:#1a1a1a;font-family:monospace;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.anim-rail-btn:hover{background:#1a1a1a;color:#fdf8f0}
+.anim-rail-play{background:#1a1a1a;color:#fdf8f0;min-width:44px}
+.anim-rail-speed{margin-left:auto;font-size:12px}
+.anim-rail-meta{margin-top:8px;font-family:monospace;font-size:10px;letter-spacing:.08em;opacity:.55}
+.anim-rail-caption{margin-top:4px;font-size:13px;line-height:1.5;opacity:.8}
+@media(min-width:1024px){.anim-rail{position:absolute;left:100%;top:0;margin-top:0;margin-left:16px;width:210px}}

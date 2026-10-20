@@ -12,6 +12,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
+import { createPlayer } from "./animation.js";
+import { scriptFor } from "./animation-scripts.js";
 
 const PROPERTIES = propertiesData;
 
@@ -517,6 +519,57 @@ function LoShuApp() {
         setTimeout(() => {
           l.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 80);
+    },
+    script = scriptFor(e),
+    playerRef = React.useRef(null),
+    [frame, setFrame] = React.useState(null),
+    [started, setStarted] = React.useState(false),
+    [animPlaying, setAnimPlaying] = React.useState(false),
+    [animSpeed, setAnimSpeed] = React.useState(1);
+  React.useEffect(() => {
+    if (playerRef.current) playerRef.current.dispose();
+    playerRef.current = null;
+    setStarted(false);
+    setAnimPlaying(false);
+    setAnimSpeed(1);
+    if (!script) {
+      setFrame(null);
+      return;
+    }
+    const p = createPlayer(script, {
+      onFrame: (f) => {
+        setFrame(f);
+        setAnimPlaying(f.playing);
+        setAnimSpeed(f.speed);
+      },
+    });
+    playerRef.current = p;
+    setFrame(p.getState());
+    return () => p.dispose();
+  }, [e]);
+  const animOn = started && frame && script,
+    animPlay = () => {
+      if (!playerRef.current) return;
+      setStarted(true);
+      playerRef.current.play();
+    },
+    animPause = () => playerRef.current?.pause(),
+    animNext = () => {
+      if (!playerRef.current) return;
+      setStarted(true);
+      playerRef.current.stepNext();
+    },
+    animPrev = () => {
+      if (!playerRef.current) return;
+      setStarted(true);
+      playerRef.current.stepPrev();
+    },
+    animReset = () => playerRef.current?.reset() || setStarted(false),
+    animSpeedCycle = () => {
+      const next = animSpeed >= 2 ? 0.5 : animSpeed >= 1 ? 2 : 1;
+      try {
+        playerRef.current?.setSpeed(next);
+      } catch {}
     };
   return _("div", {
     className:
@@ -716,7 +769,11 @@ function LoShuApp() {
                                     " ring-2 ring-[#b89a5a] ring-offset-2 ring-offset-white";
                               }
                               let S = i - 5,
-                                D = o?.id === "G";
+                                D = o?.id === "G",
+                                buildOn = animOn && script.id === "construction",
+                                cellVal = buildOn ? (frame.setValues?.[a] ?? "") : i;
+                              if (buildOn && frame.highlight.includes(a))
+                                k += " ring-2 ring-[#c96442] ring-offset-2 ring-offset-white";
                               return _(
                                 "div",
                                 {
@@ -730,7 +787,7 @@ function LoShuApp() {
                                         fontFamily: "'Instrument Serif', serif",
                                         fontWeight: 500,
                                       },
-                                      children: i,
+                                      children: cellVal,
                                     }),
                                     D &&
                                       h("span", {
@@ -802,6 +859,13 @@ function LoShuApp() {
                                     { a: 3, b: 5, color: "#7a6a9e" },
                                     { a: 0, b: 8, color: "#c96442" },
                                   ].map((i, a) => {
+                                    let animKey = `A.pair-${a}`;
+                                    if (
+                                      animOn &&
+                                      script.id === "A" &&
+                                      !frame.visibleKeys.includes(animKey)
+                                    )
+                                      return null;
                                     let m = CENTERS[i.a],
                                       d = CENTERS[i.b],
                                       v = (m.x + d.x) / 2,
@@ -809,6 +873,7 @@ function LoShuApp() {
                                     return _(
                                       "g",
                                       {
+                                        "data-anim-key": animKey,
                                         children: [
                                           h("line", {
                                             x1: m.x,
@@ -1537,6 +1602,70 @@ function LoShuApp() {
                         ],
                       }),
                     }),
+                    script &&
+                      h("div", {
+                        className: "anim-rail",
+                        role: "group",
+                        "aria-label": `${script.title} animation playback`,
+                        children: [
+                          _("div", {
+                            className: "anim-rail-row",
+                            children: [
+                              h("button", {
+                                onClick: animPrev,
+                                className: "anim-rail-btn",
+                                "aria-label": "Previous animation step",
+                                title: "Previous step",
+                                children: "‹",
+                              }),
+                              h("button", {
+                                onClick: animPlaying ? animPause : animPlay,
+                                className: "anim-rail-btn anim-rail-play",
+                                "aria-label": animPlaying
+                                  ? "Pause animation"
+                                  : "Play animation",
+                                title: animPlaying ? "Pause" : "Play",
+                                children: animPlaying ? "❚❚" : "▶",
+                              }),
+                              h("button", {
+                                onClick: animNext,
+                                className: "anim-rail-btn",
+                                "aria-label": "Next animation step",
+                                title: "Next step",
+                                children: "›",
+                              }),
+                              h("button", {
+                                onClick: animReset,
+                                className: "anim-rail-btn",
+                                "aria-label": "Reset animation",
+                                title: "Reset",
+                                children: "↺",
+                              }),
+                              h("button", {
+                                onClick: animSpeedCycle,
+                                className: "anim-rail-btn anim-rail-speed",
+                                "aria-label": "Cycle playback speed",
+                                title: "Playback speed",
+                                children: `${animSpeed}×`,
+                              }),
+                            ],
+                          }),
+                          h("div", {
+                            className: "anim-rail-meta",
+                            children:
+                              started && frame
+                                ? `Step ${frame.stepIndex + 1} of ${script.steps.length}`
+                                : `${script.steps.length} steps`,
+                          }),
+                          h("div", {
+                            className: "anim-rail-caption",
+                            children:
+                              started && frame
+                                ? frame.caption
+                                : `Play to watch: ${script.title}.`,
+                          }),
+                        ],
+                      }),
                     h("div", {
                       className: "w-full max-w-[560px] mt-12 lg:mt-16",
                       children: !o

@@ -38,7 +38,7 @@ need(
 
 // Sidebar: 5 category headers + 14 property items, two-column grid,
 // square icon tiles with 26px glyphs.
-need(document.querySelectorAll('#root button').length === 19, 'expected 19 buttons');
+need(document.querySelectorAll('#root button').length === 24, 'expected 24 buttons');
 need(root.querySelectorAll('.lg\\:grid-cols-2').length === 5, 'two-column sidebar grid missing');
 need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 14, 'square icon tiles missing');
 need(root.querySelectorAll('svg[width="26"]').length === 14, 'icon glyphs missing');
