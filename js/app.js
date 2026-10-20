@@ -888,11 +888,37 @@ function LoShuApp() {
                         role: "status",
                         "aria-live": "polite",
                         children: [
+                          h("button", {
+                            onClick: animPlaying ? animPause : animPlay,
+                            className: "anim-rail-btn anim-rail-play anim-caption-play",
+                            "aria-label": animPlaying
+                              ? "Pause animation"
+                              : "Play animation",
+                            title: animPlaying ? "Pause" : "Play",
+                            children: animPlaying ? "❚❚" : "▶",
+                          }),
                           h("span", {
                             className: "anim-caption-step",
                             children: `Step ${captionFrame.stepIndex + 1} of ${script.steps.length}`,
                           }),
-                          h("span", { children: captionText }),
+                          h("span", {
+                            className: "anim-caption-text",
+                            children: captionText,
+                          }),
+                          h("button", {
+                            onClick: animPrev,
+                            className: "anim-rail-btn anim-caption-prev",
+                            "aria-label": "Previous animation step",
+                            title: "Previous step",
+                            children: "‹",
+                          }),
+                          h("button", {
+                            onClick: animNext,
+                            className: "anim-rail-btn anim-caption-next",
+                            "aria-label": "Next animation step",
+                            title: "Next step",
+                            children: "›",
+                          }),
                           formLine &&
                             h("span", { className: "anim-caption-note", children: formLine }),
                         ],
@@ -1151,85 +1177,6 @@ function LoShuApp() {
                           }),
                       ],
                     }),
-                    script &&
-                      h("div", {
-                        className: "anim-rail",
-                        role: "group",
-                        "aria-label": `${script.title} animation playback`,
-                        children: [
-                          _("div", {
-                            className: "anim-rail-row",
-                            children: [
-                              h("button", {
-                                onClick: animPrev,
-                                className: "anim-rail-btn",
-                                "aria-label": "Previous animation step",
-                                title: "Previous step",
-                                children: "‹",
-                              }),
-                              h("button", {
-                                onClick: animPlaying ? animPause : animPlay,
-                                className: "anim-rail-btn anim-rail-play",
-                                "aria-label": animPlaying
-                                  ? "Pause animation"
-                                  : "Play animation",
-                                title: animPlaying ? "Pause" : "Play",
-                                children: animPlaying ? "❚❚" : "▶",
-                              }),
-                              h("button", {
-                                onClick: animNext,
-                                className: "anim-rail-btn",
-                                "aria-label": "Next animation step",
-                                title: "Next step",
-                                children: "›",
-                              }),
-                              h("button", {
-                                onClick: animReset,
-                                className: "anim-rail-btn",
-                                "aria-label": "Reset animation",
-                                title: "Reset",
-                                children: "↺",
-                              }),
-                              h("button", {
-                                onClick: animSpeedCycle,
-                                className: "anim-rail-btn anim-rail-speed",
-                                "aria-label": "Cycle playback speed",
-                                title: "Playback speed",
-                                children: `${animSpeed}×`,
-                              }),
-                            ],
-                          }),
-                          h("input", {
-                            key: script.id,
-                            className: "anim-scrub",
-                            type: "range",
-                            min: "0",
-                            max: "1000",
-                            defaultValue: "0",
-                            "data-anim-scrub": "true",
-                            "aria-label": "Scrub animation",
-                            onInput: (ev) => {
-                              const loc = ratioToTime(script, Number(ev.target.value) / 1000);
-                              setStarted(true);
-                              playerRef.current?.seekAt(loc.stepIndex, loc.elapsedMs);
-                            },
-                          }),
-                          h("div", {
-                            className: "anim-rail-meta",
-                            children:
-                              started && frame
-                                ? `Step ${frame.stepIndex + 1} of ${script.steps.length}`
-                                : `${script.steps.length} steps`,
-                          }),
-                          h("div", {
-                            className: "anim-rail-caption",
-                            children:
-                              started && frame
-                                ? frame.caption
-                                : `Play to watch: ${script.title}.`,
-                          }),
-                        ],
-                      }),
                     h("div", {
                       className: "legend-toggles mt-4",
                       children: [

@@ -38,9 +38,9 @@ need(
 
 // Sidebar: 6 category headers + 15 items (intro + A–N), two-column grid,
 // square icon tiles with 26px glyphs. Intro is selected on load, so the
-// detail close button is present too. 6 + 15 + 5 playback + 1 close = 27,
-// plus 6 correspondences-legend chips beneath the matrix = 33.
-need(document.querySelectorAll('#root button').length === 33, 'expected 33 buttons');
+// detail close button is present too. 6 + 15 + 3 caption playback + 1 close
+// = 25, plus 6 correspondences-legend chips = 31.
+need(document.querySelectorAll('#root button').length === 31, 'expected 31 buttons');
 need(text.includes('Correspondences'), 'missing correspondences legend');
 const pressed = [...document.querySelectorAll('#root button')].filter(
   (b) => b.getAttribute('aria-pressed') === 'true',

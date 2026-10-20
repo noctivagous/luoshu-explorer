@@ -96,9 +96,11 @@ html,body{height:100%;overflow:hidden}
 #root main button.w-7{width:44px;height:44px}
 }
 /* Step caption strip: horizontal, above the square card and playback rail. */
-.anim-caption{margin:0 0 12px;width:100%;max-width:none;display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:baseline;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:8px 12px;font-size:12px;line-height:1.4}
+.anim-caption{margin:0 0 12px;width:100%;max-width:none;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;align-items:center;column-gap:8px;row-gap:4px;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:6px 12px;font-size:12px;line-height:1.4}
+.anim-caption-play,.anim-caption-prev,.anim-caption-next{flex-shrink:0}
 .anim-caption-step{font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
-.anim-caption-note{flex-basis:100%;font-family:monospace;font-size:11px;opacity:.7}
+.anim-caption-text{min-width:0;overflow-wrap:anywhere}
+.anim-caption-note{grid-column:1/-1;font-family:monospace;font-size:11px;opacity:.7}
 .anim-scrub{width:100%;margin:8px 0 0;accent-color:#1a1a1a;height:16px}
 .anim-flyer{position:absolute;z-index:2;pointer-events:none;font-family:'Instrument Serif',serif;font-size:42px;font-weight:500;line-height:1;letter-spacing:-0.02em;transform:translate(-50%,-50%);color:#1a1a1a}
 .board-meta{width:100%;margin-top:14px;padding-top:12px;border-top:1px solid rgba(26,26,26,.06);display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left}
