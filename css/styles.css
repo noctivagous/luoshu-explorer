@@ -40,8 +40,8 @@ html,body{height:100%;overflow:hidden}
 /* Stage matches the description column. The square grows; the rail stays 92px. */
 #root main>div>.relative{width:100%;max-width:560px;display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
 #root main>div>.relative:has(.anim-rail){grid-template-columns:minmax(0,1fr) 92px;column-gap:12px}
-#root main .rounded-\[22px\]{width:auto;max-width:100%;display:flex;justify-content:center}
-#root main>div>.relative>.mt-12{grid-column:1/-1;width:100%;max-width:none;margin-top:16px}
+#root main .rounded-\[22px\]{width:auto;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#root main>div>.relative>.property-panel{grid-column:1/-1;width:100%;max-width:none;order:-1;margin:0 0 16px}
 #root main>div>.relative>.anim-caption,#root main>div>.relative>.legend-toggles{grid-column:1/-1;width:100%;max-width:none}
 /* Utilities for the enlarged layout (absent from the frozen Tailwind output). */
 .text-\[42px\]{font-size:42px}
@@ -72,7 +72,8 @@ html,body{height:100%;overflow:hidden}
 #root aside{flex:1 1 auto;min-width:0;min-height:0;width:100%;overflow:hidden;margin-bottom:0;border-right:0;border-bottom-left-radius:0;border-top:1px solid rgba(26,26,26,.12);box-shadow:none}
 #root main>div{container-type:inline-size;width:100%;max-width:100%;min-width:0}
 #root main .rounded-\[22px\]{padding:12px;max-width:100%}
-#root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 28px) / 340px));transform:scale(var(--luoshu-fit));transform-origin:top left;margin-right:calc(340px * (var(--luoshu-fit) - 1));margin-bottom:calc(340px * (var(--luoshu-fit) - 1))}
+#root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 80px) / 340px));transform:scale(var(--luoshu-fit));transform-origin:top left;margin-right:calc(340px * (var(--luoshu-fit) - 1));margin-bottom:calc(340px * (var(--luoshu-fit) - 1))}
+.d4-strip{margin:0 8px 0 0}
 #root main>div>.relative,#root main>div>.relative:has(.anim-rail){display:block;max-width:100%}
 .anim-rail{margin-top:12px;width:100%;max-width:100%;padding:10px 12px;display:block}
 .anim-rail-row{flex-direction:row;flex-wrap:wrap;align-items:center}
@@ -100,9 +101,13 @@ html,body{height:100%;overflow:hidden}
 .anim-caption-note{flex-basis:100%;font-family:monospace;font-size:11px;opacity:.7}
 .anim-scrub{width:100%;margin:8px 0 0;accent-color:#1a1a1a;height:16px}
 .anim-flyer{position:absolute;z-index:2;pointer-events:none;font-family:'Instrument Serif',serif;font-size:42px;font-weight:500;line-height:1;letter-spacing:-0.02em;transform:translate(-50%,-50%);color:#1a1a1a}
-.d4-strip{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
-.d4-thumb{width:44px;height:44px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:3px;border-radius:6px;border:1px solid rgba(26,26,26,.15);background:#fff;color:#1a1a1a}
-.d4-thumb[aria-pressed="true"]{border-color:#1a1a1a;background:#1a1a1a;color:#fdf8f0}
+.board-meta{width:100%;margin-top:14px;padding-top:12px;border-top:1px solid rgba(26,26,26,.06);display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left}
+.d4-hint{margin:0 0 10px;width:100%;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;letter-spacing:.04em;opacity:.65}
+.d4-row{display:flex;flex-direction:row;align-items:center}
+.d4-strip{display:flex;flex-direction:column;justify-content:space-between;flex-shrink:0;width:40px;height:340px;margin:0 12px 0 0;gap:0}
+.d4-thumb{width:40px;height:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:3px;border-radius:6px;border:1px solid rgba(26,26,26,.15);background:#fff;color:#1a1a1a;opacity:.55}
+.d4-thumb:hover{opacity:1;border-color:rgba(26,26,26,.4)}
+.d4-thumb[aria-pressed="true"]{border-color:#1a1a1a;background:#1a1a1a;color:#fdf8f0;opacity:1;box-shadow:0 0 0 2px #1a1a1a}
 .d4-thumb span{font-size:7px;font-family:ui-monospace,monospace;line-height:1;display:flex;align-items:center;justify-content:center}
 /* Player-driven tweens. --anim-p is written on the stage; no keyframes. */
 [data-anim-stage] [data-anim-enter="1"] .anim-stroke-draw{stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--anim-p))}

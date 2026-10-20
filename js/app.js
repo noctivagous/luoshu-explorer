@@ -731,7 +731,7 @@ function LoShuApp() {
       "aria-label": "Eight forms of the square",
       children: script.steps.map((st, i) => {
         const g = Array.from({ length: 9 }, (_, d) => st.matrix.setValues[d]);
-        const pressed = !!(animOn && frame && frame.stepIndex === i);
+        const pressed = i === (animOn && frame ? frame.stepIndex : 0);
         return h(
           "button",
           {
@@ -799,7 +799,7 @@ function LoShuApp() {
                           children: [
                             h("span", {
                               className:
-                                "text-[12.5px] tracking-[0.18em] uppercase font-mono font-medium opacity-70 group-hover:opacity-100 transition-opacity",
+                                "text-[12.5px] tracking-[0.18em] uppercase font-mono font-bold opacity-70 group-hover:opacity-100 transition-opacity",
                               children: i.name,
                             }),
                             h("span", {
@@ -834,7 +834,7 @@ function LoShuApp() {
                                   children: [
                                     h("span", {
                                       className: `shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center border overflow-hidden ${v ? "bg-[#fdf8f0]/10 border-[#fdf8f0]/20 text-[#fdf8f0]" : "bg-white border-[#1a1a1a]/10 text-[#1a1a1a]/70"}`,
-                                      title: d.letter + " — " + d.title,
+                                      title: d.title,
                                       children: iconGlyphs(d.id),
                                     }),
                                     _("span", {
@@ -897,6 +897,15 @@ function LoShuApp() {
                       className:
                         "relative bg-white rounded-[22px] shadow-[0_20px_60px_rgba(0,0,0,0.08),0_1px_0_rgba(0,0,0,0.06)_inset] p-5 lg:p-7 border border-[#1a1a1a]/[0.06]",
                       children: [
+                        o?.id === "N" &&
+                          h("p", {
+                            className: "d4-hint",
+                            children: "Click different squares in the left column.",
+                          }),
+                        _("div", {
+                          className: "d4-row",
+                          children: [
+                        d4Strip,
                         _("div", {
                           className: "relative",
                           style: { width: Z, height: Z },
@@ -1086,7 +1095,55 @@ function LoShuApp() {
                           ...flyers,
                           ],
                         }),
-                        d4Strip,
+                          ],
+                        }),
+                        o &&
+                          _("div", {
+                            className: "board-meta",
+                            children: [
+                              _("div", {
+                                children: [
+                                  h("div", {
+                                    className:
+                                      "text-[9px] font-mono uppercase tracking-widest opacity-40",
+                                    children: "Visual key",
+                                  }),
+                                  ...(VISUAL_KEYS[o.id] || VISUAL_KEYS.A).map(
+                                    ([color, label, dashed], k) =>
+                                      _("div", {
+                                        className: `${k === 0 ? "mt-1.5" : "mt-1"} flex items-center gap-1.5`,
+                                        children: [
+                                          h("span", {
+                                            className: "w-3 h-0.5 inline-block",
+                                            style: dashed
+                                              ? { borderTop: `1px dashed ${color}` }
+                                              : { background: color },
+                                          }),
+                                          h("span", {
+                                            className: "text-[10px] font-mono",
+                                            children: label,
+                                          }),
+                                        ],
+                                      }),
+                                  ),
+                                ],
+                              }),
+                              _("div", {
+                                children: [
+                                  h("div", {
+                                    className:
+                                      "text-[9px] font-mono uppercase tracking-widest opacity-40",
+                                    children: "Center",
+                                  }),
+                                  h("div", {
+                                    className: "mt-1.5 text-[12px] font-mono",
+                                    children:
+                                      "5 = mean, median, fulcrum. Everything folds through it.",
+                                  }),
+                                ],
+                              }),
+                            ],
+                          }),
                       ],
                     }),
                     script &&
@@ -1226,7 +1283,7 @@ function LoShuApp() {
                       ],
                     }),
                     h("div", {
-                      className: "w-full max-w-[560px] mt-12 lg:mt-16",
+                      className: "property-panel w-full max-w-[560px]",
                       children: !o
                         ? _("div", {
                             className:
@@ -1324,33 +1381,23 @@ function LoShuApp() {
                                     "flex items-start justify-between gap-4",
                                   children: [
                                     _("div", {
-                                      className: "flex gap-3",
                                       children: [
-                                        h("span", {
+                                        h("h2", {
                                           className:
-                                            "w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center text-[11px] font-mono font-bold",
-                                          children: o.letter,
+                                            "text-[24px] leading-[1.05] tracking-[-0.01em]",
+                                          style: {
+                                            fontFamily:
+                                              "'Instrument Serif', serif",
+                                          },
+                                          children: o.title,
                                         }),
                                         _("div", {
+                                          className:
+                                            "mt-1 text-[11px] font-mono tracking-wide opacity-60 uppercase",
                                           children: [
-                                            h("h2", {
-                                              className:
-                                                "text-[24px] leading-[1.05] tracking-[-0.01em]",
-                                              style: {
-                                                fontFamily:
-                                                  "'Instrument Serif', serif",
-                                              },
-                                              children: o.title,
-                                            }),
-                                            _("div", {
-                                              className:
-                                                "mt-1 text-[11px] font-mono tracking-wide opacity-60 uppercase",
-                                              children: [
-                                                o.category,
-                                                " • ",
-                                                o.shortDesc,
-                                              ],
-                                            }),
+                                            o.category,
+                                            " • ",
+                                            o.shortDesc,
                                           ],
                                         }),
                                       ],
@@ -1391,71 +1438,6 @@ function LoShuApp() {
                                     fontFamily: "'Newsreader', Georgia, serif",
                                   },
                                   children: o.longDesc,
-                                }),
-                                _("div", {
-                                  className:
-                                    "mt-6 pt-5 border-t border-[#1a1a1a]/[0.06] grid grid-cols-3 gap-3",
-                                  children: [
-                                    _("div", {
-                                      children: [
-                                        h("div", {
-                                          className:
-                                            "text-[9px] font-mono uppercase tracking-widest opacity-40",
-                                          children: "Visual key",
-                                        }),
-                                        ...(VISUAL_KEYS[o.id] || VISUAL_KEYS.A).map(
-                                          ([color, label, dashed], k) =>
-                                            _("div", {
-                                              className: `${k === 0 ? "mt-1.5" : "mt-1"} flex items-center gap-1.5`,
-                                              children: [
-                                                h("span", {
-                                                  className:
-                                                    "w-3 h-0.5 inline-block",
-                                                  style: dashed
-                                                    ? { borderTop: `1px dashed ${color}` }
-                                                    : { background: color },
-                                                }),
-                                                h("span", {
-                                                  className:
-                                                    "text-[10px] font-mono",
-                                                  children: label,
-                                                }),
-                                              ],
-                                            }),
-                                        ),
-                                      ],
-                                    }),
-                                    _("div", {
-                                      children: [
-                                        h("div", {
-                                          className:
-                                            "text-[9px] font-mono uppercase tracking-widest opacity-40",
-                                          children: "Center",
-                                        }),
-                                        h("div", {
-                                          className:
-                                            "mt-1.5 text-[12px] font-mono",
-                                          children:
-                                            "5 = mean, median, fulcrum. Everything folds through it.",
-                                        }),
-                                      ],
-                                    }),
-                                    _("div", {
-                                      children: [
-                                        h("div", {
-                                          className:
-                                            "text-[9px] font-mono uppercase tracking-widest opacity-40",
-                                          children: "Source",
-                                        }),
-                                        h("div", {
-                                          className:
-                                            "mt-1.5 text-[10px] font-mono opacity-60 leading-[1.4]",
-                                          children:
-                                            "Lo Shu, Song dynasty recompilation of He Tu Luo Shu. Arithmetic verified in js/verify.js (npm run check).",
-                                        }),
-                                      ],
-                                    }),
-                                  ],
                                 }),
                               ],
                             }),
