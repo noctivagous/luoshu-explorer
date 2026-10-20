@@ -8,7 +8,7 @@ Interactive React 18.3.1 SPA exploring the 14 arithmetic properties (A–N) of t
 ├── index.html              # Shell: root div, stylesheet/script refs, manifest JSON
 ├── css/styles.css          # Tailwind build output + SPA shell rules (viewport lock)
 ├── js/app.js               # App source (recovered from minified bundle)
-├── js/animation.js         # Animation player (step-based, not CSS)
+├── js/animation.js         # Animation player
 ├── js/animation-scripts.js # Animation scripts per property (A–N)
 ├── js/external-links.js    # Classic script: forces external links to new tab
 ├── data/properties.json    # Single source of truth for 14 properties
@@ -32,7 +32,7 @@ npm run preview      # Serve dist/ locally
 - **Module type**: ESM (`"type": "module"` in package.json)
 - **React key contract**: `h` / `_` helpers wrap `React.createElement(type, props, key)` — 3rd arg is **key**, not children
 - **SPA shell**: Viewport never scrolls (`html,body{overflow:hidden}`); `aside` and `main` scroll internally. Enforced by `checks/spa-shell.check.mjs`.
-- **Animation**: Step-based via `createPlayer` + scripts in `animation-scripts.js`; no CSS animations.
+- **Animation**: Step-based via `createPlayer` + scripts in `animation-scripts.js`. Motion stays player-driven: the player owns time, overlays may read the `--anim-p` progress var on `[data-anim-stage]`; no independent CSS keyframe animations.
 - **Properties data**: Single source at `data/properties.json` (ids A–N with title/shortDesc/formula/longDesc).
 - **External links**: Handled by `public/js/external-links.js` (copied verbatim to dist).
 

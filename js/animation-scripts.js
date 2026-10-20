@@ -167,7 +167,7 @@ export const scriptF = {
       caption: "20 = 20 — parity balances around 5.",
       durationMs: 1600,
       overlay: { show: [] },
-      matrix: { highlight: [4], setValues: null },
+      matrix: { highlight: [0, 1, 2, 3, 5, 6, 7, 8], setValues: null },
     }),
   ],
 };
@@ -177,13 +177,13 @@ export const scriptG = {
   title: "Zero-balanced form",
   steps: [
     animStep("G-1", {
-      caption: "Positives above the void: +4, +2, +3, +1.",
+      caption: "Positive cells: +4, +2, +3, +1.",
       durationMs: 1400,
       overlay: { show: ["G.pos"] },
       matrix: { highlight: [1, 5, 6, 8], setValues: null },
     }),
     animStep("G-2", {
-      caption: "Negatives below: −1, −3, −2, −4.",
+      caption: "Negative cells: −1, −3, −2, −4.",
       durationMs: 1400,
       overlay: { show: ["G.neg"] },
       matrix: { highlight: [0, 2, 3, 7], setValues: null },
@@ -259,7 +259,7 @@ export const scriptJ = {
     animStep("J-2", {
       caption: "Columns: 438 + 951 + 276.",
       durationMs: 1500,
-      overlay: { show: ["J.badge-cols"] },
+      overlay: { show: ["J.cols", "J.badge-cols"] },
       matrix: { highlight: [0, 3, 6], setValues: null },
     }),
     animStep("J-3", {
@@ -282,7 +282,7 @@ export const scriptK = {
       matrix: { highlight: ALL, setValues: null },
     }),
     animStep("K-2", {
-      caption: "det = −360 = −(1 × 2 × … × 6).",
+      caption: "det = 360 = 3 × 4 × 5 × 6.",
       durationMs: 1600,
       overlay: { show: ["K.badge"] },
       matrix: { highlight: [4], setValues: null },
@@ -320,7 +320,11 @@ export const scriptM = {
   steps: [1, 3, 5, 7].map((first, k) =>
     animStep(`M-${k + 1}`, {
       caption:
-        k === 3 ? "7 → 8 → 9. A knight's tour." : `${first} → ${first + 1} → ${first + 2}.`,
+        k === 0
+          ? "1 → 2 → 3 — knight moves."
+          : k === 3
+            ? "7 → 8 → 9 — knight moves."
+            : `${first} → ${first + 1} → ${first + 2} — short steps.`,
       durationMs: 1600,
       overlay: { show: [`M.hop-${2 * k}`, `M.hop-${2 * k + 1}`] },
       matrix: {

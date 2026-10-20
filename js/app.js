@@ -12,7 +12,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
-import { createPlayer } from "./animation.js";
+import { createPlayer, DEFAULT_STEP_MS } from "./animation.js";
 import { scriptFor } from "./animation-scripts.js";
 
 const PROPERTIES = propertiesData;
@@ -32,11 +32,32 @@ const keyed = (create) => (type, props, key) => {
 const h = keyed(React.createElement);
 const _ = keyed(React.createElement);
 
+// Per-property legend for the detail card ("Visual key"). Each entry is
+// [swatchColor, label, dashed]. Replaces the old static "Pair / sum" +
+// "Modulo wrap" pair that said the same thing for all 14 properties.
+const VISUAL_KEYS = {
+  intro: [["#1a1a1a", "Cells fill 1 → 9", false], ["#c96442", "Seed cell 1", false]],
+  A: [["#c96442", "Opposite pair = 10", false], ["#1a1a1a", "Chord through 5", true]],
+  B: [["#1a1a1a", "Row / column = 15", true], ["#c96442", "Diagonal = 15", false]],
+  C: [["#1a1a1a", "Clockwise path", true], ["#c96442", "Carry drops the tens", false]],
+  D: [["#7a6a9e", "Arm: 5 + edge → corner", false], ["#1a1a1a", "Center 5", false]],
+  E: [["#1a1a1a", "Covered set", false], ["#b89a5a", "Multiple of 5", false]],
+  F: [["#c96442", "Corners Σ20", false], ["#4a6741", "Edges Σ20", false]],
+  G: [["#1a1a1a", "Offset from 5", false], ["#b89a5a", "Zero void", false]],
+  H: [["#7a6a9e", "Arm: edge − corner = 5", false], ["#1a1a1a", "Mod-10 wrap", true]],
+  I: [["#1a1a1a", "Ends average to 5", false], ["#b89a5a", "Center 5", false]],
+  J: [["#b89a5a", "Rows → 492, 357, 816", false], ["#4a6741", "Columns → 438, 951, 276", false]],
+  K: [["#1a1a1a", "Whole square → 360", false], ["#c96442", "Sign flips on reflect", false]],
+  L: [["#1a1a1a", "|n − 5| bar", false], ["#4a6741", "Mirrored sign", false]],
+  M: [["#1a1a1a", "Short hop", false], ["#7a6a9e", "Torus wrap", true]],
+  N: [["#1a1a1a", "Rotation", false], ["#7a6a9e", "Reflection", false]],
+};
+
 const CATEGORIES = [
-    { name: "Introduction", ids: ["intro"] },
+    { name: "Introduction", ids: ["intro", "B"] },
     { name: "Core Balance", ids: ["A", "E", "F", "L"] },
     { name: "Means & Zero", ids: ["G", "I"] },
-    { name: "Lines & Totals", ids: ["B", "J", "K"] },
+    { name: "Lines & Totals", ids: ["J", "K"] },
     { name: "Modular Border", ids: ["C", "D", "H"] },
     { name: "Geometry & Universality", ids: ["M", "N"] },
   ],
@@ -543,6 +564,10 @@ function LoShuApp() {
     script = scriptFor(e),
     playerRef = React.useRef(null),
     [frame, setFrame] = React.useState(null),
+    // Last triple rendered into React state. Progress-only rAF ticks update
+    // the --anim-p custom property directly and skip setState, so playback
+    // no longer re-renders the whole app ~60x/s.
+    lastRenderRef = React.useRef(null),
     [started, setStarted] = React.useState(false),
     [animPlaying, setAnimPlaying] = React.useState(false),
     [animSpeed, setAnimSpeed] = React.useState(1);
@@ -558,9 +583,30 @@ function LoShuApp() {
     }
     const p = createPlayer(script, {
       onFrame: (f) => {
-        setFrame(f);
-        setAnimPlaying(f.playing);
-        setAnimSpeed(f.speed);
+        const last = lastRenderRef.current;
+        if (
+          !last ||
+          last.stepIndex !== f.stepIndex ||
+          last.playing !== f.playing ||
+          last.speed !== f.speed
+        ) {
+          lastRenderRef.current = {
+            stepIndex: f.stepIndex,
+            playing: f.playing,
+            speed: f.speed,
+          };
+          setFrame(f);
+          setAnimPlaying(f.playing);
+          setAnimSpeed(f.speed);
+        }
+        const el = l.current;
+        if (el) {
+          const dur = f.step.durationMs || DEFAULT_STEP_MS;
+          el.style.setProperty(
+            "--anim-p",
+            String(Math.max(0, Math.min(1, f.stepElapsed / dur))),
+          );
+        }
       },
     });
     playerRef.current = p;
@@ -734,10 +780,12 @@ function LoShuApp() {
                       ref: l,
                       className:
                         "relative bg-white rounded-[22px] shadow-[0_20px_60px_rgba(0,0,0,0.08),0_1px_0_rgba(0,0,0,0.06)_inset] p-5 lg:p-7 border border-[#1a1a1a]/[0.06]",
-                      children: _("div", {
-                        className: "relative",
-                        style: { width: Z, height: Z },
-                        children: [
+                      children: [
+                        _("div", {
+                          className: "relative",
+                          style: { width: Z, height: Z },
+                          "data-anim-stage": "true",
+                          children: [
                           h("div", {
                             className: "grid",
                             style: {
@@ -1448,6 +1496,38 @@ function LoShuApp() {
                                     }),
                                   ],
                                 }),
+                              o?.id === "J" &&
+                                showKey("J", "J.cols") &&
+                                _("g", {
+                                  "data-anim-key": "J.cols",
+                                  opacity: 0.9,
+                                  children: [
+                                    h("line", {
+                                      x1: CENTERS[0].x,
+                                      y1: CENTERS[0].y,
+                                      x2: CENTERS[6].x,
+                                      y2: CENTERS[6].y,
+                                      stroke: "#4a6741",
+                                      strokeWidth: "2",
+                                    }),
+                                    h("line", {
+                                      x1: CENTERS[1].x,
+                                      y1: CENTERS[1].y,
+                                      x2: CENTERS[7].x,
+                                      y2: CENTERS[7].y,
+                                      stroke: "#4a6741",
+                                      strokeWidth: "2",
+                                    }),
+                                    h("line", {
+                                      x1: CENTERS[2].x,
+                                      y1: CENTERS[2].y,
+                                      x2: CENTERS[8].x,
+                                      y2: CENTERS[8].y,
+                                      stroke: "#4a6741",
+                                      strokeWidth: "2",
+                                    }),
+                                  ],
+                                }),
                             ],
                           }),
                           o?.id === "C" &&
@@ -1457,28 +1537,28 @@ function LoShuApp() {
                                   h("div", {
                                     className:
                                       "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
-                                    style: { left: 199, top: 277 },
+                                    style: { left: (CENTERS[7].x + CENTERS[8].x) / 2 - 29, top: CENTERS[7].y - 9 },
                                   children: "1+6=7",
                                 }),
                                 showKey("C", "C.label-1") &&
                                   h("div", {
                                     className:
                                       "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
-                                    style: { left: 257, top: 83 },
+                                    style: { left: CENTERS[5].x - 29, top: (CENTERS[5].y + CENTERS[2].y) / 2 - 29 },
                                     children: "7+2=9",
                                 }),
                                 showKey("C", "C.label-2") &&
                                   h("div", {
                                     className:
                                       "absolute text-[10px] font-mono bg-[#c96442] text-white px-2 py-1 rounded-full shadow",
-                                    style: { left: 68, top: 22 },
+                                    style: { left: (CENTERS[1].x + CENTERS[0].x) / 2 - 44, top: CENTERS[1].y - 32 },
                                     children: "9+4=13→3",
                                 }),
                                 showKey("C", "C.label-3") &&
                                   h("div", {
                                     className:
                                       "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
-                                    style: { left: 15, top: 194 },
+                                    style: { left: CENTERS[3].x - 39, top: (CENTERS[3].y + CENTERS[6].y) / 2 - 34 },
                                     children: "3+8=11→1",
                                 }),
                               ],
@@ -1490,28 +1570,28 @@ function LoShuApp() {
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                    style: { left: 83, top: 22 },
+                                    style: { left: (CENTERS[1].x + CENTERS[0].x) / 2 - 29, top: CENTERS[1].y - 32 },
                                     children: "5+9→4",
                                 }),
                                 showKey("D", "D.label-1") &&
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                    style: { left: 240, top: 29 },
+                                    style: { left: CENTERS[2].x - 46, top: CENTERS[2].y - 25 },
                                     children: "5+7→2",
                                 }),
                                 showKey("D", "D.label-2") &&
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                    style: { left: 209, top: 253 },
+                                    style: { left: (CENTERS[7].x + CENTERS[8].x) / 2 - 19, top: CENTERS[7].y - 33 },
                                     children: "5+1→6",
                                 }),
                                 showKey("D", "D.label-3") &&
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                    style: { left: 22, top: 248 },
+                                    style: { left: CENTERS[3].x - 32, top: (CENTERS[3].y + CENTERS[6].y) / 2 + 20 },
                                     children: "5+3→8",
                                   }),
                               ],
@@ -1617,7 +1697,7 @@ function LoShuApp() {
                                     "absolute left-1/2 -translate-x-1/2 text-[10px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full whitespace-nowrap",
                                 style: { bottom: -36 },
                                 children:
-                                  "det = -360 = 1!·2!·3!·...? No, = - (1×2×3×4×5×6)",
+                                  "det = 360 = 3×4×5×6 (reflections flip the sign)",
                               }),
                             }),
                           o?.id === "I" &&
@@ -1627,21 +1707,21 @@ function LoShuApp() {
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
-                                    style: { left: 112, top: 63 },
+                                    style: { left: CENTERS[0].x + 58, top: CENTERS[0].y + 9 },
                                     children: "(4+6)/2=5",
                                   }),
                                 showKey("I", "I.label-1") &&
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
-                                    style: { left: 204, top: 63 },
+                                    style: { left: CENTERS[1].x + 34, top: CENTERS[1].y + 9 },
                                     children: "(9+1)/2=5",
                                   }),
                                 showKey("I", "I.label-2") &&
                                   h("div", {
                                     className:
                                       "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
-                                    style: { left: 112, top: 228 },
+                                    style: { left: CENTERS[3].x + 58, top: CENTERS[3].y + 58 },
                                     children: "(3+7)/2=5",
                                   }),
                               ],
@@ -1693,8 +1773,22 @@ function LoShuApp() {
                                 );
                               }),
                             }),
-                        ],
-                      }),
+                          ],
+                        }),
+                        animOn &&
+                          h("div", {
+                            className: "anim-caption",
+                            role: "status",
+                            "aria-live": "polite",
+                            children: [
+                              h("span", {
+                                className: "anim-caption-step",
+                                children: `Step ${frame.stepIndex + 1} of ${script.steps.length}`,
+                              }),
+                              h("span", { children: frame.caption }),
+                            ],
+                          }),
+                      ],
                     }),
                     script &&
                       h("div", {
@@ -1938,39 +2032,26 @@ function LoShuApp() {
                                             "text-[9px] font-mono uppercase tracking-widest opacity-40",
                                           children: "Visual key",
                                         }),
-                                        _("div", {
-                                          className:
-                                            "mt-1.5 flex items-center gap-1.5",
-                                          children: [
-                                            h("span", {
-                                              className:
-                                                "w-3 h-0.5 bg-[#c96442] inline-block",
+                                        ...(VISUAL_KEYS[o.id] || VISUAL_KEYS.A).map(
+                                          ([color, label, dashed], k) =>
+                                            _("div", {
+                                              className: `${k === 0 ? "mt-1.5" : "mt-1"} flex items-center gap-1.5`,
+                                              children: [
+                                                h("span", {
+                                                  className:
+                                                    "w-3 h-0.5 inline-block",
+                                                  style: dashed
+                                                    ? { borderTop: `1px dashed ${color}` }
+                                                    : { background: color },
+                                                }),
+                                                h("span", {
+                                                  className:
+                                                    "text-[10px] font-mono",
+                                                  children: label,
+                                                }),
+                                              ],
                                             }),
-                                            h("span", {
-                                              className:
-                                                "text-[10px] font-mono",
-                                              children: "Pair / sum",
-                                            }),
-                                          ],
-                                        }),
-                                        _("div", {
-                                          className:
-                                            "mt-1 flex items-center gap-1.5",
-                                          children: [
-                                            h("span", {
-                                              className:
-                                                "w-3 h-0.5 bg-[#1a1a1a] inline-block border-dashed",
-                                              style: {
-                                                borderTop: "1px dashed #1a1a1a",
-                                              },
-                                            }),
-                                            h("span", {
-                                              className:
-                                                "text-[10px] font-mono",
-                                              children: "Modulo wrap",
-                                            }),
-                                          ],
-                                        }),
+                                        ),
                                       ],
                                     }),
                                     _("div", {
@@ -1999,7 +2080,7 @@ function LoShuApp() {
                                           className:
                                             "mt-1.5 text-[10px] font-mono opacity-60 leading-[1.4]",
                                           children:
-                                            "Lo Shu, Song dynasty recompilation of He Tu Luo Shu. Arithmetic verified.",
+                                            "Lo Shu, Song dynasty recompilation of He Tu Luo Shu. Arithmetic verified in js/verify.js (npm run check).",
                                         }),
                                       ],
                                     }),

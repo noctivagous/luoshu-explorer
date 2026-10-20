@@ -65,7 +65,7 @@
   {
     "id": "B",
     "letter": "B",
-    "category": "Lines & Totals",
+    "category": "Introduction",
     "title": "Lines sum to 15",
     "shortDesc": "8 lines of 15",
     "formula": "∀ rows, cols, diags: Σ = 15",
@@ -85,9 +85,9 @@
     "letter": "K",
     "category": "Lines & Totals",
     "title": "Determinant 360",
-    "shortDesc": "det = -360 and 9! = 362880",
-    "formula": "det(L) = -360  |  9! = 362880",
-    "longDesc": "The determinant of the Lo Shu matrix is -360. That's 3×4×5×6, or 9×40, a highly composite number. Meanwhile 9! = 362880 contains 360. The Lo Shu sits at the edge of factorial growth — order emerging from permutation space."
+    "shortDesc": "det = 360 and 9! = 362880",
+    "formula": "det(L) = 360  |  9! = 362880",
+    "longDesc": "The determinant of the Lo Shu matrix is 360. That's 3×4×5×6, or 9×40, a highly composite number. Meanwhile 9! = 362880 contains 360. The Lo Shu sits at the edge of factorial growth — order emerging from permutation space. Reflections flip the sign to −360."
   },
   {
     "id": "C",
@@ -121,9 +121,9 @@
     "letter": "M",
     "category": "Geometry & Universality",
     "title": "Knight's tour (torus)",
-    "shortDesc": "Consecutive numbers are knight moves apart",
-    "formula": "1→2→3…→9 = knight (2+1) steps on torus",
-    "longDesc": "On a torus (wrap edges), numbers 1-2-3-4-5-6-7-8-9 are each a chess knight's move from the next. 1 to 2 is (+1,-2) with wrap. This is unique to Lo Shu: it encodes a Hamiltonian knight tour, bridging magic squares and chess."
+    "shortDesc": "1→2→3 and 7→8→9 are knight moves",
+    "formula": "1→2→3, 7→8→9 = knight (2+1) steps; middle hops are short",
+    "longDesc": "On the plain grid, 1→2→3 and 7→8→9 are each a chess knight's move from the next, while 3→4→5→6→7 are short orthogonal or diagonal steps. On a torus (wrap edges) every hop reads as a (1,2) offset, which collapses into diagonals — so the honest claim is the narrowed one. The ends of the square trace a knight; the middle walks."
   },
   {
     "id": "N",

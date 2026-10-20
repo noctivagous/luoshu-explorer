@@ -41,7 +41,7 @@ html,body{height:100%;overflow:hidden}
 #root main>div>.relative{width:100%;max-width:560px;display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
 #root main>div>.relative:has(.anim-rail){grid-template-columns:minmax(0,1fr) 92px;column-gap:12px}
 #root main .rounded-\[22px\]{width:auto;max-width:100%;display:flex;justify-content:center}
-#root main>div>.relative>[class*="max-w-[560px]"]{grid-column:1/-1;width:100%;max-width:none}
+#root main>div>.relative>.mt-12{grid-column:1/-1;width:100%;max-width:none;margin-top:16px}
 /* Utilities for the enlarged layout (absent from the frozen Tailwind output). */
 .text-\[42px\]{font-size:42px}
 .text-\[16px\]{font-size:16px}
@@ -53,7 +53,7 @@ html,body{height:100%;overflow:hidden}
 @media(min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Animation playback rail: vertical strip to the right of the matrix.
    Phones/tablets restack it under the square (see max-width:1023px). */
-.anim-rail{width:92px;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:8px 6px;box-shadow:0_12px_40px_rgba(0,0,0,.06);display:flex;flex-direction:column;align-items:center}
+.anim-rail{width:92px;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:8px 6px;box-shadow:0 12px 40px rgba(0,0,0,.06);display:flex;flex-direction:column;align-items:center}
 .anim-rail-row{display:flex;flex-direction:column;align-items:center;gap:6px}
 .anim-rail-btn{min-width:34px;height:34px;padding:0 8px;border-radius:9999px;border:1px solid rgba(26,26,26,.15);background:#fdf8f0;color:#1a1a1a;font-family:monospace;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
 .anim-rail-btn:hover{background:#1a1a1a;color:#fdf8f0}
@@ -92,4 +92,18 @@ html,body{height:100%;overflow:hidden}
 @media(pointer:coarse){
 .anim-rail-btn{min-width:44px;height:44px}
 #root main button.w-7{width:44px;height:44px}
+}
+/* On-card step caption strip: the explanation sits on the square, not only
+   in the side rail. Mirrors the rail caption; announced via aria-live. */
+.anim-caption{margin-top:12px;width:100%;max-width:340px;display:flex;gap:8px;align-items:baseline;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:8px 12px;font-size:12px;line-height:1.4}
+.anim-caption-step{font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
+/* Progress value written by the player loop without re-rendering React.
+   Overlays read it for player-driven tweens; discrete steps work regardless. */
+[data-anim-stage]{--anim-p:0}
+/* prefers-reduced-motion: playback is already discrete step cuts (no motion
+   libraries), so collapse the remaining transitions to instant cuts. */
+@media(prefers-reduced-motion:reduce){
+.anim-caption,.anim-rail-caption{animation:none}
+#root *{scroll-behavior:auto}
+#root main .transition-all{transition:none}
 }
