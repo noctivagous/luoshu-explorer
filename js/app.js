@@ -12,10 +12,31 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
+import correspondencesData from "../data/correspondences.json" with { type: "json" };
 import { createPlayer, DEFAULT_STEP_MS } from "./animation.js";
 import { scriptFor } from "./animation-scripts.js";
 
-const PROPERTIES = propertiesData;
+const PROPERTIES = propertiesData,
+  CORRESPONDENCES = correspondencesData,
+  // Toggle layers for the correspondences legend beneath the matrix. The
+  // value is the active layer id; "off" renders the plain numbers.
+  LEGEND_LAYERS = [
+    { id: "off", label: "Off" },
+    { id: "elements", label: "Elements" },
+    { id: "trigrams", label: "Trigrams" },
+    { id: "tones", label: "Tones" },
+    { id: "parity", label: "Even/odd" },
+    { id: "directions", label: "Directions" },
+  ],
+  // Muted swatch per element, reusing the app palette plus one slate blue
+  // for Water (no purple/indigo accent elsewhere in the UI).
+  ELEMENT_SWATCH = {
+    Wood: "#4a6741",
+    Fire: "#c96442",
+    Earth: "#b89a5a",
+    Metal: "#6b6560",
+    Water: "#4a6a8a",
+  };
 
 // createElement aliases carried over from the original bundle.
 // IMPORTANT: the bundle's createElement (Wc) takes (type, props, key) — the
@@ -570,7 +591,9 @@ function LoShuApp() {
     lastRenderRef = React.useRef(null),
     [started, setStarted] = React.useState(false),
     [animPlaying, setAnimPlaying] = React.useState(false),
-    [animSpeed, setAnimSpeed] = React.useState(1);
+    [animSpeed, setAnimSpeed] = React.useState(1),
+    // Active correspondences-legend layer beneath the matrix ("off" = plain).
+    [legend, setLegend] = React.useState("off");
   React.useEffect(() => {
     if (playerRef.current) playerRef.current.dispose();
     playerRef.current = null;
@@ -776,6 +799,19 @@ function LoShuApp() {
                 children: _("div", {
                   className: "relative",
                   children: [
+                    animOn &&
+                      h("div", {
+                        className: "anim-caption",
+                        role: "status",
+                        "aria-live": "polite",
+                        children: [
+                          h("span", {
+                            className: "anim-caption-step",
+                            children: `Step ${frame.stepIndex + 1} of ${script.steps.length}`,
+                          }),
+                          h("span", { children: frame.caption }),
+                        ],
+                      }),
                     h("div", {
                       ref: l,
                       className:
@@ -854,7 +890,40 @@ function LoShuApp() {
                               let S = i - 5,
                                 D = o?.id === "G",
                                 buildOn = animOn && script.id === "construction",
-                                cellVal = buildOn ? (frame.setValues?.[a] ?? "") : i;
+                                cellVal = buildOn ? (frame.setValues?.[a] ?? "") : i,
+                                // Correspondences legend: badges + inset tint
+                                // only when idle (never during animation).
+                                legendOn = legend !== "off" && !animOn,
+                                corr = legendOn ? CORRESPONDENCES[i] : null,
+                                legendBadge =
+                                  !legendOn || !corr
+                                    ? null
+                                    : legend === "elements"
+                                      ? corr.element
+                                      : legend === "trigrams"
+                                        ? corr.trigram
+                                          ? `${corr.glyph} ${corr.trigram}`
+                                          : "Center"
+                                        : legend === "tones"
+                                          ? corr.tone
+                                          : legend === "parity"
+                                            ? corr.parity
+                                            : corr.direction;
+                              if (legendOn && corr) {
+                                let tint = null;
+                                if (
+                                  legend === "elements" ||
+                                  legend === "tones"
+                                )
+                                  tint = ELEMENT_SWATCH[corr.element];
+                                else if (legend === "parity")
+                                  tint =
+                                    corr.parity === "even"
+                                      ? "#4a6741"
+                                      : "#1a1a1a";
+                                if (tint)
+                                  y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 2px ${tint}`;
+                              }
                               if (buildOn && frame.highlight.includes(a))
                                 k += " ring-2 ring-[#c96442] ring-offset-2 ring-offset-white";
                               return _(
@@ -891,6 +960,12 @@ function LoShuApp() {
                                           "absolute bottom-[6px] left-1/2 -translate-x-1/2 text-[10px] font-mono opacity-60",
                                         children:
                                           i > 5 ? `+${i - 5}` : `${i - 5}`,
+                                      }),
+                                    legendBadge &&
+                                      h("span", {
+                                        className:
+                                          "absolute top-[6px] left-1/2 -translate-x-1/2 text-[10px] font-mono whitespace-nowrap opacity-70",
+                                        children: legendBadge,
                                       }),
                                   ],
                                 },
@@ -1775,19 +1850,63 @@ function LoShuApp() {
                             }),
                           ],
                         }),
-                        animOn &&
-                          h("div", {
-                            className: "anim-caption",
-                            role: "status",
-                            "aria-live": "polite",
-                            children: [
-                              h("span", {
-                                className: "anim-caption-step",
-                                children: `Step ${frame.stepIndex + 1} of ${script.steps.length}`,
-                              }),
-                              h("span", { children: frame.caption }),
-                            ],
-                          }),
+                      ],
+                    }),
+                    h("div", {
+                      className: "mt-4",
+                      children: [
+                        _("div", {
+                          className: "flex flex-wrap items-center gap-1.5",
+                          role: "group",
+                          "aria-label": "Correspondences legend",
+                          children: [
+                            h(
+                              "span",
+                              {
+                                className:
+                                  "text-[10px] font-mono uppercase tracking-widest opacity-50 mr-1",
+                                children: "Correspondences",
+                              },
+                              "legend-title",
+                            ),
+                            ...LEGEND_LAYERS.map((layer) => {
+                              let active = legend === layer.id;
+                              return h(
+                                "button",
+                                {
+                                  onClick: () => setLegend(layer.id),
+                                  className: `px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${active ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-transparent border-[#1a1a1a]/15 hover:bg-[#1a1a1a]/[0.06]"}`,
+                                  "aria-pressed": active,
+                                  title:
+                                    layer.id === "trigrams"
+                                      ? "Later Heaven arrangement"
+                                      : layer.id === "tones"
+                                        ? "Five tones via the five phases (interpretive)"
+                                        : layer.id === "off"
+                                          ? "Plain numbers"
+                                          : `${layer.label} overlay`,
+                                  children: layer.label,
+                                },
+                                layer.id,
+                              );
+                            }),
+                          ],
+                        }, "legend-chips"),
+                        h("p", {
+                          className: "mt-1.5 text-[10px] font-mono opacity-50",
+                          children:
+                            legend === "trigrams"
+                              ? "Later Heaven arrangement; center 5 has no trigram."
+                              : legend === "tones"
+                                ? "Five tones mapped via the five phases — interpretive."
+                                : legend === "elements"
+                                  ? "One phase per number by Later Heaven direction."
+                                  : legend === "parity"
+                                    ? "Evens in the corners, odds as a cross."
+                                    : legend === "directions"
+                                      ? "Chinese map: north at the bottom."
+                                      : "Overlay a traditional reading on the nine cells.",
+                        }, "legend-caption"),
                       ],
                     }),
                     script &&

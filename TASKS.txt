@@ -1,11 +1,14 @@
 
  [ ] move the "modular" section of the list to the top.
- [ ]  legend of toggles to the right of the luoshu matrix for: Five Elements, trigrams, etc.
- [ ]  animation capabilities. to the right of the luoshu matrix will be an animation playback button and the user
+ [x]  legend of toggles beneath the luoshu matrix for: Five Elements, Trigrams, Tones, even/odd, etc.
+ [x]  animation capabilities. to the right of the luoshu matrix will be an animation playback button and the user
 can press it to see the overlay animated and explained in place.  for this we will want to
 build out animation functions and module.  this will allow also for showing the construction
 process of the luoshu matrix.  
 [  ] traditional, non-tabular view should be a classic tab/toggle at the top.
+
+---
+
  [ ]  To the left of the side bar we want a column of square icons because we will convert this into a 
   multiconcept explorer and the square icon that is at the top will be luoshu.  beneath it will be 
   hetu.  beneath that will be bagua.  only luoshu will be active but the others will be there grayed 

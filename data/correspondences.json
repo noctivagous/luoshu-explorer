@@ -1,0 +1,11 @@
+{
+  "1": { "element": "Water", "trigram": "Kan", "glyph": "☵", "nature": "Water", "tone": "Yu", "parity": "odd", "direction": "North" },
+  "2": { "element": "Earth", "trigram": "Kun", "glyph": "☷", "nature": "Earth", "tone": "Gong", "parity": "even", "direction": "Southwest" },
+  "3": { "element": "Wood", "trigram": "Zhen", "glyph": "☳", "nature": "Thunder", "tone": "Jiao", "parity": "odd", "direction": "East" },
+  "4": { "element": "Wood", "trigram": "Xun", "glyph": "☴", "nature": "Wind", "tone": "Jiao", "parity": "even", "direction": "Southeast" },
+  "5": { "element": "Earth", "trigram": null, "glyph": null, "nature": "Center", "tone": "Gong", "parity": "odd", "direction": "Center" },
+  "6": { "element": "Metal", "trigram": "Qian", "glyph": "☰", "nature": "Heaven", "tone": "Shang", "parity": "even", "direction": "Northwest" },
+  "7": { "element": "Metal", "trigram": "Dui", "glyph": "☱", "nature": "Lake", "tone": "Shang", "parity": "odd", "direction": "West" },
+  "8": { "element": "Earth", "trigram": "Gen", "glyph": "☶", "nature": "Mountain", "tone": "Gong", "parity": "even", "direction": "Northeast" },
+  "9": { "element": "Fire", "trigram": "Li", "glyph": "☲", "nature": "Fire", "tone": "Zhi", "parity": "odd", "direction": "South" }
+}
