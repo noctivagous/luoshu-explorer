@@ -1,0 +1,20 @@
+{
+  "name": "luoshu-arithmetic-properties",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node checks/spa-shell.check.mjs && node checks/render-smoke.check.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.3",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

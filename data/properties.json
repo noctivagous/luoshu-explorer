@@ -1,0 +1,128 @@
+[
+  {
+    "id": "A",
+    "letter": "A",
+    "category": "Core Balance",
+    "title": "Opposites balance",
+    "shortDesc": "1↔9, 2↔8, 3↔7, 4↔6 sum 10",
+    "formula": "a + a' = 10  (a' opposite through 5)",
+    "longDesc": "Every number has an antipode through the center cell 5. The four pairs are 1+9, 2+8, 3+7, 4+6. Each sums to 10, exactly twice the center. In Chinese cosmology this is yin-yang mirrored: the center holds, the periphery balances."
+  },
+  {
+    "id": "E",
+    "letter": "E",
+    "category": "Core Balance",
+    "title": "Five rules everything",
+    "shortDesc": "Total 45=9×5, opposite 10=2×5, magic 15=3×5",
+    "formula": "45 = 9·5  |  10 = 2·5  |  15 = 3·5",
+    "longDesc": "The Lo Shu is governed by 5. All nine numbers sum to 45 = 9×5. Any opposite pair sums to 10 = 2×5. Any row, column or diagonal sums to 15 = 3×5. 5 is not just center — it is the arithmetic mean, median, and divisor of every symmetry."
+  },
+  {
+    "id": "F",
+    "letter": "F",
+    "category": "Core Balance",
+    "title": "Corners = Edges",
+    "shortDesc": "evens 20, odds 20",
+    "formula": "4+2+6+8 = 20  =  9+3+7+1",
+    "longDesc": "Add the four corners (all even) you get 20. Add the four edge-centers (all odd except center) you get 20. Parity balances perfectly around 5. It is why the Lo Shu was seen as a model of agricultural equity: corners (fields) equal edges (boundaries)."
+  },
+  {
+    "id": "L",
+    "letter": "L",
+    "category": "Core Balance",
+    "title": "Mirrored distance",
+    "shortDesc": "Deviation from 5 is mirrored",
+    "formula": "|n-5| mirrored: +4/-4, +3/-3, +2/-2, +1/-1",
+    "longDesc": "Subtract 5 from each cell. You get +4,+3,+2,+1 on one side and -1,-2,-3,-4 on the other, mirrored through center. The distance from 5 is preserved but sign flips. This is the zero-balance in disguise."
+  },
+  {
+    "id": "G",
+    "letter": "G",
+    "category": "Means & Zero",
+    "title": "Zero-balanced form",
+    "shortDesc": "Subtract 5 matrix sums to 0",
+    "formula": "M₀ = M - 5  →  all lines sum to 0",
+    "longDesc": "If you center the square at zero by subtracting 5 everywhere, the Lo Shu becomes [-1,4,-3; -2,0,2; 3,-4,1]. Every row, column and diagonal now sums to 0. The magic becomes equilibrium: positive and negative cancel around void."
+  },
+  {
+    "id": "I",
+    "letter": "I",
+    "category": "Means & Zero",
+    "title": "Middle is mean",
+    "shortDesc": "Lines through center average to 5",
+    "formula": "(a + a')/2 = 5 for any line through center",
+    "longDesc": "Take any line that passes through the center — two diagonals, middle row, middle column. The average of its two ends is exactly the center 5. The center is not inserted; it emerges as the arithmetic mean of its opposites."
+  },
+  {
+    "id": "B",
+    "letter": "B",
+    "category": "Lines & Totals",
+    "title": "Lines sum to 15",
+    "shortDesc": "8 lines of 15",
+    "formula": "∀ rows, cols, diags: Σ = 15",
+    "longDesc": "The classic definition: all three rows, three columns and two diagonals sum to 15. Eight lines, one constant. 15 is the smallest possible magic constant for numbers 1-9 using each once."
+  },
+  {
+    "id": "J",
+    "letter": "J",
+    "category": "Lines & Totals",
+    "title": "111 property",
+    "shortDesc": "492+357+816 = 438+951+276 = 1665",
+    "formula": "Rows as 492,357,816 & Cols as 438,951,276 → Σ=1665=15×111",
+    "longDesc": "Read each row as a three-digit number: 492, 357, 816. Sum = 1665. Read each column as 438, 951, 276. Sum = 1665 too. And 1665 = 15 × 111. The magic constant multiplied by the repdigit reveals hidden decimal symmetry."
+  },
+  {
+    "id": "K",
+    "letter": "K",
+    "category": "Lines & Totals",
+    "title": "Determinant 360",
+    "shortDesc": "det = -360 and 9! = 362880",
+    "formula": "det(L) = -360  |  9! = 362880",
+    "longDesc": "The determinant of the Lo Shu matrix is -360. That's 3×4×5×6, or 9×40, a highly composite number. Meanwhile 9! = 362880 contains 360. The Lo Shu sits at the edge of factorial growth — order emerging from permutation space."
+  },
+  {
+    "id": "C",
+    "letter": "C",
+    "category": "Modular Border",
+    "title": "Clockwise addition mod10",
+    "shortDesc": "1+6=7, 7+2=9, 9+4=13→3, 3+8=11→1",
+    "formula": "edge + corner ≡ next corner (mod 10)",
+    "longDesc": "Travel clockwise around the border starting at 1 (bottom middle). Add the next corner: 1+6=7 (right middle). 7+2=9 (top middle). 9+4=13→3 (left middle). 3+8=11→1 (back). The tens digit falls away, leaving a mod-10 clock that generates the whole perimeter from just two seeds."
+  },
+  {
+    "id": "D",
+    "letter": "D",
+    "category": "Modular Border",
+    "title": "Counterclockwise arms",
+    "shortDesc": "5+edge=corner mod10",
+    "formula": "5 + edge ≡ corner (mod 10) CCW",
+    "longDesc": "Going counterclockwise, center 5 plus an edge gives the next corner modulo 10: 5+7=12→2 (top right), 5+9=14→4 (top left), 5+3=8 (bottom left), 5+1=6 (bottom right). The center reaches out and builds corners from edges."
+  },
+  {
+    "id": "H",
+    "letter": "H",
+    "category": "Modular Border",
+    "title": "Subtraction =5",
+    "shortDesc": "edge-corner=5",
+    "formula": "edge - corner = 5  (or corner - edge ≡5 mod10)",
+    "longDesc": "Reverse C: subtract the corner from the following edge clockwise. 9-4=5, 7-2=5, 3-8=-5→5 mod10, 1-6=-5→5 mod10. The constant difference is exactly the center. Addition creates the border; subtraction reveals the center."
+  },
+  {
+    "id": "M",
+    "letter": "M",
+    "category": "Geometry & Universality",
+    "title": "Knight's tour (torus)",
+    "shortDesc": "Consecutive numbers are knight moves apart",
+    "formula": "1→2→3…→9 = knight (2+1) steps on torus",
+    "longDesc": "On a torus (wrap edges), numbers 1-2-3-4-5-6-7-8-9 are each a chess knight's move from the next. 1 to 2 is (+1,-2) with wrap. This is unique to Lo Shu: it encodes a Hamiltonian knight tour, bridging magic squares and chess."
+  },
+  {
+    "id": "N",
+    "letter": "N",
+    "category": "Geometry & Universality",
+    "title": "All 3×3 are Lo Shu",
+    "shortDesc": "8 rotations / reflections",
+    "formula": "D₄ group: 4 rotations × 2 reflections = 8 squares",
+    "longDesc": "There is essentially one 3×3 normal magic square. All eight variants are just rotations and reflections of Lo Shu — the dihedral group D₄. What looks like many squares is one square seen from eight directions."
+  }
+]
