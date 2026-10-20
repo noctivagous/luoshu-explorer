@@ -18,8 +18,7 @@ import { scriptFor } from "./animation-scripts.js";
 
 const PROPERTIES = propertiesData,
   CORRESPONDENCES = correspondencesData,
-  // Toggle layers for the correspondences legend beneath the matrix. The
-  // value is the active layer id; "off" renders the plain numbers.
+  // Independent correspondences layers. Off clears the set; the rest toggle.
   LEGEND_LAYERS = [
     { id: "off", label: "Off" },
     { id: "elements", label: "Elements" },
@@ -28,6 +27,25 @@ const PROPERTIES = propertiesData,
     { id: "parity", label: "Even/odd" },
     { id: "directions", label: "Directions" },
   ],
+  LEGEND_NOTES = {
+    elements: "One phase per number by Later Heaven direction.",
+    trigrams: "Later Heaven arrangement; center 5 has no trigram.",
+    tones: "Five tones mapped via the five phases — interpretive.",
+    parity: "Evens in the corners, odds as a cross.",
+    directions: "Chinese map: north at the bottom.",
+  },
+  // Compass pins with north at the bottom (Chinese map).
+  DIR_PIN = {
+    North: "N",
+    South: "S",
+    East: "E",
+    West: "W",
+    Southeast: "SE",
+    Southwest: "SW",
+    Northeast: "NE",
+    Northwest: "NW",
+    Center: "C",
+  },
   // Muted swatch per element, reusing the app palette plus one slate blue
   // for Water (no purple/indigo accent elsewhere in the UI).
   ELEMENT_SWATCH = {
@@ -592,8 +610,20 @@ function LoShuApp() {
     [started, setStarted] = React.useState(false),
     [animPlaying, setAnimPlaying] = React.useState(false),
     [animSpeed, setAnimSpeed] = React.useState(1),
-    // Active correspondences-legend layer beneath the matrix ("off" = plain).
-    [legend, setLegend] = React.useState("off");
+    // Active correspondences layers (empty set = plain numbers).
+    [legend, setLegend] = React.useState(() => new Set());
+  const toggleLegend = (id) => {
+    if (id === "off") {
+      setLegend(new Set());
+      return;
+    }
+    setLegend((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   React.useEffect(() => {
     if (playerRef.current) playerRef.current.dispose();
     playerRef.current = null;
@@ -891,38 +921,20 @@ function LoShuApp() {
                                 D = o?.id === "G",
                                 buildOn = animOn && script.id === "construction",
                                 cellVal = buildOn ? (frame.setValues?.[a] ?? "") : i,
-                                // Correspondences legend: badges + inset tint
-                                // only when idle (never during animation).
-                                legendOn = legend !== "off" && !animOn,
+                                // Correspondences: independent slots, idle only.
+                                legendOn = legend.size > 0 && !animOn,
                                 corr = legendOn ? CORRESPONDENCES[i] : null,
-                                legendBadge =
-                                  !legendOn || !corr
-                                    ? null
-                                    : legend === "elements"
-                                      ? corr.element
-                                      : legend === "trigrams"
-                                        ? corr.trigram
-                                          ? `${corr.glyph} ${corr.trigram}`
-                                          : "Center"
-                                        : legend === "tones"
-                                          ? corr.tone
-                                          : legend === "parity"
-                                            ? corr.parity
-                                            : corr.direction;
-                              if (legendOn && corr) {
-                                let tint = null;
-                                if (
-                                  legend === "elements" ||
-                                  legend === "tones"
-                                )
-                                  tint = ELEMENT_SWATCH[corr.element];
-                                else if (legend === "parity")
-                                  tint =
-                                    corr.parity === "even"
-                                      ? "#4a6741"
-                                      : "#1a1a1a";
+                                showLayer = (id) =>
+                                  legendOn && corr && legend.has(id);
+                              if (showLayer("elements")) {
+                                let tint = ELEMENT_SWATCH[corr.element];
                                 if (tint)
                                   y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 2px ${tint}`;
+                              }
+                              if (showLayer("parity")) {
+                                if (corr.parity === "odd")
+                                  y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 2px #1a1a1a`;
+                                else k += " corr-parity-even";
                               }
                               if (buildOn && frame.highlight.includes(a))
                                 k += " ring-2 ring-[#c96442] ring-offset-2 ring-offset-white";
@@ -961,11 +973,32 @@ function LoShuApp() {
                                         children:
                                           i > 5 ? `+${i - 5}` : `${i - 5}`,
                                       }),
-                                    legendBadge &&
+                                    showLayer("trigrams") &&
                                       h("span", {
-                                        className:
-                                          "absolute top-[6px] left-1/2 -translate-x-1/2 text-[10px] font-mono whitespace-nowrap opacity-70",
-                                        children: legendBadge,
+                                        className: "corr-trigram",
+                                        children: corr.trigram
+                                          ? `${corr.glyph} ${corr.trigram}`
+                                          : "Center",
+                                      }),
+                                    (showLayer("elements") ||
+                                      showLayer("tones")) &&
+                                      h("span", {
+                                        className: "corr-stack",
+                                        children: [
+                                          showLayer("elements") &&
+                                            h("span", {
+                                              children: corr.element,
+                                            }, "el"),
+                                          showLayer("tones") &&
+                                            h("span", {
+                                              children: corr.tone,
+                                            }, "tone"),
+                                        ],
+                                      }),
+                                    showLayer("directions") &&
+                                      h("span", {
+                                        className: `corr-dir corr-dir-${DIR_PIN[corr.direction]}`,
+                                        children: DIR_PIN[corr.direction],
                                       }),
                                   ],
                                 },
@@ -1852,63 +1885,6 @@ function LoShuApp() {
                         }),
                       ],
                     }),
-                    h("div", {
-                      className: "mt-4",
-                      children: [
-                        _("div", {
-                          className: "flex flex-wrap items-center gap-1.5",
-                          role: "group",
-                          "aria-label": "Correspondences legend",
-                          children: [
-                            h(
-                              "span",
-                              {
-                                className:
-                                  "text-[10px] font-mono uppercase tracking-widest opacity-50 mr-1",
-                                children: "Correspondences",
-                              },
-                              "legend-title",
-                            ),
-                            ...LEGEND_LAYERS.map((layer) => {
-                              let active = legend === layer.id;
-                              return h(
-                                "button",
-                                {
-                                  onClick: () => setLegend(layer.id),
-                                  className: `px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${active ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-transparent border-[#1a1a1a]/15 hover:bg-[#1a1a1a]/[0.06]"}`,
-                                  "aria-pressed": active,
-                                  title:
-                                    layer.id === "trigrams"
-                                      ? "Later Heaven arrangement"
-                                      : layer.id === "tones"
-                                        ? "Five tones via the five phases (interpretive)"
-                                        : layer.id === "off"
-                                          ? "Plain numbers"
-                                          : `${layer.label} overlay`,
-                                  children: layer.label,
-                                },
-                                layer.id,
-                              );
-                            }),
-                          ],
-                        }, "legend-chips"),
-                        h("p", {
-                          className: "mt-1.5 text-[10px] font-mono opacity-50",
-                          children:
-                            legend === "trigrams"
-                              ? "Later Heaven arrangement; center 5 has no trigram."
-                              : legend === "tones"
-                                ? "Five tones mapped via the five phases — interpretive."
-                                : legend === "elements"
-                                  ? "One phase per number by Later Heaven direction."
-                                  : legend === "parity"
-                                    ? "Evens in the corners, odds as a cross."
-                                    : legend === "directions"
-                                      ? "Chinese map: north at the bottom."
-                                      : "Overlay a traditional reading on the nine cells.",
-                        }, "legend-caption"),
-                      ],
-                    }),
                     script &&
                       h("div", {
                         className: "anim-rail",
@@ -1973,6 +1949,63 @@ function LoShuApp() {
                           }),
                         ],
                       }),
+                    h("div", {
+                      className: "legend-toggles mt-4",
+                      children: [
+                        _("div", {
+                          className: "flex flex-wrap items-center gap-1.5",
+                          role: "group",
+                          "aria-label": "Correspondences legend",
+                          children: [
+                            h(
+                              "span",
+                              {
+                                className:
+                                  "text-[10px] font-mono uppercase tracking-widest opacity-50 mr-1",
+                                children: "Correspondences",
+                              },
+                              "legend-title",
+                            ),
+                            ...LEGEND_LAYERS.map((layer) => {
+                              let active =
+                                layer.id === "off"
+                                  ? legend.size === 0
+                                  : legend.has(layer.id);
+                              return h(
+                                "button",
+                                {
+                                  onClick: () => toggleLegend(layer.id),
+                                  className: `px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${active ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-transparent border-[#1a1a1a]/15 hover:bg-[#1a1a1a]/[0.06]"}`,
+                                  "aria-pressed": active,
+                                  title:
+                                    layer.id === "trigrams"
+                                      ? "Later Heaven arrangement"
+                                      : layer.id === "tones"
+                                        ? "Five tones via the five phases (interpretive)"
+                                        : layer.id === "off"
+                                          ? "Plain numbers"
+                                          : `${layer.label} overlay`,
+                                  children: layer.label,
+                                },
+                                layer.id,
+                              );
+                            }),
+                          ],
+                        }, "legend-chips"),
+                        h("p", {
+                          className: "mt-1.5 text-[10px] font-mono opacity-50",
+                          children:
+                            legend.size === 0
+                              ? "Overlay a traditional reading on the nine cells."
+                              : LEGEND_LAYERS.filter(
+                                  (layer) =>
+                                    layer.id !== "off" && legend.has(layer.id),
+                                )
+                                  .map((layer) => LEGEND_NOTES[layer.id])
+                                  .join(" · "),
+                        }, "legend-caption"),
+                      ],
+                    }),
                     h("div", {
                       className: "w-full max-w-[560px] mt-12 lg:mt-16",
                       children: !o

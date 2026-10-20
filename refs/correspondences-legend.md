@@ -66,11 +66,15 @@ new UI. The per-property "Visual key" in the detail card (`VISUAL_KEYS` in
 
 ## Design notes
 
-- Single-active layer + Off (radio behavior) so 9 small cells stay readable
-  and legend tints never fight the property overlays.
-- Legend badges render only when idle (`legend !== "off" && !animOn`);
+- Layers are independent (Off clears the set). Each layer owns a slot in the
+  108px cell so they can stack without sharing one top-center badge.
+- Slots: even/odd is chrome only (odd = solid ink inset, even = dashed sage
+  outline); Elements tint plus a bottom-stack label; Tones join that stack;
+  Trigrams sit at the top; Directions pin to the compass edge (north at the
+  bottom).
+- Legend badges render only when idle (`legend.size > 0 && !animOn`);
   the animation player keeps owning all motion.
-- Tints are inset rings that compose with existing property backgrounds;
-  Trigrams/Directions layers use badges only.
+- Element tints are inset rings that compose with existing property
+  backgrounds.
 - Palette reuses app hues; Water gets muted slate blue `#4a6a8a`
   (no purple/indigo accent, no glow, per taste constraints).

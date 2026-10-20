@@ -42,6 +42,7 @@ html,body{height:100%;overflow:hidden}
 #root main>div>.relative:has(.anim-rail){grid-template-columns:minmax(0,1fr) 92px;column-gap:12px}
 #root main .rounded-\[22px\]{width:auto;max-width:100%;display:flex;justify-content:center}
 #root main>div>.relative>.mt-12{grid-column:1/-1;width:100%;max-width:none;margin-top:16px}
+#root main>div>.relative>.anim-caption,#root main>div>.relative>.legend-toggles{grid-column:1/-1;width:100%;max-width:none}
 /* Utilities for the enlarged layout (absent from the frozen Tailwind output). */
 .text-\[42px\]{font-size:42px}
 .text-\[16px\]{font-size:16px}
@@ -93,13 +94,29 @@ html,body{height:100%;overflow:hidden}
 .anim-rail-btn{min-width:44px;height:44px}
 #root main button.w-7{width:44px;height:44px}
 }
-/* On-card step caption strip: the explanation sits on the square, not only
-   in the side rail. Mirrors the rail caption; announced via aria-live. */
-.anim-caption{margin-top:12px;width:100%;max-width:340px;display:flex;gap:8px;align-items:baseline;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:8px 12px;font-size:12px;line-height:1.4}
+/* Step caption strip: horizontal, above the square card and playback rail. */
+.anim-caption{margin:0 0 12px;width:100%;max-width:none;display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:baseline;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:8px 12px;font-size:12px;line-height:1.4}
 .anim-caption-step{font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
 /* Progress value written by the player loop without re-rendering React.
    Overlays read it for player-driven tweens; discrete steps work regardless. */
 [data-anim-stage]{--anim-p:0}
+/* Correspondences slots inside a 108px cell. No motion of their own. */
+.corr-trigram,.corr-stack,.corr-dir{
+  position:absolute;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  font-size:9px;line-height:1.15;opacity:.7;white-space:nowrap;pointer-events:none
+}
+.corr-trigram{top:16px;left:50%;transform:translateX(-50%)}
+.corr-stack{bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0}
+.corr-dir-N{bottom:4px;left:50%;transform:translateX(-50%)}
+.corr-dir-S{top:4px;left:50%;transform:translateX(-50%)}
+.corr-dir-E{left:5px;top:50%;transform:translateY(-50%)}
+.corr-dir-W{right:5px;top:50%;transform:translateY(-50%)}
+.corr-dir-SE{top:4px;left:5px}
+.corr-dir-SW{top:4px;right:5px}
+.corr-dir-NE{bottom:4px;left:5px}
+.corr-dir-NW{bottom:4px;right:5px}
+.corr-dir-C{bottom:4px;left:50%;transform:translateX(-50%)}
+.corr-parity-even{outline:2px dashed #4a6741;outline-offset:-4px}
 /* prefers-reduced-motion: playback is already discrete step cuts (no motion
    libraries), so collapse the remaining transitions to instant cuts. */
 @media(prefers-reduced-motion:reduce){
