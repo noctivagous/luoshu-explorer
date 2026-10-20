@@ -556,13 +556,15 @@ function LoShuApp() {
     animPause = () => playerRef.current?.pause(),
     animNext = () => {
       if (!playerRef.current) return;
-      setStarted(true);
-      playerRef.current.stepNext();
+      // From idle, reveal the first step (the player already sits on it);
+      // otherwise advance one step.
+      if (!started) setStarted(true);
+      else playerRef.current.stepNext();
     },
     animPrev = () => {
       if (!playerRef.current) return;
-      setStarted(true);
-      playerRef.current.stepPrev();
+      if (!started) setStarted(true);
+      else playerRef.current.stepPrev();
     },
     animReset = () => playerRef.current?.reset() || setStarted(false),
     animSpeedCycle = () => {
@@ -570,7 +572,17 @@ function LoShuApp() {
       try {
         playerRef.current?.setSpeed(next);
       } catch {}
-    };
+    },
+    // Overlay gate: while a script is playing/stepping, only the keys revealed
+    // so far are shown; idle (or another property) renders everything as before.
+    showKey = (id, key) =>
+      !(
+        animOn &&
+        script &&
+        script.id === id &&
+        frame &&
+        !frame.visibleKeys.includes(key)
+      );
   return _("div", {
     className:
       "min-h-screen w-full text-[var(--ink)] selection:bg-[#1a1a1a] selection:text-[#fdf8f0]",
@@ -732,7 +744,10 @@ function LoShuApp() {
                                   if (d)
                                     ((k += " text-white"),
                                       (y.background = "#c96442"));
-                                  else if (v)
+                                  else if (
+                                    v &&
+                                    showKey("F", "F.badge-edges")
+                                  )
                                     ((k += " text-white"),
                                       (y.background = "#4a6741"));
                                   else k += " bg-[#1a1a1a] text-white";
@@ -790,6 +805,11 @@ function LoShuApp() {
                                       children: cellVal,
                                     }),
                                     D &&
+                                      (S === 0
+                                        ? showKey("G", "G.center")
+                                        : S > 0
+                                          ? showKey("G", "G.pos")
+                                          : showKey("G", "G.neg")) &&
                                       h("span", {
                                         className:
                                           "absolute -bottom-1 right-1 text-[11px] font-mono font-bold px-1 rounded bg-[#1a1a1a] text-white",
@@ -797,6 +817,7 @@ function LoShuApp() {
                                       }),
                                     o?.id === "L" &&
                                       !m &&
+                                      showKey("L", `L.bar-${a}`) &&
                                       h("span", {
                                         className:
                                           "absolute bottom-[6px] left-1/2 -translate-x-1/2 text-[10px] font-mono opacity-60",
@@ -924,11 +945,13 @@ function LoShuApp() {
                                       [3, 4, 5],
                                       [6, 7, 8],
                                     ].map((i, a) => {
+                                      if (!showKey("B", `B.row-${a}`)) return null;
                                       let m = CENTERS[i[0]],
                                         d = CENTERS[i[2]];
                                       return _(
                                         "g",
                                         {
+                                          "data-anim-key": `B.row-${a}`,
                                           opacity: 0.55,
                                           children: [
                                             h("line", {
@@ -972,11 +995,13 @@ function LoShuApp() {
                                       [1, 4, 7],
                                       [2, 5, 8],
                                     ].map((i, a) => {
+                                      if (!showKey("B", `B.col-${a}`)) return null;
                                       let m = CENTERS[i[0]],
                                         d = CENTERS[i[2]];
                                       return _(
                                         "g",
                                         {
+                                          "data-anim-key": `B.col-${a}`,
                                           opacity: 0.55,
                                           children: [
                                             h("line", {
@@ -1015,8 +1040,10 @@ function LoShuApp() {
                                         `c${a}`,
                                       );
                                     }),
-                                    _("g", {
-                                      opacity: 0.7,
+                                    showKey("B", "B.diags") &&
+                                      _("g", {
+                                        "data-anim-key": "B.diags",
+                                        opacity: 0.7,
                                       children: [
                                         h("line", {
                                           x1: CENTERS[0].x - 18,
@@ -1076,8 +1103,10 @@ function LoShuApp() {
                                           .join(" ") + ` L ${a[0].x} ${a[0].y}`;
                                     return _(Be, {
                                       children: [
-                                        h("path", {
-                                          d: m,
+                                        showKey("C", "C.path") &&
+                                          h("path", {
+                                            "data-anim-key": "C.path",
+                                            d: m,
                                           fill: "none",
                                           stroke: "#1a1a1a",
                                           strokeWidth: "1.6",
@@ -1085,6 +1114,7 @@ function LoShuApp() {
                                           opacity: 0.6,
                                         }),
                                         a.map((d, v) => {
+                                          if (!showKey("C", `C.seg-${v}`)) return null;
                                           let y = a[(v + 1) % a.length],
                                             k = (d.x + y.x) / 2,
                                             S = (d.y + y.y) / 2,
@@ -1095,6 +1125,7 @@ function LoShuApp() {
                                           return h(
                                             "g",
                                             {
+                                              "data-anim-key": `C.seg-${v}`,
                                               transform: `translate(${k},${S}) rotate(${(D * 180) / Math.PI})`,
                                               children: h("path", {
                                                 d: "M -6 -4 L 6 0 L -6 4",
@@ -1118,12 +1149,14 @@ function LoShuApp() {
                                     { edge: 7, corner: 8, sum: "5+1=6" },
                                     { edge: 3, corner: 6, sum: "5+3=8" },
                                   ].map((i, a) => {
+                                    if (!showKey("D", `D.arm-${a}`)) return null;
                                     let m = CENTERS[4],
                                       d = CENTERS[i.edge],
                                       v = CENTERS[i.corner];
                                     return _(
                                       "g",
                                       {
+                                        "data-anim-key": `D.arm-${a}`,
                                         children: [
                                           h("line", {
                                             x1: m.x,
@@ -1152,30 +1185,36 @@ function LoShuApp() {
                               o?.id === "E" &&
                                 _("g", {
                                   children: [
-                                    h("circle", {
-                                      cx: Z / 2,
-                                      cy: Z / 2,
-                                      r: 62,
+                                    showKey("E", "E.ring-0") &&
+                                      h("circle", {
+                                        "data-anim-key": "E.ring-0",
+                                        cx: Z / 2,
+                                        cy: Z / 2,
+                                        r: 62,
                                       fill: "none",
                                       stroke: "#b89a5a",
                                       strokeWidth: "1",
                                       strokeDasharray: "4 6",
                                       opacity: 0.6,
                                     }),
-                                    h("circle", {
-                                      cx: Z / 2,
-                                      cy: Z / 2,
-                                      r: 108,
+                                    showKey("E", "E.ring-1") &&
+                                      h("circle", {
+                                        "data-anim-key": "E.ring-1",
+                                        cx: Z / 2,
+                                        cy: Z / 2,
+                                        r: 108,
                                       fill: "none",
                                       stroke: "#1a1a1a",
                                       strokeWidth: "1",
                                       strokeDasharray: "2 8",
                                       opacity: 0.25,
                                     }),
-                                    h("circle", {
-                                      cx: Z / 2,
-                                      cy: Z / 2,
-                                      r: 148,
+                                    showKey("E", "E.ring-2") &&
+                                      h("circle", {
+                                        "data-anim-key": "E.ring-2",
+                                        cx: Z / 2,
+                                        cy: Z / 2,
+                                        r: 148,
                                       fill: "none",
                                       stroke: "#c96442",
                                       strokeWidth: "1",
@@ -1192,11 +1231,13 @@ function LoShuApp() {
                                     { edge: 7, corner: 8 },
                                     { edge: 3, corner: 6 },
                                   ].map((i, a) => {
+                                    if (!showKey("H", `H.arm-${a}`)) return null;
                                     let m = CENTERS[i.edge],
                                       d = CENTERS[i.corner];
                                     return _(
                                       "g",
                                       {
+                                        "data-anim-key": `H.arm-${a}`,
                                         children: [
                                           h("line", {
                                             x1: m.x,
@@ -1245,11 +1286,13 @@ function LoShuApp() {
                                       [1, 4, 7],
                                       [3, 4, 5],
                                     ].map((i, a) => {
+                                      if (!showKey("I", `I.line-${a}`)) return null;
                                       let m = CENTERS[i[0]],
                                         d = CENTERS[i[2]];
                                       return h(
                                         "line",
                                         {
+                                          "data-anim-key": `I.line-${a}`,
                                           x1: m.x,
                                           y1: m.y,
                                           x2: d.x,
@@ -1261,8 +1304,10 @@ function LoShuApp() {
                                         a,
                                       );
                                     }),
-                                    _("g", {
-                                      transform: `translate(${Z / 2}, ${Z / 2})`,
+                                    showKey("I", "I.center") &&
+                                      _("g", {
+                                        "data-anim-key": "I.center",
+                                        transform: `translate(${Z / 2}, ${Z / 2})`,
                                       children: [
                                         h("circle", { r: 18, fill: "#1a1a1a" }),
                                         h("text", {
@@ -1281,6 +1326,7 @@ function LoShuApp() {
                                 h("g", {
                                   children: SQUARE.map((i, a) => {
                                     if (a === 4) return null;
+                                    if (!showKey("L", `L.bar-${a}`)) return null;
                                     let m = CENTERS[a],
                                       d = i - 5,
                                       v = Math.abs(d) * 6,
@@ -1288,6 +1334,7 @@ function LoShuApp() {
                                     return h(
                                       "g",
                                       {
+                                        "data-anim-key": `L.bar-${a}`,
                                         children: h("rect", {
                                           x: m.x - 3,
                                           y,
@@ -1316,9 +1363,11 @@ function LoShuApp() {
                                         D =
                                           Math.abs(k) > 100 ||
                                           Math.abs(S) > 100;
+                                      if (!showKey("M", `M.hop-${d}`)) return null;
                                       return _(
                                         "g",
                                         {
+                                          "data-anim-key": `M.hop-${d}`,
                                           children: [
                                             h("path", {
                                               d: `M ${v.x} ${v.y} Q ${(v.x + y.x) / 2 + (d % 2 === 0 ? 18 : -18)} ${(v.y + y.y) / 2 + (d % 3 === 0 ? -18 : 12)} ${y.x} ${y.y}`,
@@ -1348,7 +1397,9 @@ function LoShuApp() {
                                   })(),
                                 }),
                               o?.id === "J" &&
+                                showKey("J", "J.rows") &&
                                 _("g", {
+                                  "data-anim-key": "J.rows",
                                   opacity: 0.9,
                                   children: [
                                     h("line", {
@@ -1382,85 +1433,96 @@ function LoShuApp() {
                           o?.id === "C" &&
                             _(Be, {
                               children: [
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
-                                  style: { left: 199, top: 277 },
+                                showKey("C", "C.label-0") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
+                                    style: { left: 199, top: 277 },
                                   children: "1+6=7",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
-                                  style: { left: 257, top: 83 },
-                                  children: "7+2=9",
+                                showKey("C", "C.label-1") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
+                                    style: { left: 257, top: 83 },
+                                    children: "7+2=9",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#c96442] text-white px-2 py-1 rounded-full shadow",
-                                  style: { left: 68, top: 22 },
-                                  children: "9+4=13→3",
+                                showKey("C", "C.label-2") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#c96442] text-white px-2 py-1 rounded-full shadow",
+                                    style: { left: 68, top: 22 },
+                                    children: "9+4=13→3",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
-                                  style: { left: 15, top: 194 },
-                                  children: "3+8=11→1",
+                                showKey("C", "C.label-3") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow",
+                                    style: { left: 15, top: 194 },
+                                    children: "3+8=11→1",
                                 }),
                               ],
                             }),
                           o?.id === "D" &&
                             _(Be, {
                               children: [
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                  style: { left: 83, top: 22 },
-                                  children: "5+9→4",
+                                showKey("D", "D.label-0") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
+                                    style: { left: 83, top: 22 },
+                                    children: "5+9→4",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                  style: { left: 240, top: 29 },
-                                  children: "5+7→2",
+                                showKey("D", "D.label-1") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
+                                    style: { left: 240, top: 29 },
+                                    children: "5+7→2",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                  style: { left: 209, top: 253 },
-                                  children: "5+1→6",
+                                showKey("D", "D.label-2") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
+                                    style: { left: 209, top: 253 },
+                                    children: "5+1→6",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
-                                  style: { left: 22, top: 248 },
-                                  children: "5+3→8",
-                                }),
+                                showKey("D", "D.label-3") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full",
+                                    style: { left: 22, top: 248 },
+                                    children: "5+3→8",
+                                  }),
                               ],
                             }),
                           o?.id === "J" &&
                             _(Be, {
                               children: [
-                                _("div", {
-                                  className:
-                                    "absolute left-0 right-0 flex justify-center gap-2",
-                                  style: { bottom: -38 },
+                                showKey("J", "J.badge-rows") &&
+                                  _("div", {
+                                    className:
+                                      "absolute left-0 right-0 flex justify-center gap-2",
+                                    style: { bottom: -38 },
                                   children: [
                                     h("span", {
                                       className:
                                         "text-[11px] font-mono bg-white border px-2 py-1 rounded-full",
                                       children: "492 + 357 + 816 = 1665",
                                     }),
-                                    h("span", {
-                                      className:
-                                        "text-[11px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full",
-                                      children: "15×111",
-                                    }),
+                                    showKey("J", "J.badge-reveal") &&
+                                      h("span", {
+                                        className:
+                                          "text-[11px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full",
+                                        children: "15×111",
+                                      }),
                                   ],
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute left-0 right-0 flex justify-center gap-2",
-                                  style: { top: -34 },
+                                showKey("J", "J.badge-cols") &&
+                                  h("div", {
+                                    className:
+                                      "absolute left-0 right-0 flex justify-center gap-2",
+                                    style: { top: -34 },
                                   children: h("span", {
                                     className:
                                       "text-[11px] font-mono bg-white border px-2 py-1 rounded-full",
@@ -1472,60 +1534,67 @@ function LoShuApp() {
                           o?.id === "E" &&
                             _(Be, {
                               children: [
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2.5 py-1 rounded-full",
-                                  style: {
-                                    left: "50%",
-                                    top: -16,
-                                    transform: "translateX(-50%)",
-                                  },
-                                  children: "Total 45 = 9×5",
+                                showKey("E", "E.badge-total") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2.5 py-1 rounded-full",
+                                    style: {
+                                      left: "50%",
+                                      top: -16,
+                                      transform: "translateX(-50%)",
+                                    },
+                                    children: "Total 45 = 9×5",
                                 }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-white border px-2.5 py-1 rounded-full",
-                                  style: {
-                                    left: "50%",
-                                    top: "50%",
-                                    transform: "translate(-50%, 78px)",
-                                  },
-                                  children: "Magic 15 = 3×5",
-                                }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#b89a5a] text-white px-2.5 py-1 rounded-full",
-                                  style: {
-                                    left: "50%",
-                                    top: "50%",
-                                    transform: "translate(-50%, -88px)",
-                                  },
-                                  children: "Opposite 10 = 2×5",
-                                }),
+                                showKey("E", "E.badge-magic") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-white border px-2.5 py-1 rounded-full",
+                                    style: {
+                                      left: "50%",
+                                      top: "50%",
+                                      transform: "translate(-50%, 78px)",
+                                    },
+                                    children: "Magic 15 = 3×5",
+                                  }),
+                                showKey("E", "E.badge-opp") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#b89a5a] text-white px-2.5 py-1 rounded-full",
+                                    style: {
+                                      left: "50%",
+                                      top: "50%",
+                                      transform: "translate(-50%, -88px)",
+                                    },
+                                    children: "Opposite 10 = 2×5",
+                                  }),
                               ],
                             }),
                           o?.id === "F" &&
                             _(Be, {
                               children: [
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#c96442] text-white px-2 py-1 rounded-full",
-                                  style: { left: 8, top: -18 },
-                                  children: "Corners even Σ20",
-                                }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[10px] font-mono bg-[#4a6741] text-white px-2 py-1 rounded-full",
-                                  style: { right: 8, top: -18 },
-                                  children: "Edges odd Σ20",
-                                }),
+                                showKey("F", "F.badge-corners") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#c96442] text-white px-2 py-1 rounded-full",
+                                    style: { left: 8, top: -18 },
+                                    children: "Corners even Σ20",
+                                  }),
+                                showKey("F", "F.badge-edges") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[10px] font-mono bg-[#4a6741] text-white px-2 py-1 rounded-full",
+                                    style: { right: 8, top: -18 },
+                                    children: "Edges odd Σ20",
+                                  }),
                               ],
                             }),
                           o?.id === "K" &&
                             h(Be, {
-                              children: h("div", {
-                                className:
-                                  "absolute left-1/2 -translate-x-1/2 text-[10px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full whitespace-nowrap",
+                              children:
+                                showKey("K", "K.badge") &&
+                                h("div", {
+                                  className:
+                                    "absolute left-1/2 -translate-x-1/2 text-[10px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full whitespace-nowrap",
                                 style: { bottom: -36 },
                                 children:
                                   "det = -360 = 1!·2!·3!·...? No, = - (1×2×3×4×5×6)",
@@ -1534,24 +1603,27 @@ function LoShuApp() {
                           o?.id === "I" &&
                             _(Be, {
                               children: [
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
-                                  style: { left: 112, top: 63 },
-                                  children: "(4+6)/2=5",
-                                }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
-                                  style: { left: 204, top: 63 },
-                                  children: "(9+1)/2=5",
-                                }),
-                                h("div", {
-                                  className:
-                                    "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
-                                  style: { left: 112, top: 228 },
-                                  children: "(3+7)/2=5",
-                                }),
+                                showKey("I", "I.label-0") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
+                                    style: { left: 112, top: 63 },
+                                    children: "(4+6)/2=5",
+                                  }),
+                                showKey("I", "I.label-1") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
+                                    style: { left: 204, top: 63 },
+                                    children: "(9+1)/2=5",
+                                  }),
+                                showKey("I", "I.label-2") &&
+                                  h("div", {
+                                    className:
+                                      "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full",
+                                    style: { left: 112, top: 228 },
+                                    children: "(3+7)/2=5",
+                                  }),
                               ],
                             }),
                           o?.id === "M" &&
@@ -1572,10 +1644,12 @@ function LoShuApp() {
                                 { r: 0, x: 0, y: 96, mirror: !0 },
                                 { r: 0, x: -96, y: 96, mirror: !0 },
                                 { r: 0, x: -96, y: 0, mirror: !0 },
-                              ].map((i, a) =>
-                                h(
+                              ].map((i, a) => {
+                                if (!showKey("N", `N.mini-${a}`)) return null;
+                                return h(
                                   "div",
                                   {
+                                    "data-anim-key": `N.mini-${a}`,
                                     className:
                                       "absolute w-[48px] h-[48px] grid grid-cols-3 gap-[2px] p-[3px] bg-white/80 border rounded-[8px] opacity-60 blur-[0.2px]",
                                     style: {
@@ -1596,8 +1670,8 @@ function LoShuApp() {
                                     ),
                                   },
                                   a,
-                                ),
-                              ),
+                                );
+                              }),
                             }),
                         ],
                       }),

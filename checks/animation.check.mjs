@@ -2,7 +2,7 @@
 // Run: npm run check. No DOM or wall-clock timing: the player takes an
 // injected clock and tick() advances it manually.
 import { validateScript, createPlayer, frameFor, animStep } from '../js/animation.js';
-import { constructionScript, scriptA, scriptFor } from '../js/animation-scripts.js';
+import { constructionScript, scriptA, scriptFor, demoScripts } from '../js/animation-scripts.js';
 
 const failures = [];
 const need = (cond, msg) => {
@@ -19,7 +19,27 @@ need(validateScript(scriptA).length === 0, 'property A script invalid');
 need(scriptFor(null) === constructionScript, 'no selection should route to construction');
 need(scriptFor(undefined) === constructionScript, 'undefined selection should route to construction');
 need(scriptFor('A') === scriptA, 'property A should route to script A');
-need(scriptFor('B') === null, 'properties without scripts yet should route to null');
+
+// Every property A-N routes to a valid, well-formed script.
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']) {
+  const s = scriptFor(id);
+  need(s !== null && s !== undefined, `property ${id} should route to a script`);
+  need(validateScript(s).length === 0, `script ${id} invalid`);
+  need(s.steps.length >= 2 && s.steps.length <= 9, `script ${id} should have 2-9 steps`);
+  need(s.steps.every((st) => typeof st.caption === 'string' && st.caption.length > 0), `script ${id} steps need captions`);
+  // Overlay keys accumulate monotonically across steps.
+  let seen = 0;
+  s.steps.forEach((st, k) => {
+    const f = frameFor(s, k);
+    need(f.visibleKeys.length >= seen, `script ${id} step ${k} keys should accumulate`);
+    seen = f.visibleKeys.length;
+  });
+}
+need(
+  JSON.stringify(Object.keys(demoScripts).sort()) ===
+    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'construction']),
+  'demoScripts should export all 14 property scripts plus construction'
+);
 
 // Construction: 9 steps, one cell placed per step, full board at the end.
 need(constructionScript.steps.length === 9, 'construction should have 9 steps');
