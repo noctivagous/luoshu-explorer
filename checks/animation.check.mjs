@@ -1,7 +1,7 @@
 // Animation checks: the script format and player engine must stay valid.
 // Run: npm run check. No DOM or wall-clock timing: the player takes an
 // injected clock and tick() advances it manually.
-import { validateScript, createPlayer, frameFor, animStep } from '../js/animation.js';
+import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio } from '../js/animation.js';
 import { constructionScript, scriptA, scriptFor, demoScripts } from '../js/animation-scripts.js';
 
 const failures = [];
@@ -42,27 +42,43 @@ need(
   'demoScripts should export all 14 property scripts plus construction'
 );
 
-// Construction: 9 steps, one cell placed per step, full board at the end.
-need(constructionScript.steps.length === 9, 'construction should have 9 steps');
-need(
-  JSON.stringify(constructionScript.steps.map((s) => s.matrix.highlight)) !== '[]',
-  'construction steps should highlight cells'
-);
-const lastBuild = frameFor(constructionScript, 8);
-need(Object.keys(lastBuild.setValues || {}).length === 9, 'construction end frame should place 9 cells');
-need(lastBuild.visibleCount === 9, 'construction end frame visibleCount should be 9');
+// Construction: ordinal square, corner swap, then fold onto the Lo Shu.
+need(constructionScript.steps.length === 3, 'construction should have 3 steps');
+const ordinal = frameFor(constructionScript, 0);
+const swapped = frameFor(constructionScript, 1);
+const folded = frameFor(constructionScript, 2);
+const gridOf = (setValues) => Array.from({ length: 9 }, (_, i) => setValues[i]);
+need(JSON.stringify(gridOf(ordinal.setValues)) === JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8, 9]), 'construction starts from the ordinal square');
+need(JSON.stringify(gridOf(swapped.setValues)) === JSON.stringify([9, 2, 7, 4, 5, 6, 3, 8, 1]), 'construction swaps the four corners');
+need(JSON.stringify(swapped.highlight) === JSON.stringify([0, 2, 6, 8]), 'corner swap highlights the four corners');
+need(swapped.moves.length === 4, 'corner swap moves four cells');
+need(JSON.stringify(gridOf(folded.setValues)) === JSON.stringify([4, 9, 2, 3, 5, 7, 8, 1, 6]), 'construction folds onto the Lo Shu');
+need(folded.moves.length > 0, 'fold step should glide the cells that move');
 
-// Property A: 4 pair steps, overlay keys accumulate in order.
+// Property A: 4 pair steps. The "10" chip waits until mid-step.
 need(scriptA.steps.length === 4, 'script A should have 4 steps');
 need(
-  JSON.stringify(frameFor(scriptA, 0).visibleKeys) === JSON.stringify(['A.pair-0']),
-  'script A step 0 should reveal only pair 0'
+  JSON.stringify(frameFor(scriptA, 0, 0).visibleKeys) === JSON.stringify(['A.pair-0']),
+  'script A step 0 at the start should reveal only the chord'
 );
-need(frameFor(scriptA, 2).visibleKeys.length === 3, 'script A step 2 should reveal 3 pairs');
+need(
+  JSON.stringify(frameFor(scriptA, 0).visibleKeys) === JSON.stringify(['A.pair-0', 'A.chip-0']),
+  'script A step 0 at the end should pop the 10 chip'
+);
+need(
+  frameFor(scriptA, 2).visibleKeys.filter((k) => k.startsWith('A.pair-')).length === 3,
+  'script A step 2 should reveal 3 pairs'
+);
 need(
   JSON.stringify(frameFor(scriptA, 0).highlight) === JSON.stringify([0, 8]),
   'script A step 0 should highlight cells 0 and 8'
 );
+need(scriptFor('N').steps.length === 8, 'property N should walk all eight D₄ forms');
+need(
+  JSON.stringify(gridOf(frameFor(scriptFor('N'), 0).setValues)) === JSON.stringify([4, 9, 2, 3, 5, 7, 8, 1, 6]),
+  'N starts on the displayed square'
+);
+need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells');
 
 // Player: manual tick advances, step/reset/speed behave.
 {
@@ -75,6 +91,13 @@ need(
   need(p.getState().stepIndex === 0, 'stepPrev should go back');
   p.seek(3);
   need(p.getState().isLast === true, 'seek(3) should reach the last step');
+  p.seekAt(1, 700);
+  need(p.getState().stepIndex === 1 && p.getState().stepElapsed === 700, 'seekAt should pause inside a step');
+  p.seekAt(1, 99999);
+  need(p.getState().stepElapsed === 1400, 'seekAt should clamp to the step duration');
+  const mid = ratioToTime(scriptA, timelineRatio(scriptA, 1, 700));
+  need(mid.stepIndex === 1 && Math.round(mid.elapsedMs) === 700, 'timeline ratio should round-trip');
+  p.seek(3);
   p.tick(1400);
   need(p.getState().playing === false, 'ticking past the last step should stop');
   p.reset();

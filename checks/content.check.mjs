@@ -1,9 +1,11 @@
 // Content checks: overlay keys, step liveness, and executable claims.
-// Run: npm run check. Fails when animation scripts reference overlay keys
-// that js/app.js never renders (a typo fails silently at runtime), when a
-// step reveals nothing, or when the property text drifts from the math.
-import { readFileSync } from 'node:fs';
+// Run: npm run check. Fails when a script key is not rendered by the overlay,
+// when a step reveals nothing, or when the property text drifts from the math.
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { demoScripts } from '../js/animation-scripts.js';
+import { frameFor } from '../js/animation.js';
+import { renderOverlay } from '../js/overlay.js';
 import { verifyAll, determinant } from '../js/verify.js';
 import propertiesData from '../data/properties.json' with { type: 'json' };
 
@@ -12,24 +14,53 @@ const need = (cond, msg) => {
   if (!cond) failures.push(msg);
 };
 
-const root = new URL('..', import.meta.url);
-const appSrc = readFileSync(new URL('js/app.js', root), 'utf8');
+function markup(frame) {
+  const { svg, html } = renderOverlay(frame.draw, { enteringKeys: [] });
+  return renderToStaticMarkup(React.createElement(React.Fragment, null, ...svg, ...html));
+}
 
-// Every overlay key a script reveals must be rendered by the bundle.
+// Every overlay key is a rendered data-anim-key at idle and at each step.
+// Keys that belong to later steps stay out of the earlier frames. Construction
+// and N move the cells themselves, so they are allowed to have no overlay keys.
 for (const [id, script] of Object.entries(demoScripts)) {
-  if (id === 'construction' || id === 'intro') continue;
+  if (id === 'intro') continue;
   const keys = new Set();
   for (const st of script.steps) for (const k of st.overlay?.show || []) keys.add(k);
-  need(keys.size > 0, `script ${id} reveals no overlay keys`);
+  if (id !== 'construction' && id !== 'N') need(keys.size > 0, `script ${id} reveals no overlay keys`);
+  const idleHtml = markup(frameFor(script, script.steps.length - 1, 1));
   for (const k of keys) {
-    // Keys built per-index via templates (e.g. `A.pair-${a}`) never appear
-    // literally; match their stem plus the interpolation instead.
-    const stem = k.replace(/-\d+$/, '-');
-    need(
-      appSrc.includes(k) || (stem !== k && appSrc.includes(`${stem}\${`)),
-      `script ${id} key "${k}" has no matching render in js/app.js`,
-    );
+    need(idleHtml.includes(`data-anim-key="${k}"`), `idle ${id} missing rendered key "${k}"`);
   }
+  for (const item of script.chrome || []) {
+    need(idleHtml.includes(`data-anim-key="${item.key}"`), `idle ${id} missing chrome "${item.key}"`);
+  }
+  script.steps.forEach((st, i) => {
+    const early = frameFor(script, i, 0);
+    const earlyHtml = markup(early);
+    const full = frameFor(script, i, 1);
+    const fullHtml = markup(full);
+    for (const k of full.visibleKeys) {
+      need(fullHtml.includes(`data-anim-key="${k}"`), `script ${id} step ${i} missing "${k}"`);
+    }
+    for (const item of st.draw || []) {
+      if ((item.at ?? 0) <= 0) continue;
+      const seenBefore = script.steps.slice(0, i).some((prev) =>
+        (prev.draw || []).some((d) => d.key === item.key),
+      );
+      if (!seenBefore) {
+        need(!earlyHtml.includes(`data-anim-key="${item.key}"`), `script ${id} step ${i} shows "${item.key}" before its beat`);
+      }
+    }
+    const future = new Set();
+    for (let j = i + 1; j < script.steps.length; j++) {
+      for (const k of script.steps[j].overlay?.show || []) {
+        if (!full.visibleKeys.includes(k)) future.add(k);
+      }
+    }
+    for (const k of future) {
+      need(!fullHtml.includes(`data-anim-key="${k}"`), `script ${id} step ${i} leaked future key "${k}"`);
+    }
+  });
 }
 
 // No step may be a pure no-op: it must reveal an overlay key, change the

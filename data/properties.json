@@ -4,9 +4,9 @@
     "letter": "◌",
     "category": "Introduction",
     "title": "Build the square",
-    "shortDesc": "1 through 9 fill the 3×3",
-    "formula": "Place 1→2→3…→9 until the square is complete",
-    "longDesc": "The turtle shell revealed order. Nine cells fill in sequence — 1 through 9 — until the Lo Shu is complete. Then each property overlays a different arithmetic truth on the same 3×3. The square itself never changes — only how you see it."
+    "shortDesc": "Ordinal square, swap corners, then fold",
+    "formula": "1…9 in order → swap 1↔9, 3↔7 → fold",
+    "longDesc": "Write 1 through 9 in reading order. Swap each corner with its opposite, 1↔9 and 3↔7, and the cross stays put. Fold that diamond into the square and the Lo Shu appears. Then each property overlays a different arithmetic truth on the same 3×3."
   },
   {
     "id": "A",

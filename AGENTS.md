@@ -10,6 +10,7 @@ Interactive React 18.3.1 SPA exploring the 14 arithmetic properties (A–N) of t
 ├── js/app.js               # App source (recovered from minified bundle)
 ├── js/animation.js         # Animation player
 ├── js/animation-scripts.js # Animation scripts per property (A–N)
+├── js/overlay.js           # Declarative board overlay (lines, chips, badges)
 ├── js/external-links.js    # Classic script: forces external links to new tab
 ├── data/properties.json    # Single source of truth for 14 properties
 ├── checks/
@@ -40,7 +41,7 @@ npm run preview      # Serve dist/ locally
 - **No framework migration** — keep React 18.3.1, no behavior changes.
 - **Vite base**: `./` for relative asset URLs (works from any serve path).
 - **CSS shell rules** live only in `css/styles.css`; bundle must not leak shell selectors (checked by `spa-shell.check.mjs`).
-- **Animation scripts** are pure data (steps with `visibleKeys`, `setValues`, `highlight`); player is generic.
+- **Animation scripts** are pure data (steps with `draw` items, `setValues`, `highlight`, optional `moves`); `js/overlay.js` renders them. The player is generic.
 - **Bundle recovery**: `js/app.js` was manually recovered from minified source; minimize churn to stay byte-identical.
 
 ## Testing
@@ -51,7 +52,7 @@ npm run preview      # Serve dist/ locally
 ## Common Tasks
 | Task | Approach |
 |------|----------|
-| Add property | Edit `data/properties.json`, add icon in `iconGlyphs()`, add animation script |
+| Add property | Edit `data/properties.json`, add icon in `iconGlyphs()`, add a script whose `draw` items use overlay primitives |
 | Fix shell scrolling | Edit `css/styles.css` shell rules, verify `npm run check` |
 | Debug animation | Use `animation-scripts.js` step logs; check `createPlayer` in `animation.js` |
 | Update dependencies | Keep `react`/`react-dom` at 18.3.1 (matches original bundle) |
@@ -59,5 +60,5 @@ npm run preview      # Serve dist/ locally
 ## Gotchas
 - `file://` blocked for module scripts — always use dev/preview URL.
 - `h`/`_` key-as-3rd-arg differs from standard `React.createElement`.
-- Animation overlay gate: `showKey(id, key)` hides keys not yet revealed by player.
+- Animation overlay gate: while a script is started, only `frame.draw` items revealed so far render. Idle draws the whole script. Entering strokes and chips read `--anim-p`.
 - Tailwind classes are frozen output; custom utilities added manually to `styles.css`.

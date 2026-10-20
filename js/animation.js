@@ -66,6 +66,16 @@ export function validateScript(script) {
       else if (!s.overlay.show.every((k) => typeof k === "string"))
         errors.push(`${at}.overlay.show keys must be strings`);
     }
+    if (s.draw !== undefined) {
+      if (!Array.isArray(s.draw)) errors.push(`${at}.draw must be an array`);
+      else
+        s.draw.forEach((item, j) => {
+          if (!item || typeof item.key !== "string" || !item.key)
+            errors.push(`${at}.draw[${j}].key must be a non-empty string`);
+          if (item.at !== undefined && !(typeof item.at === "number" && item.at >= 0 && item.at <= 1))
+            errors.push(`${at}.draw[${j}].at must be between 0 and 1`);
+        });
+    }
     if (s.matrix !== undefined) {
       if (!s.matrix || typeof s.matrix !== "object") errors.push(`${at}.matrix must be an object`);
       else {
@@ -90,47 +100,132 @@ export function validateScript(script) {
             }
           }
         }
+        if (s.matrix.moves !== undefined && s.matrix.moves !== null) {
+          const ok =
+            Array.isArray(s.matrix.moves) &&
+            s.matrix.moves.every(
+              (m) =>
+                m &&
+                Number.isInteger(m.from) &&
+                Number.isInteger(m.to) &&
+                m.from >= 0 &&
+                m.from <= 8 &&
+                m.to >= 0 &&
+                m.to <= 8,
+            );
+          if (!ok) errors.push(`${at}.matrix.moves must be {from,to} cell indices 0-8`);
+        }
       }
     }
   });
   return errors;
 }
 
-// Compute the rendered frame for a step index: visible overlay keys accumulate
-// across steps 0..index; matrix highlight/values come from the latest step at
-// or before index that defines them.
-export function frameFor(script, stepIndex) {
+function due(at, gate) {
+  return (at ?? 0) <= gate + 1e-9;
+}
+
+// Compute the rendered frame for a step index. `progress` (0–1) is how far
+// through that step the clock is. Draw items and show-keys with `at` stay
+// hidden until progress reaches them, so a step can sequence internally.
+// Earlier steps are fully revealed. `script.chrome` is always drawn and never
+// "entering". Matrix highlight / values come from the latest step that sets them.
+// `moves` is only the current step (cell glides), not an accumulation.
+export function frameFor(script, stepIndex, progress = 1) {
   const steps = script.steps;
   const clamped = Math.max(0, Math.min(stepIndex, steps.length - 1));
+  const gate = Math.max(0, Math.min(1, progress));
   const visibleKeys = [];
   const seenKeys = new Set();
+  const draw = [];
+  const seenDraw = new Set();
   let highlight = [];
   let setValues = null;
   let visibleCount = null;
+
+  for (const item of script.chrome || []) {
+    if (item && !seenDraw.has(item.key)) {
+      seenDraw.add(item.key);
+      draw.push(item);
+    }
+  }
+
   for (let i = 0; i <= clamped; i++) {
     const st = steps[i];
-    for (const k of (st.overlay && st.overlay.show) || [])
-      if (!seenKeys.has(k)) {
-        seenKeys.add(k);
-        visibleKeys.push(k);
-      }
+    const g = i < clamped ? 1 : gate;
+    const items = st.draw || [];
+    const atFor = new Map();
+    for (const item of items) {
+      const at = item.at ?? 0;
+      if (!atFor.has(item.key) || at < atFor.get(item.key)) atFor.set(item.key, at);
+    }
+    const show = new Set([...(st.overlay?.show || []), ...items.map((item) => item.key)]);
+    for (const k of show) {
+      const at = atFor.has(k) ? atFor.get(k) : 0;
+      if (!due(at, g) || seenKeys.has(k)) continue;
+      seenKeys.add(k);
+      visibleKeys.push(k);
+    }
+    for (const item of items) {
+      if (!due(item.at ?? 0, g) || seenDraw.has(item.key)) continue;
+      seenDraw.add(item.key);
+      draw.push(item);
+    }
     if (st.matrix) {
       if (st.matrix.highlight !== undefined) highlight = st.matrix.highlight;
       if (st.matrix.setValues !== undefined) setValues = st.matrix.setValues;
       if (st.matrix.visibleCount !== undefined) visibleCount = st.matrix.visibleCount;
     }
   }
+
+  const prior = new Set();
+  for (let i = 0; i < clamped; i++) {
+    for (const k of steps[i].overlay?.show || []) prior.add(k);
+    for (const item of steps[i].draw || []) prior.add(item.key);
+  }
+  const enteringKeys = visibleKeys.filter((k) => !prior.has(k));
+  const moves = steps[clamped].matrix?.moves || null;
+
   return {
     stepIndex: clamped,
     step: steps[clamped],
     caption: steps[clamped].caption || "",
     visibleKeys,
+    enteringKeys,
+    draw,
     highlight,
     setValues,
     visibleCount,
+    moves,
     isFirst: clamped === 0,
     isLast: clamped === steps.length - 1,
   };
+}
+
+export function stepDuration(step) {
+  return (step && step.durationMs) || DEFAULT_STEP_MS;
+}
+
+// 0–1 position across the whole script, for the rail scrubber.
+export function timelineRatio(script, stepIndex, elapsedMs) {
+  const durations = script.steps.map(stepDuration);
+  const total = durations.reduce((a, b) => a + b, 0);
+  if (!total) return 0;
+  let before = 0;
+  for (let i = 0; i < stepIndex && i < durations.length; i++) before += durations[i];
+  return Math.max(0, Math.min(1, (before + elapsedMs) / total));
+}
+
+export function ratioToTime(script, ratio) {
+  const durations = script.steps.map(stepDuration);
+  const total = durations.reduce((a, b) => a + b, 0);
+  let remain = Math.max(0, Math.min(1, ratio)) * total;
+  for (let i = 0; i < durations.length; i++) {
+    if (remain <= durations[i] || i === durations.length - 1)
+      return { stepIndex: i, elapsedMs: Math.max(0, Math.min(remain, durations[i])) };
+    remain -= durations[i];
+  }
+  return { stepIndex: 0, elapsedMs: 0 };
 }
 
 // Time-injectable player. Pass nowFn + raf for tests; defaults use Date.now /
@@ -157,7 +252,16 @@ export function createPlayer(script, opts = {}) {
   let lastTick = 0;
   let rafId = null;
 
-  const emit = () => onFrame({ ...frameFor(script, stepIndex), playing, speed, stepElapsed });
+  const snapshot = () => {
+    const dur = stepDuration(script.steps[stepIndex]);
+    const raw = dur ? stepElapsed / dur : 0;
+    const clampedP = Math.max(0, Math.min(1, raw));
+    const reduce = typeof opts.reducedMotion === "function" && opts.reducedMotion();
+    const progress = reduce ? (clampedP > 0 ? 1 : 0) : clampedP;
+    return { ...frameFor(script, stepIndex, progress), playing, speed, stepElapsed, progress };
+  };
+
+  const emit = () => onFrame(snapshot());
 
   const stopLoop = () => {
     if (rafId !== null) {
@@ -192,7 +296,7 @@ export function createPlayer(script, opts = {}) {
   return {
     script,
     getState() {
-      return { ...frameFor(script, stepIndex), playing, speed, stepElapsed };
+      return snapshot();
     },
     play() {
       if (playing) return;
@@ -235,6 +339,16 @@ export function createPlayer(script, opts = {}) {
       stopLoop();
       stepIndex = Math.max(0, Math.min(i, totalSteps - 1));
       stepElapsed = 0;
+      emit();
+    },
+    // Pause on a step at an elapsed time inside it. The scrubber and the
+    // D₄ thumbnails use this so the frame can sit mid-glide or at the end.
+    seekAt(i, elapsedMs) {
+      playing = false;
+      stopLoop();
+      stepIndex = Math.max(0, Math.min(i, totalSteps - 1));
+      const dur = stepDuration(script.steps[stepIndex]);
+      stepElapsed = Math.max(0, Math.min(Number(elapsedMs) || 0, dur));
       emit();
     },
     reset() {

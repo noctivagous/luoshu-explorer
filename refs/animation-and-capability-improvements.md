@@ -374,11 +374,7 @@ text is anchored on the square.
 
 ## 8. Constraints from `AGENTS.md` to resolve
 
-- **"Animation: step-based … no CSS animations."** The smoothness work needs
-  continuous motion. Preferred way to stay compatible: keep it **player-driven**
-  (the player owns time, overlays read a progress value `t`), which is also
-  what keeps scrubbing deterministic. If plain CSS transitions are allowed for
-  simple fades, update that line of `AGENTS.md` explicitly.
+
 - **"No behavior changes / stay byte-identical."** The overlay refactor
   (§5.1) intentionally breaks this for the *animated* path. Protect the
   *idle* path with a snapshot check (extend `render-smoke.check.mjs`) and
@@ -488,8 +484,31 @@ render-smoke, animation, content).
 
 ### Still open (not started)
 
-Phases 3–7: declarative `<Overlay>` migration (§5.1), draw-on/fade-in
-tweens and scrubber (§3.2–3.3), Siamese construction animation and D₄
-playground (§6.1, §6.3), "what breaks?" UI on top of `verify()` (§6.2),
-tours/compare/deep links/export (§5.2, §6.5, §6.8). Open questions 4–5
-(overlay-refactor scope, element/trigram source) still stand.
+Phases 6–7: "what breaks?" UI on top of `verify()` (§6.2), tours, compare,
+deep links, and export (§5.2, §6.5, §6.8). Margin gutters were never part of
+the phase-2 landing and stay out. Open question 5 (element/trigram source)
+still stands. Open question 4 is settled: the overlay refactor may change
+the animated path; idle still shows the finished square and every property's
+full drawing.
+
+### Phases 3–5 — overlay, motion, ordinal build, D₄ (2026-10-20)
+
+- **Declarative overlay (§5.1).** `js/overlay.js` renders `line`, `segments`,
+  `path`, `arc`, `wedge`, `ring`, `mark`, `bar`, `cellTag`, `chip`, and
+  `badge` from each step's `draw` list. `frameFor` accumulates those items.
+  The per-property SVG/HTML blocks in `js/app.js` are gone. Idle draws the
+  whole script; playback draws only revealed keys. Property A's chords now
+  match their captions (the old key order drew a different pair than the
+  highlight).
+- **Tweens and scrubber (§3.2–3.3).** Entering strokes draw on from
+  `--anim-p` (`pathLength` + dashoffset). Dashed designs fade in after the
+  solid draw. Chips and badges fade in. Property A pops the `10` chip at
+  `at: 0.55` inside the step. `prefers-reduced-motion` snaps progress to
+  0 or 1. The rail has a scrubber (`seekAt` / `ratioToTime`).
+- **Ordinal construction.** "Build the square" is three beats: reading-order
+  1…9, swap corners 1↔9 and 3↔7, fold onto this app's square. Digits glide
+  between cell centers. Idle still shows the finished Lo Shu.
+- **D₄ (§6.3).** Property N drops the eight minis. Eight steps permute the
+  main board (four rotations, then four reflections). A thumbnail strip
+  seeks to a form. The caption notes that lines still sum to 15 and shows
+  the determinant, which flips sign on reflection.

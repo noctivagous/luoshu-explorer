@@ -97,6 +97,18 @@ html,body{height:100%;overflow:hidden}
 /* Step caption strip: horizontal, above the square card and playback rail. */
 .anim-caption{margin:0 0 12px;width:100%;max-width:none;display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:baseline;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:8px 12px;font-size:12px;line-height:1.4}
 .anim-caption-step{font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
+.anim-caption-note{flex-basis:100%;font-family:monospace;font-size:11px;opacity:.7}
+.anim-scrub{width:100%;margin:8px 0 0;accent-color:#1a1a1a;height:16px}
+.anim-flyer{position:absolute;z-index:2;pointer-events:none;font-family:'Instrument Serif',serif;font-size:42px;font-weight:500;line-height:1;letter-spacing:-0.02em;transform:translate(-50%,-50%);color:#1a1a1a}
+.d4-strip{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
+.d4-thumb{width:44px;height:44px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:3px;border-radius:6px;border:1px solid rgba(26,26,26,.15);background:#fff;color:#1a1a1a}
+.d4-thumb[aria-pressed="true"]{border-color:#1a1a1a;background:#1a1a1a;color:#fdf8f0}
+.d4-thumb span{font-size:7px;font-family:ui-monospace,monospace;line-height:1;display:flex;align-items:center;justify-content:center}
+/* Player-driven tweens. --anim-p is written on the stage; no keyframes. */
+[data-anim-stage] [data-anim-enter="1"] .anim-stroke-draw{stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--anim-p))}
+[data-anim-stage] [data-anim-enter="1"] .anim-stroke-ghost{opacity:clamp(0, calc((0.85 - var(--anim-p)) / 0.2), 1)}
+[data-anim-stage] [data-anim-enter="1"] .anim-stroke-ink{opacity:clamp(0, calc((var(--anim-p) - 0.62) / 0.28), 1)}
+[data-anim-stage] [data-anim-enter="1"] .anim-pop{opacity:clamp(0, calc((var(--anim-p) - var(--anim-at, 0.4)) / (1 - var(--anim-at, 0.4))), 1)}
 /* Progress value written by the player loop without re-rendering React.
    Overlays read it for player-driven tweens; discrete steps work regardless. */
 [data-anim-stage]{--anim-p:0}
