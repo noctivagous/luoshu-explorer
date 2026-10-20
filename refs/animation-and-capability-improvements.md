@@ -423,3 +423,73 @@ text, no jank, and explanations sitting on the board.
 4. Should the overlay refactor (§5.1) be allowed to change animated rendering
    as long as the idle view stays identical?
 5. Which Five Elements / trigram source should the legend layers follow?
+
+---
+
+## 11. What was built (2026-10-20)
+
+Phases 0–2 of §9 plus the §8 check extensions are implemented. Commit
+`2678a53` ("Fix content errors, decouple frame rate, annotate on-card, add
+verify() checks"). `npm run check` passes all four gates (spa-shell,
+render-smoke, animation, content).
+
+### Phase 0 — content (§7), done
+
+- **K determinant sign (§7 #1, #2):** `data/properties.json` K entry now
+  states `det(L) = 360`, formula `3×4×5×6`, with a note that reflections
+  flip the sign. K-2 caption and the on-board K badge
+  (`js/app.js`, was `det = -360 = 1!·2!·3!·...? No, = - (1×2×3×4×5×6)`)
+  now read `det = 360 = 3×4×5×6`. Verified independently:
+  `det [[4,9,2],[3,5,7],[8,1,6]] = 360`.
+- **M knight's tour (§7 #4):** narrowed, not recolored — open question 1
+  resolved. `properties.json` M text and the M-1…M-4 captions now claim
+  knight moves only for `1→2→3` and `7→8→9` ("short steps" otherwise).
+  Verified per-hop on the plain grid.
+- **G wording (§7 #5):** captions read "Positive/Negative cells".
+- **J columns (§7 #6):** new `J.cols` overlay (vertical lines gated on
+  `J.cols`, added to script J-2) so the columns step draws lines.
+- **F-3 dead beat:** highlights the eight outer cells instead of the
+  center, matching the "20 = 20" caption.
+- **Visual key (§7 #7):** the static "Pair / sum" + "Modulo wrap" block is
+  replaced by a per-property `VISUAL_KEYS` map in `js/app.js`.
+- **`.anim-rail` shadow (§3.5):** underscore separators fixed to spaces in
+  `css/styles.css`.
+
+### Phase 1 — frame rate + reduced motion (§3.1, §3.5), done
+
+- `onFrame` in `js/app.js` only calls `setState` when `stepIndex`,
+  `playing`, or `speed` change; progress-only rAF ticks write a `--anim-p`
+  custom property on the `[data-anim-stage]` board root instead, so
+  playback no longer re-renders `LoShuApp` ~60×/s.
+- `prefers-reduced-motion` disables transitions and smooth scrolling
+  (`css/styles.css`); playback itself is already discrete step cuts.
+- `AGENTS.md` "no CSS animations" rule updated to the player-driven
+  policy: the player owns time, overlays may read `--anim-p`; no
+  independent keyframe animations. (Open question 3 resolved this way.)
+
+### Phase 2 — annotation on the card (§4.2–4.4), done
+
+- Step caption strip on the card (`anim-caption`, `role="status"`,
+  `aria-live="polite"`), mirroring the rail caption.
+- All hard-coded C/D/I label pixels rewritten as `CENTERS`-derived
+  expressions; evaluated byte-identical to the old positions, so a future
+  `gn`/`Tl` change moves the labels with the geometry.
+
+### Checks (§8 a–c), done — new `checks/content.check.mjs`
+
+- Per-script overlay-key cross-check against `js/app.js` (template-built
+  keys such as `` `A.pair-${a}` `` matched by stem; catches silent typos).
+- No-op step detection (none found: K-1 highlights ALL, F-3 highlights
+  the outer ring, N steps reveal minis).
+- `js/verify.js`: one predicate per property (A–N); all 14 hold on the
+  Lo Shu square and a single cell swap breaks the set, so the predicates
+  are not vacuous. Text/math agreement on K (+360) and M (narrowed
+  claim) is asserted.
+
+### Still open (not started)
+
+Phases 3–7: declarative `<Overlay>` migration (§5.1), draw-on/fade-in
+tweens and scrubber (§3.2–3.3), Siamese construction animation and D₄
+playground (§6.1, §6.3), "what breaks?" UI on top of `verify()` (§6.2),
+tours/compare/deep links/export (§5.2, §6.5, §6.8). Open questions 4–5
+(overlay-refactor scope, element/trigram source) still stand.
