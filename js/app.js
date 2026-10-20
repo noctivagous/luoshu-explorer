@@ -1758,7 +1758,7 @@ function LoShuApp() {
                                   h("span", {
                                     className:
                                       "text-[11px] tracking-[0.2em] uppercase font-mono opacity-60",
-                                    children: "Select a property on the left",
+                                    children: "Select a property",
                                   }),
                                 ],
                               }),
@@ -1774,7 +1774,7 @@ function LoShuApp() {
                                   "text-[13px] leading-[1.6] opacity-60",
                                 style: { fontFamily: "'Newsreader', serif" },
                                 children:
-                                  "Each item on the left overlays a different arithmetic truth directly on the 3×3. The square itself never changes — only how you see it.",
+                                  "Each item in the list overlays a different arithmetic truth directly on the 3×3. The square itself never changes — only how you see it.",
                               }),
                               _("div", {
                                 className: "mt-4 grid grid-cols-3 gap-2",
