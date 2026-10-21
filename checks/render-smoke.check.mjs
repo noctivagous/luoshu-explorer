@@ -40,8 +40,9 @@ need(
 // square icon tiles with 26px glyphs. Intro is selected on load, so the
 // detail close button is present too. 6 + 15 + 5 caption playback
 // (play/prev/next/loop/overview) + 1 close = 27, plus 6
-// correspondences-legend chips = 33, plus 3 construction step cards = 36.
-need(document.querySelectorAll('#root button').length === 36, 'expected 36 buttons');
+// correspondences-legend chips = 33, plus 3 construction step cards = 36,
+// plus 3 worked-example tape rows (intro shows construction) = 39.
+need(document.querySelectorAll('#root button').length === 39, 'expected 39 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -57,6 +58,27 @@ const constructionCards = [...root.querySelectorAll('button')].filter((b) =>
   (b.getAttribute('aria-label') || '').startsWith('Construction step'),
 );
 need(constructionCards.length === 3, 'expected 3 construction step cards');
+const tape = root.querySelector('[aria-label="Worked-example tape"]');
+need(tape !== null, 'worked-example tape should render');
+const tapeRows = [...tape.querySelectorAll('button')];
+need(tapeRows.length === 3, `tape should ledger all 3 construction steps (got ${tapeRows.length})`);
+need(tapeRows[0].textContent.includes('Write'), 'tape should fall back to step captions without drawn text');
+need(
+  tapeRows.filter((b) => b.getAttribute('aria-pressed') === 'true').length === 1,
+  'exactly one tape row should sync with the current step'
+);
+need(
+  root.querySelectorAll('.formula-tok').length > 0,
+  'formula should render tokenized'
+);
+need(
+  root.querySelectorAll('.formula-tok-lit').length === 0,
+  'idle formula should light no tokens before playback'
+);
+need(
+  root.querySelectorAll('.board-cell').length === 9,
+  'board cells should be probe-focusable'
+);
 need(root.querySelectorAll('.lg\\:grid-cols-2').length === 6, 'sidebar catalog grid missing');
 need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 15, 'square icon tiles missing');
 need(root.querySelectorAll('svg[width="26"]').length === 15, 'icon glyphs missing');

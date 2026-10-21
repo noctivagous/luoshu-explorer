@@ -6,6 +6,31 @@
 import { animStep } from "./animation.js";
 import { Z, CENTERS, rowGutter, colGutter, cornerGutter } from "./overlay.js";
 
+// Worked-example tape: derive one ledger line per step from the text the
+// step already draws, so the tape can never drift from the board.
+// - A badge that states an equation (has = or Σ) is already a ledger line.
+// - Otherwise the step's chips/gutters/marks form an arithmetic chain:
+//   operands then results joined with " = " ("9+4 = 13 = 3"), unless every
+//   part already states its own equation, in which case they stack with " · "
+//   ("45 = 9×5 · 10 = 2×5 · 15 = 3×5").
+// Steps with no text (L's bars, N's poses, construction) return [] and the
+// tape falls back to their captions.
+const LEDGER_TEXT_TYPES = new Set(["chip", "gutter", "badge", "mark"]);
+export function ledgerFor(step) {
+  const items = (step.draw || []).filter(
+    (d) => d.text != null && LEDGER_TEXT_TYPES.has(d.type),
+  );
+  const statements = items.filter((d) => d.type === "badge" && /[=Σ]/.test(String(d.text)));
+  if (statements.length) return statements.map((d) => String(d.text));
+  const texts = items.map((d) => String(d.text));
+  const cleaned = texts.map((t) => t.replace(/^=\s*/, ""));
+  const uniq = cleaned.filter((t, i) => i === 0 || t !== cleaned[i - 1]);
+  if (uniq.length === 0) return [];
+  if (uniq.length === 1) return [texts[0].startsWith("=") ? texts[0] : uniq[0]];
+  if (uniq.every((t) => t.includes("="))) return [uniq.join(" · ")];
+  return [uniq.join(" = ")];
+}
+
 const ALL = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const LOSHU = [4, 9, 2, 3, 5, 7, 8, 1, 6];
 const ORDINAL = [1, 2, 3, 4, 5, 6, 7, 8, 9];

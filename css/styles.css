@@ -100,7 +100,7 @@ html,body{height:100%;overflow:hidden}
 .anim-caption-play,.anim-caption-prev,.anim-caption-next,.anim-caption-loop{flex-shrink:0}
 .anim-rail-btn[aria-pressed="true"]{background:#1a1a1a;color:#fdf8f0}
 .anim-rail-btn:focus-visible,.d4-thumb:focus-visible{outline:2px solid #1a1a1a;outline-offset:2px}
-.anim-caption-step{font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
+.anim-caption-step{font-family:monospace;font-size:11px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
 .anim-caption-text{min-width:0;overflow-wrap:anywhere}
 .anim-caption-note{grid-column:1/-1;font-family:monospace;font-size:11px;opacity:.7}
 .anim-scrub{width:100%;margin:8px 0 0;accent-color:#1a1a1a;height:16px}
@@ -151,3 +151,15 @@ html,body{height:100%;overflow:hidden}
 #root *{scroll-behavior:auto}
 #root main .transition-all{transition:none}
 }
+/* Worked-example tape: equation hierarchy. Operands read at 18px, the
+   demonstrated result lands at 22px; stacked totals get one line each.
+   Tape labels stay at the 11px secondary floor. */
+.ledger-eq{font-size:18px;line-height:1.3;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-weight:500}
+.ledger-sep{font-size:15px;opacity:.55;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.ledger-res{font-size:22px;line-height:1.25;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-weight:700}
+.ledger-line + .ledger-line{margin-top:2px}
+/* Formula-token sync: demonstrated tokens light up with a terra rule. */
+.formula-tok{opacity:.55}
+.formula-tok-lit{opacity:1;font-weight:700;border-bottom:2px solid #c96442}
+/* Probed board cells are keyboard-focusable; keep the focus ring visible. */
+.board-cell:focus-visible{outline:2px solid #1a1a1a;outline-offset:2px}

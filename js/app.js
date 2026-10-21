@@ -14,7 +14,7 @@ import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime } from "./animation.js";
-import { scriptFor, variantsFor } from "./animation-scripts.js";
+import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant } from "./verify.js";
 
@@ -599,6 +599,27 @@ function parseDeepLink() {
     return null;
   }
 }
+// Tape typography: split a ledger line into operands and result on the last
+// "=" or "→" so results render at the top of the equation hierarchy.
+function splitLedger(entry) {
+  const m = String(entry).match(/^(.*)(=|→)\s*([^=→]+)$/);
+  if (!m) return { lead: String(entry), result: null, sep: "" };
+  return { lead: m[1].trim(), result: m[3].trim(), sep: ` ${m[2]} ` };
+}
+// Formula-token sync: emphasize the formula tokens whose numbers the current
+// step demonstrates. Digit-runs must match exactly, so "360" never lights up
+// "362880". When the step shows a multi-digit result, single digits (like E's
+// ubiquitous 5) stay quiet.
+function syncNumbers(entries) {
+  const runs = entries.flatMap((t) => String(t).match(/\d+/g) || []);
+  const multi = runs.filter((r) => r.length > 1);
+  return new Set(multi.length ? multi : runs);
+}
+function tokenLit(tok, nums) {
+  if (!nums.size) return false;
+  const runs = String(tok).match(/\d+/g) || [];
+  return runs.some((r) => nums.has(r));
+}
 function LoShuApp() {
   let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
     // Active animation variant for the selected property. One select in the
@@ -650,7 +671,13 @@ function LoShuApp() {
       } catch {}
     },
     // Active correspondences layers (empty set = plain numbers).
-    [legend, setLegend] = React.useState(() => new Set());
+    [legend, setLegend] = React.useState(() => new Set()),
+    // Worked-example tape: hovered row (preview that step's cells on the
+    // board) and probed cell (transient focus or sticky click, emphasizing
+    // the tape rows that use it).
+    [hoverStep, setHoverStep] = React.useState(null),
+    [focusCell, setFocusCell] = React.useState(null),
+    [stickyCell, setStickyCell] = React.useState(null);
   const toggleLegend = (id) => {
     // Correspondence labels occupy the same small cells as the animation.
     // Selecting a layer must therefore leave the board in its stable state;
@@ -689,6 +716,9 @@ function LoShuApp() {
     setStarted(false);
     setAnimPlaying(false);
     setAnimSpeed(1);
+    setHoverStep(null);
+    setFocusCell(null);
+    setStickyCell(null);
     if (!script) {
       setFrame(null);
       return;
@@ -839,6 +869,18 @@ function LoShuApp() {
   const ov = renderOverlay(drawItems || [], {
     enteringKeys: animOn && frame && !overview ? frame.enteringKeys : [],
   });
+  // Tape linking: the hovered row previews its step's cells on the board;
+  // the probed cell (keyboard focus or sticky click) picks out its rows.
+  // Formula sync lights the formula tokens the current step demonstrates.
+  const probeCell = focusCell ?? stickyCell,
+    hoverCells =
+      hoverStep != null && script && script.steps[hoverStep]
+        ? script.steps[hoverStep].matrix.highlight || []
+        : [],
+    syncNums =
+      animOn && frame && script
+        ? syncNumbers(ledgerFor(script.steps[frame.stepIndex]))
+        : new Set();
   const moves = animOn && frame?.moves ? frame.moves : [];
   const moving = new Set(moves.flatMap((m) => [m.from, m.to]));
   const flyers = moves.map((m) =>
@@ -1208,11 +1250,23 @@ function LoShuApp() {
                               }
                               if (buildOn && frame.highlight.includes(a))
                                 k += " ring-2 ring-[#c96442] ring-offset-2 ring-offset-white";
+                              // Tape linking: hovered rows preview their cells
+                              // in gold; the probed cell gets an ink inset.
+                              if (hoverCells.length > 0 && hoverCells.includes(a))
+                                k += " ring-2 ring-[#b89a5a] ring-offset-2 ring-offset-white";
+                              if (probeCell === a)
+                                y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #1a1a1a`;
                               return _(
                                 "div",
                                 {
-                                  className: k,
+                                  className: `${k} board-cell`,
                                   style: { width: gn, height: gn, ...y },
+                                  tabIndex: 0,
+                                  role: "button",
+                                  "aria-label": `Probe cell ${cellVal}`,
+                                  onFocus: () => setFocusCell(a),
+                                  onBlur: () => setFocusCell((c) => (c === a ? null : c)),
+                                  onClick: () => setStickyCell((c) => (c === a ? null : a)),
                                   children: [
                                     h("span", {
                                       className:
@@ -1316,7 +1370,7 @@ function LoShuApp() {
                                 children: [
                                   h("div", {
                                     className:
-                                      "text-[9px] font-mono uppercase tracking-widest opacity-40",
+                                      "text-[11px] font-mono uppercase tracking-widest opacity-40",
                                     children: "Visual key",
                                   }),
                                   ...(VISUAL_KEYS[o.id] || VISUAL_KEYS.A).map(
@@ -1331,7 +1385,7 @@ function LoShuApp() {
                                               : { background: color },
                                           }),
                                           h("span", {
-                                            className: "text-[10px] font-mono",
+                                            className: "text-[11px] font-mono",
                                             children: label,
                                           }),
                                         ],
@@ -1343,7 +1397,7 @@ function LoShuApp() {
                                 children: [
                                   h("div", {
                                     className:
-                                      "text-[9px] font-mono uppercase tracking-widest opacity-40",
+                                      "text-[11px] font-mono uppercase tracking-widest opacity-40",
                                     children: "Center",
                                   }),
                                   h("div", {
@@ -1357,6 +1411,100 @@ function LoShuApp() {
                           }),
                       ],
                     }),
+                    script &&
+                      script.steps &&
+                      _("section", {
+                        className: "tape mt-4 w-full max-w-none",
+                        role: "group",
+                        "aria-label": "Worked-example tape",
+                        children: [
+                          h("div", {
+                            className:
+                              "text-[11px] font-mono uppercase tracking-widest opacity-40 mb-1.5",
+                            children: "Worked example",
+                          }, "tape-title"),
+                          ...script.steps.map((st, i) => {
+                            const entries = ledgerFor(st);
+                            const isCaption = entries.length === 0;
+                            const lines = isCaption
+                              ? [st.caption]
+                              : entries.flatMap((en) => String(en).split(" · "));
+                            const isCurrent =
+                              (animOn && frame ? frame.stepIndex : 0) === i;
+                            const cells = st.matrix.highlight || [];
+                            const related =
+                              probeCell != null && cells.includes(probeCell);
+                            return h(
+                              "button",
+                              {
+                                type: "button",
+                                "aria-label": `Tape step ${i + 1}: ${entries[0] || st.caption}`,
+                                "aria-pressed": isCurrent ? "true" : "false",
+                                onClick: () => {
+                                  if (!playerRef.current) return;
+                                  setStarted(true);
+                                  playerRef.current.seekAt(
+                                    i,
+                                    st.durationMs || DEFAULT_STEP_MS,
+                                  );
+                                },
+                                onMouseEnter: () => setHoverStep(i),
+                                onMouseLeave: () =>
+                                  setHoverStep((s) => (s === i ? null : s)),
+                                onFocus: () => setHoverStep(i),
+                                onBlur: () =>
+                                  setHoverStep((s) => (s === i ? null : s)),
+                                className: isCurrent
+                                  ? "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-[#1a1a1a] bg-[#1a1a1a] text-[#fdf8f0] px-3 py-2 text-left"
+                                  : related
+                                    ? "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-[#1a1a1a]/40 bg-[#1a1a1a]/[0.04] px-3 py-2 text-left hover:bg-[#1a1a1a]/[0.06]"
+                                    : "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-transparent px-3 py-2 text-left hover:bg-[#1a1a1a]/[0.06]",
+                                children: [
+                                  h("div", {
+                                    className:
+                                      "text-[11px] font-mono opacity-40 shrink-0",
+                                    children: `${i + 1}`,
+                                  }, "num"),
+                                  _("div", {
+                                    className: "flex-1 min-w-0",
+                                    children: lines.map((ln, j) => {
+                                      if (isCaption)
+                                        return h("div", {
+                                          className:
+                                            "text-[13px] leading-[1.4] opacity-75",
+                                          style: { overflowWrap: "anywhere" },
+                                          children: ln,
+                                        }, j);
+                                      const { lead, result, sep } = splitLedger(ln);
+                                      return h("div", {
+                                        className: "ledger-line",
+                                        style: { overflowWrap: "anywhere" },
+                                        children: [
+                                          h("span", {
+                                            className: "ledger-eq",
+                                            children: lead,
+                                          }, "lead"),
+                                          result &&
+                                            h("span", {
+                                              className: "ledger-sep",
+                                              children: sep,
+                                            }, "sep"),
+                                          result &&
+                                            h("span", {
+                                              className: "ledger-res",
+                                              children: result,
+                                            }, "res"),
+                                        ],
+                                      }, j);
+                                    }),
+                                  }, "lines"),
+                                ],
+                              },
+                              `tape-row-${i}`,
+                            );
+                          }),
+                        ],
+                      }, "tape"),
                     h("div", {
                       className: "legend-toggles mt-4",
                       children: [
@@ -1369,7 +1517,7 @@ function LoShuApp() {
                               "span",
                               {
                                 className:
-                                  "text-[10px] font-mono uppercase tracking-widest opacity-50 mr-1",
+                                  "text-[11px] font-mono uppercase tracking-widest opacity-50 mr-1",
                                 children: "Correspondences",
                               },
                               "legend-title",
@@ -1401,7 +1549,7 @@ function LoShuApp() {
                           ],
                         }, "legend-chips"),
                         h("p", {
-                          className: "mt-1.5 text-[10px] font-mono opacity-50",
+                          className: "mt-1.5 text-[11px] font-mono opacity-50",
                           children:
                             legend.size === 0
                               ? "Overlay a traditional reading on the nine cells."
@@ -1562,7 +1710,21 @@ function LoShuApp() {
                                           overflowWrap: "anywhere",
                                           maxWidth: "100%",
                                         },
-                                        children: o.formula,
+                                        // Formula-token sync: tokens whose
+                                        // numbers the current step demonstrates
+                                        // light up; the rest recede.
+                                        children: String(o.formula)
+                                          .split(/(\s+)/)
+                                          .map((tok, i) =>
+                                            /^\s*$/.test(tok)
+                                              ? tok
+                                              : h("span", {
+                                                  className: tokenLit(tok, syncNums)
+                                                    ? "formula-tok-lit"
+                                                    : "formula-tok",
+                                                  children: tok,
+                                                }, i),
+                                          ),
                                       }),
                                     ],
                                   }),
@@ -1615,7 +1777,7 @@ function LoShuApp() {
                                           children: [
                                             h("div", {
                                               className:
-                                                "text-[9px] font-mono opacity-40",
+                                                "text-[11px] font-mono opacity-40",
                                               children: `STEP ${i + 1}`,
                                             }, "step"),
                                             h("div", {
@@ -1625,7 +1787,7 @@ function LoShuApp() {
                                             }, "name"),
                                             h("div", {
                                               className:
-                                                "text-[10px] font-mono opacity-60 mt-1",
+                                                "text-[11px] font-mono opacity-60 mt-1",
                                               children: sub,
                                             }, "sub"),
                                           ],

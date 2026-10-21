@@ -3,7 +3,7 @@
 // when a step reveals nothing, or when the property text drifts from the math.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { demoScripts, variantsFor } from '../js/animation-scripts.js';
+import { demoScripts, variantsFor, ledgerFor } from '../js/animation-scripts.js';
 
 // Every script the app can show: defaults plus non-default variants.
 const allScripts = [...Object.entries(demoScripts)];
@@ -341,6 +341,41 @@ for (const [id, script] of allScripts) {
     }
   }
 }
+
+// Worked-example tape: ledger lines derive from the drawn text and can
+// never drift from the board.
+need(
+  JSON.stringify(ledgerFor(demoScripts.A.steps[0])) === JSON.stringify(['4+6 = 10']),
+  `A step 0 should ledger as 4+6 = 10 (got ${JSON.stringify(ledgerFor(demoScripts.A.steps[0]))})`
+);
+need(
+  JSON.stringify(ledgerFor(demoScripts.C.steps[2])) === JSON.stringify(['9+4 = 13 = 3']),
+  `C step 2 should ledger the tens-drop chain (got ${JSON.stringify(ledgerFor(demoScripts.C.steps[2]))})`
+);
+need(
+  JSON.stringify(ledgerFor(demoScripts.E.steps[5])) ===
+    JSON.stringify(['45 = 9×5 · 10 = 2×5 · 15 = 3×5']),
+  `E lockup should stack the three totals (got ${JSON.stringify(ledgerFor(demoScripts.E.steps[5]))})`
+);
+need(
+  JSON.stringify(ledgerFor(demoScripts.J.steps[0])) ===
+    JSON.stringify(['492 + 357 + 816 = 1665']),
+  `J rows should ledger the full row equation (got ${JSON.stringify(ledgerFor(demoScripts.J.steps[0]))})`
+);
+need(
+  JSON.stringify(ledgerFor(demoScripts.B.steps[0])) === JSON.stringify(['= 15']),
+  `B should ledger its margin tick (got ${JSON.stringify(ledgerFor(demoScripts.B.steps[0]))})`
+);
+need(
+  JSON.stringify(ledgerFor(demoScripts.G.steps[3])) === JSON.stringify(['Σ 0']),
+  `G should ledger one zero tick (got ${JSON.stringify(ledgerFor(demoScripts.G.steps[3]))})`
+);
+need(ledgerFor(demoScripts.L.steps[0]).length === 0, 'L bars carry no ledger text');
+need(ledgerFor(demoScripts.N.steps[0]).length === 0, 'N opening pose carries no ledger text');
+need(
+  ledgerFor(demoScripts.construction.steps[1]).length === 0,
+  'construction swap beat carries no ledger text'
+);
 
 // Property K is framed as a computed fact, not a visual proof.
 need(

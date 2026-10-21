@@ -40,7 +40,7 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 33, 'expected 33 buttons with the loop toggle');
+need(document.querySelectorAll('#root button').length === 37, 'expected 37 buttons with the loop toggle and 4 tape rows');
 
 const stepText = () => document.querySelector('.anim-caption-step')?.textContent || '';
 const captionText = () => document.querySelector('.anim-caption-text')?.textContent || '';
@@ -63,6 +63,14 @@ const needSeen = async (fn, want, msg) => {
 await needSeen(stepText, 'Step 2 of 4', 'deep link should land on step 2');
 need(captionText() === '7 + 2 = 9 — running total rides the border.', `deep link caption wrong: ${captionText()}`);
 need(dom.window.location.hash === '#/luoshu/C?step=2', `hash should track the step: ${dom.window.location.hash}`);
+
+const tapeRows = () => [...document.querySelectorAll('[aria-label="Worked-example tape"] button')];
+need(tapeRows().length === 4, `tape should ledger all 4 C steps (got ${tapeRows().length})`);
+const litRow = tapeRows().find((b) => b.getAttribute('aria-pressed') === 'true');
+need(
+  !!litRow && litRow.textContent.includes('7+2'),
+  `tape should sync with the deep-linked step (got ${litRow && litRow.textContent})`
+);
 
 const key = (k) => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: k, bubbles: true }));
 
