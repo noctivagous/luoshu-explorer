@@ -72,9 +72,12 @@ for (const [id, script] of Object.entries(demoScripts)) {
       JSON.stringify(['B.diag-0']),
     'B step 3 should draw only the main diagonal'
   );
+  const flash = b.steps[3].draw.find((d) => d.key === 'B.tick-3');
+  need(flash && flash.at >= 0.7, 'B should flash the = 15 late in the final beat');
+  need(b.steps[3].durationMs >= 2200, 'B final beat should hold a pause after the flash');
   const idleB = markup(frameFor(b, 3, 1));
   const ticks = idleB.match(/= 15/g) || [];
-  need(ticks.length === 3, `idle B should carry three gutter ticks (got ${ticks.length})`);
+  need(ticks.length === 4, `idle B should carry four gutter ticks (got ${ticks.length})`);
   need(b.steps[0].draw[0].dash === undefined, 'B hero lines should be solid, not dashed');
   need(b.steps[0].draw[1].type === 'gutter', 'B totals should be gutter ticks, not on-line pills');
   need(

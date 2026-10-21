@@ -221,9 +221,12 @@ export const scriptB = {
     }),
     animStep("B-4", {
       caption: "2 + 5 + 8 = 15 — and the other diagonal. Eight lines, one constant.",
-      durationMs: 1800,
+      // The = 15 flashes late, then the beat holds: a brief pause on the
+      // finished square. Same pill as B.tick-2, so the idle end state is
+      // unchanged — only the entrance re-fires.
+      durationMs: 2400,
       overlay: {
-        show: ["B.diag-1", "B.ctx-0", "B.ctx-1", "B.ctx-2", "B.ctx-3"],
+        show: ["B.diag-1", "B.ctx-0", "B.ctx-1", "B.ctx-2", "B.ctx-3", "B.tick-3"],
       },
       draw: [
         heroLine("B.diag-1", 2, 6),
@@ -231,6 +234,7 @@ export const scriptB = {
         faintLine("B.ctx-1", 6, 8),
         faintLine("B.ctx-2", 1, 7),
         faintLine("B.ctx-3", 2, 8),
+        { ...gutterTick("B.tick-3", cornerGutter()), at: 0.75 },
       ],
       matrix: { highlight: ALL, setValues: null },
     }),
