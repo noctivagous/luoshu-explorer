@@ -5,6 +5,13 @@ Scope: the ordinal construction and properties A–N as implemented in
 `js/animation-scripts.js` and rendered by `js/overlay.js`. This is a visual
 communication review, not a mathematical-content review.
 
+> Status correction (2026-10-21): the triage table records the pre-revision
+> baseline. The treatments for A–N are now implemented; the open
+> per-property item is Build. The current task status is maintained in
+> [implementation-task-list.md](implementation-task-list.md), with the
+> playback and capability detail in
+> [animation-and-capability-improvements.md](animation-and-capability-improvements.md).
+
 ## Executive finding
 
 **“Build the square” is the only animation whose primary idea is legible
@@ -64,7 +71,7 @@ effects improve entrance, but they do not add semantic information.
 | B — Lines sum to 15 | Bare / cluttered | The finished board contains rows, columns, diagonals, and many small `15` chips simultaneously. Chips crowd the right and bottom edges; thin dashed strokes pass through the numbers. A line says “group,” not “sum.” | Treat one line at a time as a hero. Light its three cells in sequence, show a large running total (`4 → 13 → 15`) in a reserved outer gutter, then leave a single tidy `= 15` badge. Repeat with a row, column, and diagonal; end on an eight-line overview with only eight restrained gutter ticks, not eight chips. |
 | C — Clockwise addition mod 10 | Partly clear, still bare | The perimeter path and wedge arrows imply direction, but the tiny badges carry the arithmetic. The essential modular reduction (`13 → 3`) appears as text rather than an event. | Use a traveling token/ledger around the border: `1 + 6 → 7`, then `7 + 2 → 9`. For overflow, visibly split `13` into a muted `1` tens digit that drops away and an emphasized `3` that lands in the target cell. Keep a faint clockwise path as context. |
 | D — Counterclockwise arms | Bare | Center-to-edge-to-corner arrows show a route, but they do not make “add 5” or modular reduction visible. The current result is a small off-cell badge. | Begin with a center `5` token that joins the edge value, then send the result along the second arm into the corner. Use the same overflow treatment as C. Use a central directional compass/arrow once, so counterclockwise is legible rather than inferred from four separate arms. |
-| E — Five rules everything | Bare / decorative | Concentric dashed rings are visually attractive but arbitrary: radius does not communicate 9, 2, or 3. A badge tells the whole story; the rings do not prove it. | Replace rings with three deliberately different groupings: all 9 cells collect to `45`, one opposite pair joins to `10`, and one magic line accumulates to `15`. Conclude by snapping the three totals into a vertical `9×5 / 2×5 / 3×5` fact stack centered on the 5. |
+| E — Five rules everything | Revised | The original concentric rings were decorative: radius did not communicate 9, 2, or 3. | Implemented as six transient proof beats: establish center/mean 5; state the mean of 1–9; prove `45 = 9×5`; prove `4+6 = 10 = 2×5`; prove `3+5+7 = 15 = 3×5`; then retain only the three-fact margin stack. |
 | F — Corners = Edges | Bare | Cell color separates evens from odds, but the two totals are small badges above the board. There is no visible collection, weighing, or equality; the final frame is merely colored cells. | Bracket the four corners and the four edge cells outside the grid. Animate each group into a large `Σ 20`, then connect the two totals with an equal sign or a restrained balance beam. Retain even/odd markers so color is not the only cue. |
 | G — Zero-balanced form | Bare | `+n`, `−n`, and `0` tags are shown, but the values do not visibly become deviations from 5. It is not clear that the original matrix has been transformed, nor that lines now total zero. | Perform a visible “subtract 5” pass: each cell briefly shows `original − 5`, then flips to its signed deviation. Demonstrate one row canceling to zero with opposite-signed tokens, then end with all three line families shown as quiet `Σ 0` gutter marks. |
 | H — Subtraction = 5 | Bare | An arrow and a `5` chip could mean distance, sum, direction, or subtraction. The modulo-10 exception is caption-only. | Mirror C’s visual grammar in reverse: select the minuend, subtract the corner, and let the residual `5` settle at the center. For `1 − 6`, show `−5` crossing a small “mod 10” gate to become `5`; this converts a textual exception into the memorable moment. |
@@ -77,11 +84,10 @@ effects improve entrance, but they do not add semantic information.
 
 ### Summary classification
 
-- **Not bare / good base:** Build.
-- **Usable but needs stronger arithmetic storytelling:** A, C, N.
-- **Bare but readily recoverable with a reusable visual grammar:** B, D, E, F,
-  G, H, I, J, L, M.
-- **Should be reframed rather than merely decorated:** K.
+- **Still open:** Build needs named construction phases, before/after ghosts,
+  and a hold frame.
+- **Implemented from this audit:** A–N, including the computed-invariant
+  treatment for K and the six-beat transient proof sequence for E.
 
 ## Cross-cutting causes
 
@@ -198,15 +204,16 @@ These are a small system, not fourteen bespoke animations:
 
 ### Supporting implementation work
 
-- Add a reserved annotation/gutter coordinate system outside `Z × Z` instead
-  of using ad-hoc badge offsets.
-- Let draw items specify semantic phases or `at` offsets for focus, operation,
-  result, and hold.
-- Add a board-level ghost/focus state so irrelevant cells recede.
-- Test responsive annotation size at the smallest supported viewport; do not
-  scale the main explanatory text below 11–12 px.
-- Add screenshot/DOM checks for label collisions and for the intended end
-  state of the primary properties (at minimum B, C, F, I, J, M, N).
+- [x] Add reserved annotation/gutter coordinates outside `Z × Z` instead of
+  using ad-hoc badge offsets.
+- [x] Let draw items specify semantic phases or `at` offsets for focus,
+  operation, result, and hold. `transient: true` now clears a worked example
+  before the next proof.
+- [x] Add a board-level ghost/focus state so irrelevant cells recede.
+- [ ] Manually test responsive annotation size at the smallest supported
+  viewport; explanatory text must not render below 11–12 px.
+- [x] Add DOM checks for label collisions and intended end states. Screenshot
+  coverage remains optional visual-regression work.
 
 ## Acceptance criteria for a revised property
 
@@ -250,9 +257,10 @@ supporting work.
 - [x] K: decided — labeled computed-invariant card ("A computed fact,
   not a path", `det = 360 … · computed invariant` badge), not a visual
   proof; full cofactor storyboard deferred
-- [x] E/G/J: group-collection treatment — E three groupings + margin
-  fact stack, G middle-row cancel + `Σ 0` ticks, J number ribbons +
-  `1665 = 15 × 111` payoff (landed 2026-10-21)
+- [x] E/G/J: group-collection treatment — E is a six-beat transient proof
+  sequence ending in a margin fact stack; G has middle-row cancellation +
+  `Σ 0` ticks; J has number ribbons + `1665 = 15 × 111` payoff (landed
+  2026-10-21)
 - [x] L: four matched pair-beats with simultaneous bar growth and a
   through-center link each; four paired brackets in the end state
   (landed 2026-10-21)

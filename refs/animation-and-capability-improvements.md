@@ -482,20 +482,21 @@ render-smoke, animation, content).
   are not vacuous. Text/math agreement on K (+360) and M (narrowed
   claim) is asserted.
 
-### Still open (not started)
+### Status correction (2026-10-21)
 
-Phases 6–7: "what breaks?" UI on top of `verify()` (§6.2), tours, compare,
-deep links, and export (§5.2, §6.5, §6.8). Margin gutters were never part of
-the phase-2 landing and stay out. Open question 5 (element/trigram source)
-still stands. Open question 4 is settled: the overlay refactor may change
-the animated path; idle still shows the finished square and every property's
-full drawing.
+This paragraph formerly described deep links and margin gutters as unstarted.
+That is no longer accurate: both are implemented and covered by checks. The
+authoritative remaining-work list is §12 below. The still-open capability work
+is the "what breaks?" playground, tours, compare mode, export, and learning
+interactions; the remaining content decision is the Five Elements/trigram
+source.
 
 ### Phases 3–5 — overlay, motion, ordinal build, D₄ (2026-10-20)
 
 - **Declarative overlay (§5.1).** `js/overlay.js` renders `line`, `segments`,
   `path`, `arc`, `wedge`, `ring`, `mark`, `bar`, `cellTag`, `chip`, and
-  `badge` from each step's `draw` list. `frameFor` accumulates those items.
+  `badge` from each step's `draw` list. `frameFor` accumulates persistent
+  items; a `transient: true` item is scoped to its own worked-example beat.
   The per-property SVG/HTML blocks in `js/app.js` are gone. Idle draws the
   whole script; playback draws only revealed keys. Property A's chords now
   match their captions (the old key order drew a different pair than the
@@ -561,7 +562,9 @@ priority roadmap.
 - [x] K: decided — explicit computed-invariant card, not a storyboard
   (`det = 360 = 3×4×5×6 · computed invariant` badge; full cofactor
   storyboard deferred)
-- [x] Group collection for E, G, J (landed 2026-10-21)
+- [x] Group collection for E, G, J (landed 2026-10-21). E was subsequently
+  expanded to six focused beats: establish 5 as the mean, prove the all-cell,
+  opposite-pair, and magic-line totals, then show the persistent fact stack.
 - [x] Paired motion for A, L; torus cues for M; transform affordances
   for N; overview-diagram toggle (landed 2026-10-21)
 - [x] Collision handling (same-spot gate in `checks/content.check.mjs`)
