@@ -24,6 +24,15 @@ const need = (cond, msg) => {
 
 const root = document.getElementById('root');
 const text = root.textContent;
+const until = async (fn, want, ms) => {
+  const stop = Date.now() + (ms || 4000);
+  for (;;) {
+    const got = fn();
+    if (got === want) return got;
+    if (Date.now() > stop) return got;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+};
 need(!text.includes('Matrix L'), 'caption header is back');
 need(text.includes('LUO SHU'), 'missing LUO SHU heading');
 
@@ -42,8 +51,8 @@ need(
 // (play/prev/next/loop/overview) + 1 close = 27, plus 6
 // correspondences-legend chips = 33, plus 3 construction step cards = 36,
 // plus 3 worked-example tape rows (intro shows construction) = 39,
-// plus 3 step ticks + 2 autoplay toggles = 44.
-need(document.querySelectorAll('#root button').length === 44, 'expected 44 buttons');
+// plus 3 step ticks + 2 autoplay toggles = 44, plus 1 playground toggle = 45.
+need(document.querySelectorAll('#root button').length === 45, 'expected 45 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -111,6 +120,36 @@ for (const title of ['Build the square', 'Opposites balance', 'Zero-balanced for
   need(text.includes(title), `missing property: ${title}`);
 }
 need(root.querySelector('style') !== null, 'font/style element missing');
+need(!text.includes('computed:'), 'intro should carry no computed claim status');
+
+// What-breaks playground: swap two cells, watch the checklist, restore.
+const pgToggle = () =>
+  root.querySelector('button[aria-label="Enter playground"], button[aria-label="Exit playground"]');
+need(pgToggle() !== null && pgToggle().getAttribute('aria-pressed') === 'false', 'playground should start closed');
+need(root.querySelector('[aria-label="Property checklist"]') === null, 'checklist should hide until the playground opens');
+pgToggle().click();
+await until(
+  () => (root.querySelector('[aria-label="Property checklist"]') !== null ? 'yes' : 'no'),
+  'yes',
+  4000
+);
+const checklist = () => root.querySelector('[aria-label="Property checklist"]');
+need(checklist() !== null, 'playground should open the checklist');
+const chips = () => [...checklist().querySelectorAll('span')];
+need(chips().length === 14, `checklist should cover A–N (got ${chips().length})`);
+need(chips().every((c) => c.textContent.includes('✓')), 'intact Lo Shu should hold every claim');
+const boardCells = () => [...document.querySelectorAll('#root [data-anim-stage] div.grid > div')];
+const pgSection = () => root.querySelector('[aria-label="What breaks playground"]');
+boardCells()[0].click();
+await until(() => (pgSection().textContent.includes('One cell armed') ? 'armed' : 'idle'), 'armed', 4000);
+need(pgSection().textContent.includes('One cell armed'), 'first tap should arm the cell');
+boardCells()[1].click();
+await until(() => (checklist().textContent.includes('✗') ? 'broken' : 'holds'), 'broken', 4000);
+need(checklist().textContent.includes('B ✗'), 'swapping 4 and 9 should break the lines claim');
+need(boardCells()[0].textContent.trim() === '9', 'swapped cell should show its new value');
+root.querySelector('button[aria-label="Restore Lo Shu"]').click();
+await until(() => (checklist().textContent.includes('✗') ? 'broken' : 'holds'), 'holds', 4000);
+need(boardCells()[0].textContent.trim() === '4', 'restore should bring back the Lo Shu');
 
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);

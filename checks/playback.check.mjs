@@ -40,7 +40,15 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 43, 'expected 43 buttons with the loop toggle, 4 tape rows, 4 ticks and 2 autoplay toggles');
+need(document.querySelectorAll('#root button').length === 44, 'expected 44 buttons with the loop toggle, 4 tape rows, 4 ticks, 2 autoplay toggles and 1 playground toggle');
+need(
+  document.body.textContent.includes('✓ computed: holds on this square'),
+  'active claim should surface its computed status'
+);
+need(
+  document.querySelector('button[aria-label="Enter playground"]') !== null,
+  'playground toggle should exist'
+);
 
 const stepText = () => document.querySelector('.anim-caption-step')?.textContent || '';
 const captionText = () => document.querySelector('.anim-caption-text')?.textContent || '';

@@ -16,7 +16,7 @@ import correspondencesData from "../data/correspondences.json" with { type: "jso
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS } from "./animation.js";
 import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
-import { determinant } from "./verify.js";
+import { determinant, verifyAll } from "./verify.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -699,7 +699,12 @@ function LoShuApp() {
     // Playback continuity: queued autoplay target plus the two opt-in prefs.
     [autoplayQueue, setAutoplayQueue] = React.useState(null),
     [autoSelect, setAutoSelect] = React.useState(() => loadPref("luoshu:autoplay-select")),
-    [autoNext, setAutoNext] = React.useState(() => loadPref("luoshu:autoplay-next"));
+    [autoNext, setAutoNext] = React.useState(() => loadPref("luoshu:autoplay-next")),
+    // What-breaks playground: an idle-mode swapped grid (null = Lo Shu),
+    // the armed swap cell, and whether the playground section is open.
+    [playground, setPlayground] = React.useState(false),
+    [playGrid, setPlayGrid] = React.useState(null),
+    [swapArm, setSwapArm] = React.useState(null);
   const toggleLegend = (id) => {
     // Correspondence labels occupy the same small cells as the animation.
     // Selecting a layer must therefore leave the board in its stable state;
@@ -879,6 +884,22 @@ function LoShuApp() {
       else playerRef.current.stepPrev();
     },
     animReset = () => playerRef.current?.reset() || setStarted(false),
+    // What-breaks playground: entering pauses playback and clears transient
+    // attention; exiting keeps the swapped grid (Restore clears it).
+    playgroundToggle = () => {
+      const next = !playground;
+      if (next) {
+        playerRef.current?.reset();
+        setStarted(false);
+        setHoverStep(null);
+        setFocusCell(null);
+        setStickyCell(null);
+        setSwapArm(null);
+      } else {
+        setSwapArm(null);
+      }
+      setPlayground(next);
+    },
     // Opt-in autoplay prefs. The loop toggle stays the visible loop choice;
     // pausing never advances the chain, so stop is always one press away.
     autoSelectToggle = () => {
@@ -961,6 +982,10 @@ function LoShuApp() {
   // Tape linking: the hovered row previews its step's cells on the board;
   // the probed cell (keyboard focus or sticky click) picks out its rows.
   // Formula sync lights the formula tokens the current step demonstrates.
+  // What breaks: the live grid is the swapped one when set, else Lo Shu.
+  // The checklist and the computed claim status both read this grid.
+  const playBase = playGrid ?? SQUARE,
+    playResults = verifyAll(playBase);
   const probeCell = focusCell ?? stickyCell,
     hoverCells =
       hoverStep != null && script && script.steps[hoverStep]
@@ -1425,7 +1450,7 @@ function LoShuApp() {
                               if (dimmed) y.opacity = 0.45;
                               let buildOn = animOn && script?.id === "construction",
                                 valueOn = animOn && frame?.setValues,
-                                cellVal = valueOn ? (frame.setValues[a] ?? "") : i,
+                                cellVal = valueOn ? (frame.setValues[a] ?? "") : playBase[a],
                                 hideNum = moving.has(a),
                                 // Correspondences: independent slots. Selecting one
                                 // resets playback above, so their labels are never
@@ -1452,6 +1477,8 @@ function LoShuApp() {
                                 k += " ring-2 ring-[#b89a5a] ring-offset-2 ring-offset-white";
                               if (probeCell === a)
                                 y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #1a1a1a`;
+                              if (playground && swapArm === a)
+                                y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #c96442`;
                               return _(
                                 "div",
                                 {
@@ -1459,10 +1486,29 @@ function LoShuApp() {
                                   style: { width: gn, height: gn, ...y },
                                   tabIndex: 0,
                                   role: "button",
-                                  "aria-label": `Probe cell ${cellVal}`,
+                                  "aria-label": playground
+                                    ? `Swap cell ${cellVal}`
+                                    : `Probe cell ${cellVal}`,
                                   onFocus: () => setFocusCell(a),
                                   onBlur: () => setFocusCell((c) => (c === a ? null : c)),
-                                  onClick: () => setStickyCell((c) => (c === a ? null : a)),
+                                  onClick: () => {
+                                    // Playground swap: arm one cell, then tap
+                                    // a second to exchange their values.
+                                    if (playground) {
+                                      if (swapArm == null) setSwapArm(a);
+                                      else if (swapArm === a) setSwapArm(null);
+                                      else {
+                                        const g = [...(playGrid ?? SQUARE)];
+                                        const t = g[swapArm];
+                                        g[swapArm] = g[a];
+                                        g[a] = t;
+                                        setPlayGrid(g);
+                                        setSwapArm(null);
+                                      }
+                                      return;
+                                    }
+                                    setStickyCell((c) => (c === a ? null : a));
+                                  },
                                   children: [
                                     h("span", {
                                       className:
@@ -1925,6 +1971,26 @@ function LoShuApp() {
                                     ],
                                   }),
                                 }),
+                                o.id !== "intro" &&
+                                  h("div", {
+                                    className: "mt-3",
+                                    children: _("div", {
+                                      className:
+                                        "inline-flex flex-wrap min-w-0 max-w-full items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#1a1a1a]/10",
+                                      children: [
+                                        h("span", {
+                                          className: `w-1.5 h-1.5 rounded-full shrink-0 ${playResults[o.id] ? "bg-[#4a6741]" : "bg-[#c96442]"}`,
+                                        }, "dot"),
+                                        h("code", {
+                                          className:
+                                            "text-[12px] font-mono tracking-tight",
+                                          children: playResults[o.id]
+                                            ? "✓ computed: holds on this square"
+                                            : "✗ computed: broken on this square",
+                                        }, "status"),
+                                      ],
+                                    }),
+                                  }, "computed-status"),
                                 h("p", {
                                   className:
                                     "mt-4 text-[14px] leading-[1.7] opacity-75",
@@ -1996,6 +2062,90 @@ function LoShuApp() {
                             }),
                           }),
                     }),
+                    h("section", {
+                      className: "mt-4 w-full max-w-[560px] rounded-[18px] border border-dashed border-[#1a1a1a]/20 bg-white/50 p-6",
+                      "aria-label": "What breaks playground",
+                      children: [
+                        _("div", {
+                          className: "flex items-start justify-between gap-4",
+                          children: [
+                            _("div", {
+                              children: [
+                                h("div", {
+                                  className:
+                                    "text-[11px] font-mono uppercase tracking-widest opacity-60",
+                                  children: "Playground",
+                                }, "pg-kicker"),
+                                h("h2", {
+                                  className: "text-[24px] leading-[1.05] tracking-[-0.01em] mt-1",
+                                  style: {
+                                    fontFamily: "'Instrument Serif', serif",
+                                  },
+                                  children: "What breaks?",
+                                }, "pg-title"),
+                                h("p", {
+                                  className: "mt-2 text-[13px] leading-[1.6] opacity-60",
+                                  style: { fontFamily: "'Newsreader', Georgia, serif" },
+                                  children:
+                                    "Swap any two cells and watch the A–N checklist. Playback shows script values; reset it to see your swap.",
+                                }, "pg-desc"),
+                              ],
+                            }, "pg-head"),
+                            h("button", {
+                              type: "button",
+                              "aria-label": playground ? "Exit playground" : "Enter playground",
+                              "aria-pressed": playground ? "true" : "false",
+                              onClick: playgroundToggle,
+                              className: "anim-rail-btn shrink-0",
+                              title: "Swap cells and test the claims",
+                              children: playground
+                                ? "Exit"
+                                : playGrid
+                                  ? "Modified…"
+                                  : "Enter",
+                            }, "pg-toggle"),
+                          ],
+                        }, "pg-top"),
+                        playground && [
+                          h("p", {
+                            className: "mt-3 text-[13px] leading-[1.6] opacity-75",
+                            style: { fontFamily: "'Newsreader', Georgia, serif" },
+                            children: swapArm == null
+                              ? "Tap a cell to arm it, then tap a second cell to swap their values."
+                              : "One cell armed — tap another cell to complete the swap, or tap it again to stand down.",
+                          }, "pg-hint"),
+                          h("button", {
+                            type: "button",
+                            "aria-label": "Restore Lo Shu",
+                            onClick: () => {
+                              setPlayGrid(null);
+                              setSwapArm(null);
+                            },
+                            disabled: !playGrid,
+                            className:
+                              "anim-rail-btn mt-3",
+                            title: "Restore the Lo Shu square",
+                            children: "Restore Lo Shu",
+                          }, "pg-restore"),
+                          h("div", {
+                            className: "mt-3 flex flex-wrap gap-1.5",
+                            role: "group",
+                            "aria-label": "Property checklist",
+                            "aria-live": "polite",
+                            children: PROPERTIES.filter((p) => p.id !== "intro").map(
+                              (p) => {
+                                const ok = !!playResults[p.id];
+                                return h("span", {
+                                  className: `rounded-full border px-2 py-0.5 text-[11px] font-mono ${ok ? "border-[#4a6741]/50 text-[#4a6741]" : "border-[#c96442] text-[#c96442] bg-[#c96442]/10"}`,
+                                  title: `${p.title} — ${ok ? "holds" : "broken"}`,
+                                  children: `${p.id} ${ok ? "✓" : "✗"}`,
+                                }, p.id);
+                              },
+                            ),
+                          }, "pg-list"),
+                        ],
+                      ],
+                    }, "playground"),
                   ],
                 }),
               }),
