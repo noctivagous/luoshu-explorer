@@ -59,7 +59,7 @@ const needSeen = async (fn, want, msg) => {
 };
 
 await needSeen(stepText, 'Step 2 of 4', 'deep link should land on step 2');
-need(captionText() === '7 + 2 = 9', `deep link caption wrong: ${captionText()}`);
+need(captionText() === '7 + 2 = 9 — running total rides the border.', `deep link caption wrong: ${captionText()}`);
 need(dom.window.location.hash === '#/luoshu/C?step=2', `hash should track the step: ${dom.window.location.hash}`);
 
 const key = (k) => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: k, bubbles: true }));

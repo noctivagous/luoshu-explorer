@@ -82,6 +82,73 @@ for (const [id, script] of Object.entries(demoScripts)) {
   );
 }
 
+// Property C: traveling token — hero draws first, equation assembles, then
+// the result lands; overflow steps split the tens (muted sum, bold result).
+{
+  const c = demoScripts.C;
+  need(c.steps.length === 4, 'script C should stay at 4 steps');
+  need(
+    JSON.stringify(frameFor(c, 0, 0).visibleKeys) === JSON.stringify(['C.path', 'C.hero-0']),
+    'C step 0 at the start should reveal only the context path and hero hops'
+  );
+  const overflow = c.steps[2].draw;
+  need(overflow.some((d) => d.key === 'C.sum-2'), 'C overflow step should stage a muted sum');
+  const res2 = overflow.find((d) => d.key === 'C.res-2');
+  need(res2 && res2.fontSize >= 14, 'C landed result should be large (14+)');
+  need(c.steps.every((st) => st.durationMs >= 1800), 'C beats should be readable (1800ms+)');
+}
+
+// Property D: same grammar — arm, equation, tens-drop, one compass cue.
+{
+  const d = demoScripts.D;
+  need(d.steps.length === 4, 'script D should stay at 4 steps');
+  need(
+    JSON.stringify(frameFor(d, 0, 0).visibleKeys) === JSON.stringify(['D.arm-0']),
+    'D step 0 at the start should reveal only the arm'
+  );
+  need(d.steps[0].draw.some((x) => x.key === 'D.ccw'), 'D should name the counterclockwise sense once');
+  const dsum = d.steps[0].draw.find((x) => x.key === 'D.sum-0');
+  need(dsum && dsum.at === 0.55, 'D muted sum should wait for its beat inside the step');
+}
+
+// Property H: reversed grammar — arm, equation, residual 5 at center, mod gate.
+{
+  const h = demoScripts.H;
+  need(h.steps.length === 4, 'script H should stay at 4 steps');
+  h.steps.forEach((st, k) => {
+    need(st.matrix.highlight.includes(4), `H ${st.id} should keep the center in focus`);
+    need(st.draw.some((x) => x.key === `H.res-${k}`), `H ${st.id} should land a residual 5`);
+  });
+  need(h.steps[2].draw.some((x) => x.key === 'H.gate-2'), 'H mod-10 step should show the gate');
+  need(h.steps[3].draw.some((x) => x.key === 'H.gate-3'), 'H mod-10 step should show the gate');
+}
+
+// Property F: group-then-balance — X/plus, two Σ 20 margin totals, 20 = 20.
+{
+  const f = demoScripts.F;
+  need(f.steps.length === 3, 'script F should stay at 3 steps');
+  need(
+    JSON.stringify(frameFor(f, 0, 0).visibleKeys) === JSON.stringify(['F.x-c', 'F.ptag-c']),
+    'F step 0 at the start should group before collecting the total'
+  );
+  const idleF = markup(frameFor(f, 2, 1));
+  const totals = idleF.match(/Σ 20/g) || [];
+  need(totals.length === 2, `idle F should carry two Σ 20 totals (got ${totals.length})`);
+  need(idleF.includes('20 = 20'), 'idle F should beam the two totals together');
+}
+
+// Property I: one fixed equation panel on all axes, 5 pulse on landing.
+{
+  const iv = demoScripts.I;
+  need(iv.steps.length === 4, 'script I should stay at 4 steps');
+  const panels = iv.steps.map((st) => st.draw.find((x) => x.type === 'badge'));
+  need(panels.every((p) => p && p.style && p.style.top === -18), 'I equations should share one fixed panel');
+  need(
+    iv.steps.every((st) => st.draw.some((x) => x.type === 'mark' && x.text === '5' && (x.at ?? 0) === 0.6)),
+    'I should land a 5 pulse on every axis'
+  );
+}
+
 // Property K is framed as a computed fact, not a visual proof.
 need(
   demoScripts.K.steps[0].caption.toLowerCase().includes('computed'),

@@ -11,14 +11,18 @@ Interactive React 18.3.1 SPA exploring the 14 arithmetic properties (A–N) of t
 ├── js/animation.js         # Animation player
 ├── js/animation-scripts.js # Animation scripts per property (A–N)
 ├── js/overlay.js           # Declarative board overlay (lines, chips, badges)
-├── js/external-links.js    # Classic script: forces external links to new tab
+├── js/verify.js            # Verification utilities for animation predicates
+├── public/js/external-links.js  # Classic script: forces external links to new tab
 ├── data/properties.json    # Single source of truth for 14 properties
+├── data/correspondences.json    # Property correspondences data
 ├── checks/
 │   ├── spa-shell.check.mjs     # CSS shell regression (viewport lock)
 │   ├── render-smoke.check.mjs  # JSDOM mount + DOM assertions
 │   ├── animation.check.mjs     # Animation state machine checks
 │   ├── playback.check.mjs      # Deep links, keyboard, loop toggle
 │   └── content.check.mjs       # Overlay keys, verify() predicates, text/math agreement
+├── refs/                     # Reference documentation (architecture, audits, etc.)
+├── dist/                     # Production build output
 └── archive-artifacts/        # Original minified bundle (workspace root)
 ```
 

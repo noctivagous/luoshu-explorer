@@ -187,24 +187,46 @@ export const scriptB = {
   ],
 };
 
+// Property C: traveling token around the perimeter. Each step draws the two
+// hero hops solid, assembles the equation mid-step, then lands the result
+// near the target cell. Overflow steps split the tens: a muted sum drops
+// away and an emphasized ones-digit lands (tens-drop event, not text).
 const C_CELLS = [7, 8, 5, 2, 1, 0, 3, 6];
-const C_LABELS = [
-  { text: "1+6=7", className: "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow pointer-events-none", place: { mid: [7, 8], dx: -29, topCell: 7, dy: -9 } },
-  { text: "7+2=9", className: "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow pointer-events-none", place: { cell: 5, dx: -29, midY: [5, 2], dy: -29 } },
-  { text: "9+4=13→3", className: "absolute text-[10px] font-mono bg-[#c96442] text-white px-2 py-1 rounded-full shadow pointer-events-none", place: { mid: [1, 0], dx: -44, topCell: 1, dy: -32 } },
-  { text: "3+8=11→1", className: "absolute text-[10px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow pointer-events-none", place: { cell: 3, dx: -39, midY: [3, 6], dy: -34 } },
+const C_BEATS = [
+  { eq: "1+6", sum: null, res: "7" },
+  { eq: "7+2", sum: null, res: "9" },
+  { eq: "9+4", sum: "13", res: "3" },
+  { eq: "3+8", sum: "11", res: "1" },
 ];
+
+function cChip(key, from, to, text, at, look) {
+  return {
+    key,
+    type: "chip",
+    at,
+    from,
+    to,
+    anchor: "end",
+    dy: -32,
+    text,
+    ...look,
+  };
+}
 
 export const scriptC = {
   id: "C",
   title: "Clockwise addition mod 10",
   steps: [
-    ["1 + 6 = 7", [7, 8, 5]],
-    ["7 + 2 = 9", [5, 2, 1]],
-    ["9 + 4 = 13 → 3", [1, 0, 3]],
-    ["3 + 8 = 11 → 1", [3, 6, 7]],
+    ["1 + 6 = 7 — token travels 1 → 6 → 7.", [7, 8, 5]],
+    ["7 + 2 = 9 — running total rides the border.", [5, 2, 1]],
+    ["9 + 4 = 13 → 3 — the tens drops away.", [1, 0, 3]],
+    ["3 + 8 = 11 → 1 — the tens drops away.", [3, 6, 7]],
   ].map(([caption, highlight], k) => {
-    const show = [...(k === 0 ? ["C.path"] : []), `C.seg-${2 * k}`, `C.seg-${2 * k + 1}`, `C.label-${k}`];
+    const beat = C_BEATS[k];
+    const a = C_CELLS[2 * k];
+    const b = C_CELLS[(2 * k + 1) % C_CELLS.length];
+    const c = C_CELLS[(2 * k + 2) % C_CELLS.length];
+    const show = [...(k === 0 ? ["C.path"] : []), `C.hero-${k}`, `C.eq-${k}`];
     const draw = [];
     if (k === 0) {
       draw.push({
@@ -213,25 +235,67 @@ export const scriptC = {
         cells: C_CELLS,
         close: true,
         color: "#1a1a1a",
-        width: "1.6",
+        width: "1.2",
         dash: "8 8",
-        opacity: 0.6,
+        opacity: 0.35,
       });
     }
-    for (const seg of [2 * k, 2 * k + 1]) {
-      draw.push({
-        key: `C.seg-${seg}`,
-        type: "wedge",
-        from: C_CELLS[seg],
-        to: C_CELLS[(seg + 1) % C_CELLS.length],
-        color: "#c96442",
-        width: "1.6",
-      });
+    draw.push({
+      key: `C.hero-${k}`,
+      type: "segments",
+      parts: [
+        { from: a, to: b, color: "#c96442", width: "2" },
+        { from: b, to: c, color: "#c96442", width: "2", marker: "arrowSmall" },
+      ],
+    });
+    draw.push(
+      cChip(`C.eq-${k}`, a, b, beat.eq, 0.3, {
+        fill: "white",
+        stroke: "#1a1a1a",
+        color: "#1a1a1a",
+        w: 46,
+        h: 20,
+        fontSize: 12,
+      }),
+    );
+    if (beat.sum) {
+      show.push(`C.sum-${k}`, `C.res-${k}`);
+      draw.push(
+        cChip(`C.sum-${k}`, b, c, beat.sum, 0.55, {
+          fill: "#f0ece4",
+          stroke: "#c96442",
+          color: "#c96442",
+          w: 34,
+          h: 20,
+          fontSize: 11,
+        }),
+        cChip(`C.res-${k}`, b, c, beat.res, 0.75, {
+          fill: "#c96442",
+          stroke: "#c96442",
+          color: "white",
+          w: 30,
+          h: 22,
+          fontSize: 14,
+          weight: "700",
+        }),
+      );
+    } else {
+      show.push(`C.res-${k}`);
+      draw.push(
+        cChip(`C.res-${k}`, b, c, beat.res, 0.55, {
+          fill: "#c96442",
+          stroke: "#c96442",
+          color: "white",
+          w: 30,
+          h: 22,
+          fontSize: 14,
+          weight: "700",
+        }),
+      );
     }
-    draw.push({ key: `C.label-${k}`, type: "badge", ...C_LABELS[k] });
     return animStep(`C-${k + 1}`, {
       caption,
-      durationMs: 1500,
+      durationMs: 1900,
       overlay: { show },
       draw,
       matrix: { highlight, setValues: null },
@@ -239,44 +303,125 @@ export const scriptC = {
   }),
 };
 
-const D_ARMS = [
-  { edge: 1, corner: 0, text: "5+9→4", place: { mid: [1, 0], dx: -29, topCell: 1, dy: -32 } },
-  { edge: 5, corner: 2, text: "5+7→2", place: { cell: 2, dx: -46, dy: -25 } },
-  { edge: 7, corner: 8, text: "5+1→6", place: { mid: [7, 8], dx: -19, topCell: 7, dy: -33 } },
-  { edge: 3, corner: 6, text: "5+3→8", place: { cell: 3, dx: -32, midY: [3, 6], dy: 20 } },
+// Property D: the center 5 token joins the edge value, then the result
+// rides the second arm into the corner. Same tens-drop grammar as C; one
+// compass badge on the first step names the counterclockwise sense.
+const D_BEATS = [
+  { edge: 1, corner: 0, eq: "5+9", sum: "14", res: "4" },
+  { edge: 5, corner: 2, eq: "5+7", sum: "12", res: "2" },
+  { edge: 7, corner: 8, eq: "5+1", sum: null, res: "6" },
+  { edge: 3, corner: 6, eq: "5+3", sum: null, res: "8" },
 ];
 
 export const scriptD = {
   id: "D",
   title: "Counterclockwise arms",
   steps: [
-    ["5 + 9 = 14 → 4", [4, 1, 0]],
-    ["5 + 7 = 12 → 2", [4, 5, 2]],
-    ["5 + 1 = 6", [4, 7, 8]],
-    ["5 + 3 = 8", [4, 3, 6]],
+    ["5 + 9 = 14 → 4 — 5 joins 9, tens drops.", [4, 1, 0]],
+    ["5 + 7 = 12 → 2 — 5 joins 7, tens drops.", [4, 5, 2]],
+    ["5 + 1 = 6 — straight into the corner.", [4, 7, 8]],
+    ["5 + 3 = 8 — straight into the corner.", [4, 3, 6]],
   ].map(([caption, highlight], k) => {
-    const arm = D_ARMS[k];
+    const beat = D_BEATS[k];
+    const show = [`D.arm-${k}`, `D.eq-${k}`];
+    const draw = [
+      {
+        key: `D.arm-${k}`,
+        type: "segments",
+        parts: [
+          { from: 4, to: beat.edge, color: "#7a6a9e", width: "1.4", dash: "3 4" },
+          { from: beat.edge, to: beat.corner, color: "#7a6a9e", width: "2", marker: "arrowSmall" },
+        ],
+      },
+      {
+        key: `D.eq-${k}`,
+        type: "chip",
+        at: 0.3,
+        from: 4,
+        to: beat.edge,
+        text: beat.eq,
+        fill: "white",
+        stroke: "#7a6a9e",
+        color: "#7a6a9e",
+        w: 46,
+        h: 20,
+        fontSize: 12,
+      },
+    ];
+    if (beat.sum) {
+      show.push(`D.sum-${k}`, `D.res-${k}`);
+      draw.push(
+        {
+          key: `D.sum-${k}`,
+          type: "chip",
+          at: 0.55,
+          from: beat.edge,
+          to: beat.corner,
+          anchor: "end",
+          dy: -32,
+          text: beat.sum,
+          fill: "#f0ece4",
+          stroke: "#7a6a9e",
+          color: "#7a6a9e",
+          w: 34,
+          h: 20,
+          fontSize: 11,
+        },
+        {
+          key: `D.res-${k}`,
+          type: "chip",
+          at: 0.75,
+          from: beat.edge,
+          to: beat.corner,
+          anchor: "end",
+          dy: -32,
+          text: beat.res,
+          fill: "#7a6a9e",
+          stroke: "#7a6a9e",
+          color: "white",
+          w: 30,
+          h: 22,
+          fontSize: 14,
+          weight: "700",
+        },
+      );
+    } else {
+      show.push(`D.res-${k}`);
+      draw.push({
+        key: `D.res-${k}`,
+        type: "chip",
+        at: 0.55,
+        from: beat.edge,
+        to: beat.corner,
+        anchor: "end",
+        dy: -32,
+        text: beat.res,
+        fill: "#7a6a9e",
+        stroke: "#7a6a9e",
+        color: "white",
+        w: 30,
+        h: 22,
+        fontSize: 14,
+        weight: "700",
+      });
+    }
+    if (k === 0) {
+      show.push("D.ccw");
+      draw.push({
+        key: "D.ccw",
+        type: "badge",
+        at: 0.15,
+        text: "↺ counterclockwise from 5",
+        className:
+          "absolute text-[11px] font-mono bg-white border px-2 py-1 rounded-full shadow pointer-events-none whitespace-nowrap",
+        style: { left: "50%", top: 106, transform: "translateX(-50%)" },
+      });
+    }
     return animStep(`D-${k + 1}`, {
       caption,
-      durationMs: 1400,
-      overlay: { show: [`D.arm-${k}`, `D.label-${k}`] },
-      draw: [
-        {
-          key: `D.arm-${k}`,
-          type: "segments",
-          parts: [
-            { from: 4, to: arm.edge, color: "#7a6a9e", width: "1.4", dash: "3 4" },
-            { from: arm.edge, to: arm.corner, color: "#7a6a9e", width: "2", marker: "arrowSmall" },
-          ],
-        },
-        {
-          key: `D.label-${k}`,
-          type: "badge",
-          text: arm.text,
-          className: "absolute text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full pointer-events-none",
-          place: arm.place,
-        },
-      ],
+      durationMs: 1900,
+      overlay: { show },
+      draw,
       matrix: { highlight, setValues: null },
     });
   }),
@@ -339,46 +484,96 @@ export const scriptE = {
   ],
 };
 
-const F_BADGE = "absolute text-[10px] font-mono text-white px-2 py-1 rounded-full pointer-events-none";
+// Property F: group-then-balance. Corners join as an X, edges join as a
+// plus, each collects into a large Σ 20 total in the top margin with
+// even/odd cell tags (shape + letter, not color alone). The last step
+// beams the two totals together as 20 = 20.
+const F_EQ = "absolute text-[13px] font-mono px-3 py-1 rounded-full pointer-events-none whitespace-nowrap";
 
 export const scriptF = {
   id: "F",
   title: "Corners = Edges",
   steps: [
     animStep("F-1", {
-      caption: "Corners are even — sum 20.",
-      durationMs: 1400,
-      overlay: { show: ["F.badge-corners"] },
+      caption: "Corners are even — collect to Σ 20.",
+      durationMs: 1800,
+      overlay: { show: ["F.x-c", "F.tot-c", "F.ptag-c"] },
       draw: [
         {
-          key: "F.badge-corners",
-          type: "badge",
-          text: "Corners even Σ20",
-          className: `${F_BADGE} bg-[#c96442]`,
-          style: { left: 8, top: -18 },
+          key: "F.x-c",
+          type: "segments",
+          parts: [
+            { from: 0, to: 8, color: "#c96442", width: "1.6" },
+            { from: 2, to: 6, color: "#c96442", width: "1.6" },
+          ],
         },
+        {
+          key: "F.tot-c",
+          type: "gutter",
+          at: 0.55,
+          x: 80,
+          y: -16,
+          text: "corners Σ 20",
+          fill: "#c96442",
+          color: "white",
+          w: 96,
+          h: 22,
+          rx: 11,
+          fontSize: 13,
+          weight: "700",
+          textDy: 4,
+        },
+        { key: "F.ptag-c", type: "cellTag", cells: [0, 2, 6, 8], texts: ["E", "E", "E", "E"] },
       ],
       matrix: { highlight: [0, 2, 6, 8], setValues: null },
     }),
     animStep("F-2", {
-      caption: "Edges are odd — sum 20.",
-      durationMs: 1400,
-      overlay: { show: ["F.badge-edges"] },
+      caption: "Edges are odd — collect to Σ 20.",
+      durationMs: 1800,
+      overlay: { show: ["F.plus-e", "F.tot-e", "F.ptag-e"] },
       draw: [
         {
-          key: "F.badge-edges",
-          type: "badge",
-          text: "Edges odd Σ20",
-          className: `${F_BADGE} bg-[#4a6741]`,
-          style: { right: 8, top: -18 },
+          key: "F.plus-e",
+          type: "segments",
+          parts: [
+            { from: 1, to: 7, color: "#4a6741", width: "1.6" },
+            { from: 3, to: 5, color: "#4a6741", width: "1.6" },
+          ],
         },
+        {
+          key: "F.tot-e",
+          type: "gutter",
+          at: 0.55,
+          x: 260,
+          y: -16,
+          text: "edges Σ 20",
+          fill: "#4a6741",
+          color: "white",
+          w: 96,
+          h: 22,
+          rx: 11,
+          fontSize: 13,
+          weight: "700",
+          textDy: 4,
+        },
+        { key: "F.ptag-e", type: "cellTag", cells: [1, 3, 5, 7], texts: ["O", "O", "O", "O"] },
       ],
       matrix: { highlight: [1, 3, 5, 7], setValues: null },
     }),
     animStep("F-3", {
       caption: "20 = 20 — parity balances around 5.",
-      durationMs: 1600,
-      overlay: { show: [] },
+      durationMs: 1800,
+      overlay: { show: ["F.eq"] },
+      draw: [
+        {
+          key: "F.eq",
+          type: "badge",
+          at: 0.4,
+          text: "20 = 20",
+          className: `${F_EQ} bg-[#1a1a1a] text-white shadow`,
+          style: { left: "50%", top: -18, transform: "translateX(-50%)" },
+        },
+      ],
       matrix: { highlight: [0, 1, 2, 3, 5, 6, 7, 8], setValues: null },
     }),
   ],
@@ -419,95 +614,123 @@ const H_ARMS = [
   { edge: 3, corner: 6 },
 ];
 
+// Property H: the C/D traveling-token grammar in reverse. The minuend is
+// selected, the corner is subtracted, and the residual 5 settles at the
+// center. The two mod-10 steps pass a visible gate: −5 becomes 5.
 export const scriptH = {
   id: "H",
   title: "Subtraction = 5",
   steps: [
-    ["9 − 4 = 5", [1, 0]],
-    ["7 − 2 = 5", [5, 2]],
-    ["1 − 6 ≡ 5 (mod 10)", [7, 8]],
-    ["3 − 8 ≡ 5 (mod 10)", [3, 6]],
+    ["9 − 4 = 5 — residual lands at the center.", [1, 0, 4]],
+    ["7 − 2 = 5 — residual lands at the center.", [5, 2, 4]],
+    ["1 − 6 ≡ 5 (mod 10) — through the gate.", [7, 8, 4]],
+    ["3 − 8 ≡ 5 (mod 10) — through the gate.", [3, 6, 4]],
   ].map(([caption, highlight], k) => {
     const arm = H_ARMS[k];
+    const eq = ["9−4", "7−2", "1−6", "3−8"][k];
+    const mod = k >= 2;
+    const show = [`H.arm-${k}`, `H.eq-${k}`, `H.res-${k}`];
+    const draw = [
+      {
+        key: `H.arm-${k}`,
+        type: "line",
+        from: arm.edge,
+        to: arm.corner,
+        color: "#c96442",
+        width: "2",
+        marker: "arrowSmall",
+        opacity: 0.9,
+      },
+      {
+        key: `H.eq-${k}`,
+        type: "chip",
+        at: 0.3,
+        from: arm.edge,
+        to: arm.corner,
+        text: eq,
+        fill: "white",
+        stroke: "#c96442",
+        color: "#c96442",
+        w: 46,
+        h: 20,
+        fontSize: 12,
+      },
+      {
+        key: `H.res-${k}`,
+        type: "chip",
+        at: 0.6,
+        from: arm.corner,
+        to: 4,
+        anchor: "end",
+        dy: -34,
+        text: "5",
+        fill: "#c96442",
+        stroke: "#c96442",
+        color: "white",
+        w: 30,
+        h: 22,
+        fontSize: 14,
+        weight: "700",
+      },
+    ];
+    if (mod) {
+      show.push(`H.gate-${k}`);
+      draw.push({
+        key: `H.gate-${k}`,
+        type: "badge",
+        at: 0.75,
+        text: "mod 10 gate: −5 → 5",
+        className:
+          "absolute text-[11px] font-mono bg-[#1a1a1a] text-white px-2 py-1 rounded-full shadow pointer-events-none whitespace-nowrap",
+        place: { cell: 4, dx: 0, dy: 52 },
+        style: { transform: "translateX(-50%)" },
+      });
+    }
     return animStep(`H-${k + 1}`, {
       caption,
-      durationMs: 1400,
-      overlay: { show: [`H.arm-${k}`] },
-      draw: [
-        {
-          key: `H.arm-${k}`,
-          type: "line",
-          from: arm.edge,
-          to: arm.corner,
-          color: "#c96442",
-          width: "2",
-          marker: "arrowSmall",
-          opacity: 0.9,
-          chip: {
-            text: "5",
-            fill: "#c96442",
-            color: "white",
-            w: 20,
-            h: 18,
-            rx: 9,
-            fontSize: 9,
-            weight: "400",
-            textDy: 3,
-          },
-        },
-      ],
+      durationMs: 1900,
+      overlay: { show },
+      draw,
       matrix: { highlight, setValues: null },
     });
   }),
 };
 
-const I_LABEL = "absolute text-[9px] font-mono bg-white border px-1.5 py-0.5 rounded-full pointer-events-none";
+// Property I: one fixed equation panel for all four axes. Endpoints are
+// named in the panel, the faint axis draws first, and the average lands on
+// the center with a 5 pulse — the same beat on every axis.
+const I_PANEL =
+  "absolute text-[12px] font-mono bg-white border px-2.5 py-1 rounded-full shadow pointer-events-none whitespace-nowrap";
+const I_AXES = [
+  { from: 0, to: 8, cells: [0, 4, 8], eq: "(4 + 6) / 2 = 5" },
+  { from: 2, to: 6, cells: [2, 4, 6], eq: "(2 + 8) / 2 = 5" },
+  { from: 1, to: 7, cells: [1, 4, 7], eq: "(9 + 1) / 2 = 5" },
+  { from: 3, to: 5, cells: [3, 4, 5], eq: "(3 + 7) / 2 = 5" },
+];
 
 export const scriptI = {
   id: "I",
   title: "Middle is mean",
-  steps: [
-    animStep("I-1", {
-      caption: "Diagonal: (4 + 6) / 2 = 5.",
-      durationMs: 1400,
-      overlay: { show: ["I.line-0", "I.label-0"] },
+  steps: I_AXES.map((axis, k) =>
+    animStep(`I-${k + 1}`, {
+      caption: `Endpoints average to the center: ${axis.eq}.`,
+      durationMs: 1800,
+      overlay: { show: [`I.line-${k}`, `I.eq-${k}`, `I.res-${k}`] },
       draw: [
-        { key: "I.line-0", type: "line", from: 0, to: 8, color: "#1a1a1a", width: "1.2", opacity: 0.35 },
-        { key: "I.label-0", type: "badge", text: "(4+6)/2=5", className: I_LABEL, place: { cell: 0, dx: 58, dy: 9 } },
+        { key: `I.line-${k}`, type: "line", from: axis.from, to: axis.to, color: "#1a1a1a", width: "1.2", opacity: 0.35 },
+        {
+          key: `I.eq-${k}`,
+          type: "badge",
+          at: 0.3,
+          text: axis.eq,
+          className: I_PANEL,
+          style: { left: "50%", top: -18, transform: "translateX(-50%)" },
+        },
+        { key: `I.res-${k}`, type: "mark", at: 0.6, text: "5", r: 18, fill: "#1a1a1a" },
       ],
-      matrix: { highlight: [0, 4, 8], setValues: null },
+      matrix: { highlight: axis.cells, setValues: null },
     }),
-    animStep("I-2", {
-      caption: "Other diagonal ends average to 5.",
-      durationMs: 1400,
-      overlay: { show: ["I.line-1", "I.center"] },
-      draw: [
-        { key: "I.line-1", type: "line", from: 2, to: 6, color: "#1a1a1a", width: "1.2", opacity: 0.35 },
-        { key: "I.center", type: "mark", text: "μ", r: 18, fill: "#1a1a1a" },
-      ],
-      matrix: { highlight: [2, 4, 6], setValues: null },
-    }),
-    animStep("I-3", {
-      caption: "Middle column: (9 + 1) / 2 = 5.",
-      durationMs: 1400,
-      overlay: { show: ["I.line-2", "I.label-1"] },
-      draw: [
-        { key: "I.line-2", type: "line", from: 1, to: 7, color: "#1a1a1a", width: "1.2", opacity: 0.35 },
-        { key: "I.label-1", type: "badge", text: "(9+1)/2=5", className: I_LABEL, place: { cell: 1, dx: 34, dy: 9 } },
-      ],
-      matrix: { highlight: [1, 4, 7], setValues: null },
-    }),
-    animStep("I-4", {
-      caption: "Middle row: (3 + 7) / 2 = 5.",
-      durationMs: 1400,
-      overlay: { show: ["I.line-3", "I.label-2"] },
-      draw: [
-        { key: "I.line-3", type: "line", from: 3, to: 5, color: "#1a1a1a", width: "1.2", opacity: 0.35 },
-        { key: "I.label-2", type: "badge", text: "(3+7)/2=5", className: I_LABEL, place: { cell: 3, dx: 58, dy: 58 } },
-      ],
-      matrix: { highlight: [3, 4, 5], setValues: null },
-    }),
-  ],
+  ),
 };
 
 const J_PILL = "text-[11px] font-mono px-2 py-1 rounded-full";
