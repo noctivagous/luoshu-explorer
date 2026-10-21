@@ -158,16 +158,43 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   p.reset();
   const r = p.getState();
   need(r.stepIndex === 0 && r.speed === 1 && r.playing === false, 'reset should restore the initial state');
-  p.setSpeed(2);
-  need(p.getState().speed === 2, 'setSpeed(2) should apply');
+  p.setSpeed(0.25);
+  need(p.getState().speed === 0.25, 'setSpeed(0.25) should apply');
+  p.setSpeed(3);
+  need(p.getState().speed === 3, 'setSpeed(3) should apply');
   let threw = false;
   try {
-    p.setSpeed(3);
+    p.setSpeed(4);
   } catch {
     threw = true;
   }
-  need(threw, 'setSpeed(3) should throw');
+  need(threw, 'setSpeed(4) should throw');
   p.dispose();
+}
+
+// onEnd fires on natural ends only: not on pause, seek, reset, or loop wrap.
+{
+  let ended = 0;
+  const last = scriptA.steps.length - 1;
+  const lastDur = scriptA.steps[last].durationMs;
+  const q = createPlayer(scriptA, { ...silent, onEnd: () => { ended += 1; } });
+  q.seek(last);
+  q.tick(lastDur);
+  need(ended === 1, 'natural end should fire onEnd once');
+  q.dispose();
+  const m = createPlayer(scriptA, { ...silent, onEnd: () => { ended += 1; } });
+  m.seek(last);
+  m.pause();
+  need(ended === 1, 'manual pause at the last step should not fire onEnd');
+  m.stepPrev();
+  m.reset();
+  need(ended === 1, 'step and reset should not fire onEnd');
+  m.dispose();
+  const w = createPlayer(scriptA, { ...silent, loop: true, onEnd: () => { ended += 1; } });
+  w.seek(last);
+  w.tick(lastDur);
+  need(ended === 1, 'loop wrap should not fire onEnd');
+  w.dispose();
 }
 
 // Validation rejects malformed scripts; the player refuses them.

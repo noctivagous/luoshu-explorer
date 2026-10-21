@@ -27,7 +27,7 @@
 //   Use it for a focused worked example that should clear before the next
 //   example; ordinary draw items continue to accumulate into the overview.
 
-export const SPEEDS = [0.5, 1, 2];
+export const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3];
 export const DEFAULT_STEP_MS = 1200;
 
 export function animStep(id, patch = {}) {
@@ -284,7 +284,10 @@ export function createPlayer(script, opts = {}) {
   };
 
   // End of the current step: advance, or wrap to the start when looping
-  // instead of stopping dead on the last frame.
+  // instead of stopping dead on the last frame. A natural (unlooped) end
+  // also fires onEnd, so the UI can offer autoplay-next; manual pauses,
+  // seeks and resets never fire it.
+  const onEnd = opts.onEnd || null;
   const advance = (now) => {
     if (stepIndex >= totalSteps - 1) {
       if (loop) {
@@ -295,6 +298,11 @@ export function createPlayer(script, opts = {}) {
       }
       playing = false;
       stepElapsed = script.steps[stepIndex].durationMs || DEFAULT_STEP_MS;
+      if (onEnd) {
+        try {
+          onEnd();
+        } catch {}
+      }
       return false;
     }
     stepIndex += 1;

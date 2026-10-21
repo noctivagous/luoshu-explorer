@@ -13,7 +13,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
-import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime } from "./animation.js";
+import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS } from "./animation.js";
 import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant } from "./verify.js";
@@ -571,7 +571,7 @@ function iconGlyphs(e) {
     }),
   ]);
 }
-// Shareable step address: #/luoshu/<id>?anim=<key>&step=<1-based>&speed=<0.5|1|2>.
+// Shareable step address: #/luoshu/<id>?anim=<key>&step=<1-based>&speed=<0.25|0.5|1|1.5|2|3>.
 // <id> is "intro" or a property A–N ("construction" aliases to intro).
 // Unknown ids and out-of-range steps fall back to the start of the intro;
 // unknown anim keys fall back to the property's default animation, and the
@@ -592,7 +592,7 @@ function parseDeepLink() {
     return {
       id,
       step: Number.isInteger(rawStep) && rawStep > 0 ? rawStep : 1,
-      speed: [0.5, 1, 2].includes(rawSpeed) ? rawSpeed : 1,
+      speed: SPEEDS.includes(rawSpeed) ? rawSpeed : 1,
       anim: variantKeys.includes(rawAnim) ? rawAnim : variantKeys[0] || null,
     };
   } catch {
@@ -620,6 +620,20 @@ function tokenLit(tok, nums) {
   const runs = String(tok).match(/\d+/g) || [];
   return runs.some((r) => nums.has(r));
 }
+// Opt-in playback prefs persist across visits; private-mode failures fall
+// back to off.
+function loadPref(key) {
+  try {
+    return window.localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+function storePref(key, on) {
+  try {
+    window.localStorage.setItem(key, on ? "1" : "0");
+  } catch {}
+}
 function LoShuApp() {
   let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
     // Active animation variant for the selected property. One select in the
@@ -638,6 +652,8 @@ function LoShuApp() {
     },
     s = (i) => {
       setVariant(variantsFor(i)[0]?.key || "standard");
+      // Autoplay-on-select: queue playback for the newly selected property.
+      if (autoSelectRef.current) setAutoplayQueue(i);
       if ((n(i), window.innerWidth < 1024))
         setTimeout(() => {
           l.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -662,6 +678,8 @@ function LoShuApp() {
     [overview, setOverview] = React.useState(false),
     loopRef = React.useRef(false),
     startedRef = React.useRef(false),
+    autoSelectRef = React.useRef(false),
+    autoNextRef = React.useRef(false),
     animLoopToggle = () => {
       const next = !loopRef.current;
       loopRef.current = next;
@@ -677,7 +695,11 @@ function LoShuApp() {
     // the tape rows that use it).
     [hoverStep, setHoverStep] = React.useState(null),
     [focusCell, setFocusCell] = React.useState(null),
-    [stickyCell, setStickyCell] = React.useState(null);
+    [stickyCell, setStickyCell] = React.useState(null),
+    // Playback continuity: queued autoplay target plus the two opt-in prefs.
+    [autoplayQueue, setAutoplayQueue] = React.useState(null),
+    [autoSelect, setAutoSelect] = React.useState(() => loadPref("luoshu:autoplay-select")),
+    [autoNext, setAutoNext] = React.useState(() => loadPref("luoshu:autoplay-next"));
   const toggleLegend = (id) => {
     // Correspondence labels occupy the same small cells as the animation.
     // Selecting a layer must therefore leave the board in its stable state;
@@ -700,6 +722,8 @@ function LoShuApp() {
   };
   // Ref mirror so the mount-once keyboard handler can branch on it.
   startedRef.current = started;
+  autoSelectRef.current = autoSelect;
+  autoNextRef.current = autoNext;
   // Deep link frozen at selection time: the player effect re-runs under
   // StrictMode and the hash-sync effect below rewrites the hash, so reading
   // it fresh inside the effect would land on step 1 the second time.
@@ -725,6 +749,7 @@ function LoShuApp() {
     }
     const p = createPlayer(script, {
       loop: loopRef.current,
+      onEnd: naturalEnd,
       reducedMotion: () =>
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -775,6 +800,15 @@ function LoShuApp() {
         setStarted(true);
       }
     }
+    // Autoplay queue (auto-select / auto-next): start this property playing
+    // on mount. Switching properties also fades the new board in instead of
+    // cutting from the old one.
+    if (autoplayQueue === e) {
+      setAutoplayQueue(null);
+      p.play();
+      setStarted(true);
+    }
+    fadeStage();
     return () => p.dispose();
   }, [e, variant]);
   // Keep the address bar on the visible step so any step is shareable.
@@ -826,6 +860,8 @@ function LoShuApp() {
   const animOn = started && frame && script,
     animPlay = () => {
       if (!playerRef.current) return;
+      // Idle overview fades into the first gated frame instead of cutting.
+      if (!startedRef.current) fadeStage();
       setStarted(true);
       playerRef.current.play();
     },
@@ -843,11 +879,64 @@ function LoShuApp() {
       else playerRef.current.stepPrev();
     },
     animReset = () => playerRef.current?.reset() || setStarted(false),
-    animSpeedCycle = () => {
-      const next = animSpeed >= 2 ? 0.5 : animSpeed >= 1 ? 2 : 1;
+    // Opt-in autoplay prefs. The loop toggle stays the visible loop choice;
+    // pausing never advances the chain, so stop is always one press away.
+    autoSelectToggle = () => {
+      const next = !autoSelectRef.current;
+      autoSelectRef.current = next;
+      setAutoSelect(next);
+      storePref("luoshu:autoplay-select", next);
+    },
+    autoNextToggle = () => {
+      const next = !autoNextRef.current;
+      autoNextRef.current = next;
+      setAutoNext(next);
+      storePref("luoshu:autoplay-next", next);
+    },
+    // Autoplay-next: on a natural end, advance through the catalog in
+    // property order. Loop keeps looping instead; manual pauses, seeks and
+    // resets never reach this handler (see createPlayer onEnd).
+    naturalEnd = () => {
+      if (!autoNextRef.current || loopRef.current) return;
+      const ids = PROPERTIES.map((p) => p.id);
+      const at = ids.indexOf(e);
+      const next = ids[(at + 1 + ids.length) % ids.length];
+      s(next);
+      setAutoplayQueue(next);
+    },
+    // Playback continuity: player-clock stage fade. The diagram itself stays
+    // player-driven; only the stage container eases from 0 to 1 over ~350ms
+    // of wall time so Play and property switches land instead of cutting.
+    // Reduced motion (or no rAF, as in tests) settles instantly.
+    fadeStage = () => {
+      let stage = null;
       try {
-        playerRef.current?.setSpeed(next);
+        stage = l.current?.parentElement?.querySelector("[data-anim-stage]");
       } catch {}
+      if (!stage) return;
+      let reduce = typeof requestAnimationFrame !== "function";
+      try {
+        reduce =
+          reduce || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      } catch {}
+      if (reduce) {
+        try {
+          stage.style.setProperty("--stage-in", "1");
+        } catch {}
+        return;
+      }
+      const t0 = Date.now();
+      try {
+        stage.style.setProperty("--stage-in", "0");
+      } catch {}
+      const step = () => {
+        const v = Math.min(1, (Date.now() - t0) / 350);
+        try {
+          stage.style.setProperty("--stage-in", String(v));
+        } catch {}
+        if (v < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
     },
     // Overlay gate: while a script is playing/stepping, only the keys revealed
     // so far are shown; idle (or another property) renders everything as before.
@@ -877,9 +966,15 @@ function LoShuApp() {
       hoverStep != null && script && script.steps[hoverStep]
         ? script.steps[hoverStep].matrix.highlight || []
         : [],
+    // The frame can briefly outlive a property switch (the new player mounts
+    // in the effect), so clamp its step to the incoming script.
     syncNums =
       animOn && frame && script
-        ? syncNumbers(ledgerFor(script.steps[frame.stepIndex]))
+        ? syncNumbers(
+            ledgerFor(
+              script.steps[Math.min(frame.stepIndex, script.steps.length - 1)],
+            ),
+          )
         : new Set();
   const moves = animOn && frame?.moves ? frame.moves : [];
   const moving = new Set(moves.flatMap((m) => [m.from, m.to]));
@@ -1134,6 +1229,107 @@ function LoShuApp() {
                             h("span", { className: "anim-caption-note", children: formLine }),
                         ],
                       }),
+                    script &&
+                      _("div", {
+                        className: "anim-transport",
+                        children: [
+                          _("div", {
+                            className: "anim-transport-row",
+                            children: [
+                              h("input", {
+                                type: "range",
+                                min: "0",
+                                max: "1000",
+                                defaultValue: "0",
+                                key: `${e}-${variant}`,
+                                "data-anim-scrub": "true",
+                                "aria-label": "Animation timeline",
+                                title: "Scrub the timeline",
+                                className: "anim-scrub",
+                                onChange: (ev) => {
+                                  const p = playerRef.current;
+                                  if (!p || !script) return;
+                                  const { stepIndex, elapsedMs } = ratioToTime(
+                                    script,
+                                    Number(ev.target.value) / 1000,
+                                  );
+                                  setStarted(true);
+                                  p.seekAt(stepIndex, elapsedMs);
+                                },
+                              }, "scrub"),
+                              h("select", {
+                                value: animSpeed,
+                                onChange: (ev) => {
+                                  const v = parseFloat(ev.target.value);
+                                  try {
+                                    playerRef.current?.setSpeed(v);
+                                  } catch {}
+                                },
+                                className: "anim-speed",
+                                "aria-label": "Playback speed",
+                                title: "Playback speed (0.25×–3×)",
+                                children: SPEEDS.map((sd) =>
+                                  h("option", {
+                                    value: String(sd),
+                                    children: `${sd}×`,
+                                  }, String(sd)),
+                                ),
+                              }, "speed"),
+                            ],
+                          }, "transport-row"),
+                          h("div", {
+                            className: "anim-ticks",
+                            role: "group",
+                            "aria-label": "Animation steps",
+                            children: script.steps.map((st, i) => {
+                              const current =
+                                (animOn && frame ? frame.stepIndex : 0) === i;
+                              return h("button", {
+                                type: "button",
+                                className: `anim-tick${current ? " anim-tick-on" : ""}`,
+                                "aria-label": `Seek to step ${i + 1}: ${st.caption}`,
+                                "aria-pressed": current ? "true" : "false",
+                                title: st.caption,
+                                onClick: () => {
+                                  if (!playerRef.current) return;
+                                  setStarted(true);
+                                  playerRef.current.seekAt(
+                                    i,
+                                    st.durationMs || DEFAULT_STEP_MS,
+                                  );
+                                },
+                                children: `${i + 1}`,
+                              }, `tick-${i}`);
+                            }),
+                          }, "ticks"),
+                          h("div", {
+                            className: "anim-auto-row",
+                            role: "group",
+                            "aria-label": "Autoplay preferences",
+                            children: [
+                              h("button", {
+                                type: "button",
+                                className: "anim-rail-btn",
+                                "aria-label": "Autoplay on select",
+                                "aria-pressed": autoSelect ? "true" : "false",
+                                title: "Start playing whenever a property is selected",
+                                onClick: autoSelectToggle,
+                                children: "Auto-select",
+                              }, "auto-select"),
+                              h("button", {
+                                type: "button",
+                                className: "anim-rail-btn",
+                                "aria-label": "Autoplay next property",
+                                "aria-pressed": autoNext ? "true" : "false",
+                                title:
+                                  "Advance to the next property when this one ends (loop keeps looping instead; pause always stops)",
+                                onClick: autoNextToggle,
+                                children: "Auto-next",
+                              }, "auto-next"),
+                            ],
+                          }, "auto-row"),
+                        ],
+                      }, "transport"),
                     h("div", {
                       ref: l,
                       className:

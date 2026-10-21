@@ -40,7 +40,7 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 37, 'expected 37 buttons with the loop toggle and 4 tape rows');
+need(document.querySelectorAll('#root button').length === 43, 'expected 43 buttons with the loop toggle, 4 tape rows, 4 ticks and 2 autoplay toggles');
 
 const stepText = () => document.querySelector('.anim-caption-step')?.textContent || '';
 const captionText = () => document.querySelector('.anim-caption-text')?.textContent || '';
@@ -117,12 +117,56 @@ overviewBtn.click();
 await needSeen(() => overviewBtn.getAttribute('aria-pressed'), 'false', 'overview toggle should disarm');
 need(document.querySelector('[data-anim-key="C.res-3"]') === null, 'leaving overview should gate future keys again');
 
+// Timeline: one tick per step; clicking a tick seeks to its step.
+const tickBtns = () => [...document.querySelectorAll('[aria-label="Animation steps"] button')];
+need(tickBtns().length === 4, `ticks should cover all 4 C steps (got ${tickBtns().length})`);
+tickBtns()[2].click();
+await needSeen(stepText, 'Step 3 of 4', 'tick should seek to its step');
+
+// Autoplay-next: arm it, finish C at 3×, and the app should advance to D playing.
+// (Loop keeps looping instead of advancing, so disarm it first.)
+loopBtn.click();
+await needSeen(() => loopBtn.getAttribute('aria-pressed'), 'false', 'loop toggle should disarm');
+const speedSel = document.querySelector('select[aria-label="Playback speed"]');
+need(speedSel !== null && speedSel.querySelectorAll('option').length === 6, 'speed should offer 0.25×–3×');
+const autoNextBtn = document.querySelector('button[aria-label="Autoplay next property"]');
+need(autoNextBtn !== null && autoNextBtn.getAttribute('aria-pressed') === 'false', 'auto-next should start off');
+autoNextBtn.click();
+await needSeen(() => autoNextBtn.getAttribute('aria-pressed'), 'true', 'auto-next toggle should arm');
+speedSel.value = '3';
+speedSel.dispatchEvent(new window.Event('change', { bubbles: true }));
+tickBtns()[3].click();
+document.querySelector('.anim-caption-play').click();
+{
+  const stop = Date.now() + 15000;
+  for (;;) {
+    if (dom.window.location.hash.startsWith('#/luoshu/D')) break;
+    if (Date.now() > stop) break;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
+need(
+  dom.window.location.hash.startsWith('#/luoshu/D'),
+  `auto-next should advance to D on a natural end (hash ${dom.window.location.hash})`
+);
+await needSeen(playLabel, '❚❚', 'auto-next should keep playing the next property');
+
 // Variant UI is hidden, but B still selects Family tour as its default.
+// Pause D's autoplay first so its steps can't satisfy the B assertions.
+document.querySelector('.anim-caption-play').click();
+await needSeen(playLabel, '▶', 'pause should stop the autoplay chain');
 const bTile = [...document.querySelectorAll('#root aside button')].find((btn) =>
   (btn.textContent || '').includes('Lines sum to 15')
 );
 need(!!bTile, 'B sidebar tile should exist');
 bTile.click();
+{
+  const stop = Date.now() + 4000;
+  while (!dom.window.location.hash.startsWith('#/luoshu/B') && Date.now() < stop) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+need(dom.window.location.hash.startsWith('#/luoshu/B'), `selecting B should address B (hash ${dom.window.location.hash})`);
 await needSeen(stepText, 'Step 1 of 4', 'selecting B should show its first step');
 need(document.querySelector('select[aria-label="Animation"]') === null, 'animation select should stay hidden');
 need(document.querySelector('[data-anim-key="BF.rows"]') !== null, 'Family tour should be B’s default animation');

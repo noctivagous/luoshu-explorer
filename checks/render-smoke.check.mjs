@@ -41,8 +41,9 @@ need(
 // detail close button is present too. 6 + 15 + 5 caption playback
 // (play/prev/next/loop/overview) + 1 close = 27, plus 6
 // correspondences-legend chips = 33, plus 3 construction step cards = 36,
-// plus 3 worked-example tape rows (intro shows construction) = 39.
-need(document.querySelectorAll('#root button').length === 39, 'expected 39 buttons');
+// plus 3 worked-example tape rows (intro shows construction) = 39,
+// plus 3 step ticks + 2 autoplay toggles = 44.
+need(document.querySelectorAll('#root button').length === 44, 'expected 44 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -78,6 +79,24 @@ need(
 need(
   root.querySelectorAll('.board-cell').length === 9,
   'board cells should be probe-focusable'
+);
+const speedSel = root.querySelector('select[aria-label="Playback speed"]');
+need(speedSel !== null, 'speed control should exist');
+need(speedSel.querySelectorAll('option').length === 6, 'speed should offer 0.25×–3×');
+need(
+  [...speedSel.querySelectorAll('option')].map((o) => o.value).join(',') === '0.25,0.5,1,1.5,2,3',
+  'speed options should span 0.25×–3×'
+);
+need(root.querySelector('input[data-anim-scrub]') !== null, 'timeline scrubber should exist');
+const ticks = [...root.querySelectorAll('[aria-label="Animation steps"] button')];
+need(ticks.length === 3, `ticks should cover all 3 construction steps (got ${ticks.length})`);
+const autoSelectBtn = root.querySelector('button[aria-label="Autoplay on select"]');
+const autoNextBtn = root.querySelector('button[aria-label="Autoplay next property"]');
+need(autoSelectBtn !== null && autoNextBtn !== null, 'autoplay toggles should exist');
+need(
+  autoSelectBtn.getAttribute('aria-pressed') === 'false' &&
+    autoNextBtn.getAttribute('aria-pressed') === 'false',
+  'autoplay prefs should start off'
 );
 need(root.querySelectorAll('.lg\\:grid-cols-2').length === 6, 'sidebar catalog grid missing');
 need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 15, 'square icon tiles missing');

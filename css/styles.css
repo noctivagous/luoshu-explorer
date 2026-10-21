@@ -163,3 +163,17 @@ html,body{height:100%;overflow:hidden}
 .formula-tok-lit{opacity:1;font-weight:700;border-bottom:2px solid #c96442}
 /* Probed board cells are keyboard-focusable; keep the focus ring visible. */
 .board-cell:focus-visible{outline:2px solid #1a1a1a;outline-offset:2px}
+/* Playback continuity: transport row under the caption. The stage fades in
+   on Play and on property switches via --stage-in, which the app drives on
+   its own wall clock (the diagram itself stays player-driven). */
+[data-anim-stage]{opacity:var(--stage-in,1)}
+.anim-transport{margin:0 0 12px;width:100%;max-width:none}
+.anim-transport-row{display:flex;align-items:center;gap:8px}
+.anim-transport-row input[type="range"]{flex:1;min-width:0;accent-color:#1a1a1a}
+.anim-speed{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;border:1px solid rgba(26,26,26,.15);border-radius:9999px;background:#fdf8f0;color:#1a1a1a;padding:4px 8px;flex-shrink:0}
+.anim-ticks{display:flex;gap:4px;margin-top:6px}
+.anim-tick{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1;padding:5px 0;border-radius:8px;border:1px solid rgba(26,26,26,.15);background:transparent;color:#1a1a1a}
+.anim-tick:hover{background:rgba(26,26,26,.06)}
+.anim-tick-on{background:#1a1a1a;color:#fdf8f0;border-color:#1a1a1a}
+.anim-auto-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.anim-auto-row .anim-rail-btn{font-size:11px;min-width:0}
