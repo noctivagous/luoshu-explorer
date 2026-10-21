@@ -1395,7 +1395,7 @@ export const demoScripts = {
   construction: constructionScript,
   intro: constructionScript,
   A: scriptA,
-  B: scriptB,
+  B: scriptBFamilies,
   C: scriptC,
   D: scriptD,
   E: scriptE,
@@ -1411,12 +1411,12 @@ export const demoScripts = {
 };
 
 // Multiple animations per property. Each id keeps its default script in
-// demoScripts (so scriptFor(id) never changes meaning); extra animations
-// register here as labeled variants. The rail select lists variantsFor(e).
+// demoScripts; extra animations register here as labeled variants. The rail
+// select lists variantsFor(e). Family tour is B's default presentation.
 export const animationVariants = {
   B: [
-    { key: "hero-lines", label: "One line at a time", script: scriptB },
     { key: "families", label: "Family tour", script: scriptBFamilies },
+    { key: "hero-lines", label: "One line at a time", script: scriptB },
   ],
 };
 

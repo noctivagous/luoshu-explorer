@@ -21,8 +21,8 @@ need(scriptFor(undefined) === constructionScript, 'undefined selection should ro
 need(scriptFor('intro') === constructionScript, 'intro should route to construction');
 need(scriptFor('A') === scriptA, 'property A should route to script A');
 need(
-  scriptFor('B', 'families') != null && scriptFor('B', 'families') !== scriptFor('B'),
-  'property B should offer a second animation'
+  scriptFor('B', 'hero-lines') != null && scriptFor('B', 'hero-lines') !== scriptFor('B'),
+  'property B should offer One line at a time as an alternate animation'
 );
 need(scriptFor('B', 'bogus') === scriptFor('B'), 'unknown variant should fall back to the default script');
 need(variantsFor('C').length === 1, 'single-animation properties should list one variant');

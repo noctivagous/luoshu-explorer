@@ -26,7 +26,7 @@ need(at('#/luoshu/k').id === 'K', 'deep link id should be case-insensitive');
 need(at('#/luoshu/construction').id === 'intro', 'construction should alias to intro');
 need(JSON.stringify(at('#/luoshu/J?step=1&speed=2')) === JSON.stringify({ id: 'J', step: 1, speed: 2, anim: 'standard' }), 'deep link speed should parse');
 need(JSON.stringify(at('#/luoshu/B?anim=families&step=2')) === JSON.stringify({ id: 'B', step: 2, speed: 1, anim: 'families' }), 'deep link anim should parse');
-need(at('#/luoshu/B?anim=bogus').anim === 'hero-lines', 'bad anim should fall back to the default variant');
+need(at('#/luoshu/B?anim=bogus').anim === 'families', 'bad anim should fall back to Family tour');
 need(at('#/luoshu/J?speed=5').speed === 1, 'bad speed should fall back to 1');
 need(at('#/luoshu/Z') === null, 'unknown id should not parse');
 need(at('#nope') === null, 'non-luoshu hash should not parse');
@@ -124,7 +124,11 @@ const animSel = document.querySelector('select[aria-label="Animation"]');
 need(animSel !== null, 'animation select should exist');
 need(animSel.querySelectorAll('option').length === 2, 'B should offer two animations');
 need(animSel.disabled === false, 'multi-animation select should be enabled');
+need(animSel.value === 'families', 'Family tour should be B’s default animation');
 // Drive the native value setter so React's onChange fires.
+Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(animSel, 'hero-lines');
+animSel.dispatchEvent(new window.Event('change', { bubbles: true }));
+await needSeen(() => animSel.value, 'hero-lines', 'switching should select One line at a time');
 Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(animSel, 'families');
 animSel.dispatchEvent(new window.Event('change', { bubbles: true }));
 await needSeen(
@@ -134,8 +138,8 @@ await needSeen(
 );
 await needSeen(stepText, 'Step 1 of 4', 'switching animation should reset to step 1');
 need(
-  (dom.window.location.hash || '').includes('anim=families'),
-  `hash should carry the variant: ${dom.window.location.hash}`
+  !(dom.window.location.hash || '').includes('anim='),
+  `default Family tour should omit its redundant variant parameter: ${dom.window.location.hash}`
 );
 
 if (failures.length) {

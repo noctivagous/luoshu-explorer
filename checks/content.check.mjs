@@ -79,7 +79,8 @@ for (const [id, script] of allScripts) {
 
 // Property B: one hero line per step, margin ticks, restrained end state.
 {
-  const b = demoScripts.B;
+  const b = Object.fromEntries(allScripts)['B:hero-lines'];
+  need(!!b, 'B:hero-lines variant should be gated');
   need(b.steps.length === 4, 'script B should show one hero line per step');
   need(
     JSON.stringify(frameFor(b, 2, 1).visibleKeys.filter((k) => k.startsWith('B.diag-'))) ===
@@ -92,8 +93,7 @@ for (const [id, script] of allScripts) {
 
 // Property B, Family tour: families accumulate together, same overview.
 {
-  const bf = Object.fromEntries(allScripts)['B:families'];
-  need(!!bf, 'B:families variant should be gated');
+  const bf = demoScripts.B;
   need(bf.steps.length === 4, 'B:families should have 4 beats');
   need(
     JSON.stringify(frameFor(bf, 0, 0).visibleKeys) === JSON.stringify(['BF.rows']),
