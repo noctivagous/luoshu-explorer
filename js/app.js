@@ -18,6 +18,10 @@ import { scriptFor, variantsFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant } from "./verify.js";
 
+// Variant scripts remain addressable by deep link, but the in-rail chooser is
+// deliberately hidden until multiple animations are ready for broader use.
+const SHOW_ANIMATION_VARIANT_SELECT = false;
+
 const PROPERTIES = propertiesData,
   CORRESPONDENCES = correspondencesData,
   // Independent correspondences layers. Off clears the set; the rest toggle.
@@ -967,7 +971,8 @@ function LoShuApp() {
                                 "button",
                                 {
                                   onClick: () => s(d.id),
-                                  className: `w-full text-left flex items-start gap-3 px-3 py-3 rounded-[10px] transition-all border ${v ? "bg-[#1a1a1a] text-[#fdf8f0] border-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.18)]" : "bg-transparent border-transparent hover:bg-[#1a1a1a]/[0.06] hover:border-[#1a1a1a]/[0.06]"}`,
+                                  className: `catalog-tile w-full text-left flex items-start gap-3 px-3 py-3 rounded-[10px] transition-all border ${v ? "bg-[#1a1a1a] text-[#fdf8f0] border-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.18)]" : "bg-transparent border-transparent hover:bg-[#1a1a1a]/[0.06] hover:border-[#1a1a1a]/[0.06]"}`,
+                                  style: { height: 120 },
                                   children: [
                                     h("span", {
                                       className: `shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center border overflow-hidden ${v ? "bg-[#fdf8f0]/10 border-[#fdf8f0]/20 text-[#fdf8f0]" : "bg-white border-[#1a1a1a]/10 text-[#1a1a1a]/70"}`,
@@ -975,10 +980,10 @@ function LoShuApp() {
                                       children: iconGlyphs(d.id),
                                     }),
                                     _("span", {
-                                      className: "flex-1 min-w-0",
+                                      className: "flex-1 min-w-0 overflow-hidden",
                                       children: [
                                         h("span", {
-                                          className: `block text-[16px] leading-[1.2] font-medium ${v ? "text-[#fdf8f0]" : "text-[#1a1a1a]"}`,
+                                          className: `catalog-tile-title block text-[16px] leading-[1.2] font-medium ${v ? "text-[#fdf8f0]" : "text-[#1a1a1a]"}`,
                                           style: {
                                             fontFamily:
                                               "'Instrument Serif', serif",
@@ -986,18 +991,9 @@ function LoShuApp() {
                                           children: d.title,
                                         }),
                                         h("span", {
-                                          className: `block mt-1 text-[12.5px] leading-[1.35] font-mono ${v ? "text-[#fdf8f0]/60" : "opacity-55"}`,
+                                          className: `catalog-tile-desc block mt-1 text-[12.5px] leading-[1.35] font-mono ${v ? "text-[#fdf8f0]/60" : "opacity-55"}`,
                                           children: d.shortDesc,
                                         }),
-                                        v && script &&
-                                          h("span", {
-                                            className:
-                                              "block mt-1 text-[11px] leading-[1.35] font-mono text-[#fdf8f0]/60",
-                                            children:
-                                              started && frame
-                                                ? `Step ${frame.stepIndex + 1} of ${script.steps.length}`
-                                                : `${script.steps.length} steps — press play`,
-                                          }),
                                       ],
                                     }),
                                   ],
@@ -1076,7 +1072,8 @@ function LoShuApp() {
                             title: "Overview (full diagram)",
                             children: "▦",
                           }),
-                          h("select", {
+                          SHOW_ANIMATION_VARIANT_SELECT &&
+                            h("select", {
                             value: variant,
                             onChange: (ev) => {
                               setVariant(ev.target.value);
@@ -1090,7 +1087,7 @@ function LoShuApp() {
                             children: variantsFor(e).map((v) =>
                               h("option", { value: v.key, children: v.label }, v.key),
                             ),
-                          }),
+                            }),
                           formLine &&
                             h("span", { className: "anim-caption-note", children: formLine }),
                         ],

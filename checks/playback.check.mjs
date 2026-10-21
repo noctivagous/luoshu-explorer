@@ -69,10 +69,6 @@ const key = (k) => window.dispatchEvent(new window.KeyboardEvent('keydown', { ke
 key('ArrowRight');
 await needSeen(stepText, 'Step 3 of 4', 'ArrowRight should advance one step');
 need(dom.window.location.hash === '#/luoshu/C?step=3', 'hash should follow stepping');
-need(
-  (document.querySelector('#root aside')?.textContent || '').includes('Step 3 of 4'),
-  'sidebar tile should track the playback step'
-);
 key('ArrowRight');
 await needSeen(stepText, 'Step 4 of 4', 'ArrowRight should reach the last step');
 key('r');
@@ -113,30 +109,15 @@ overviewBtn.click();
 await needSeen(() => overviewBtn.getAttribute('aria-pressed'), 'false', 'overview toggle should disarm');
 need(document.querySelector('[data-anim-key="C.res-3"]') === null, 'leaving overview should gate future keys again');
 
-// Variant select: B offers two animations; switching resets to step 1.
+// Variant UI is hidden, but B still selects Family tour as its default.
 const bTile = [...document.querySelectorAll('#root aside button')].find((btn) =>
   (btn.textContent || '').includes('Lines sum to 15')
 );
 need(!!bTile, 'B sidebar tile should exist');
 bTile.click();
 await needSeen(stepText, 'Step 1 of 4', 'selecting B should show its first step');
-const animSel = document.querySelector('select[aria-label="Animation"]');
-need(animSel !== null, 'animation select should exist');
-need(animSel.querySelectorAll('option').length === 2, 'B should offer two animations');
-need(animSel.disabled === false, 'multi-animation select should be enabled');
-need(animSel.value === 'families', 'Family tour should be B’s default animation');
-// Drive the native value setter so React's onChange fires.
-Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(animSel, 'hero-lines');
-animSel.dispatchEvent(new window.Event('change', { bubbles: true }));
-await needSeen(() => animSel.value, 'hero-lines', 'switching should select One line at a time');
-Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(animSel, 'families');
-animSel.dispatchEvent(new window.Event('change', { bubbles: true }));
-await needSeen(
-  () => (document.querySelector('[data-anim-key="BF.rows"]') ? 'families' : ''),
-  'families',
-  'switching should render the family tour'
-);
-await needSeen(stepText, 'Step 1 of 4', 'switching animation should reset to step 1');
+need(document.querySelector('select[aria-label="Animation"]') === null, 'animation select should stay hidden');
+need(document.querySelector('[data-anim-key="BF.rows"]') !== null, 'Family tour should be B’s default animation');
 need(
   !(dom.window.location.hash || '').includes('anim='),
   `default Family tour should omit its redundant variant parameter: ${dom.window.location.hash}`

@@ -138,6 +138,12 @@ html,body{height:100%;overflow:hidden}
 .corr-dir-NW{bottom:4px;right:5px}
 .corr-dir-C{bottom:4px;left:50%;transform:translateX(-50%)}
 .corr-parity-even{outline:2px dashed #4a6741;outline-offset:-4px}
+/* Fixed-height catalog tiles preserve the two-column rhythm. Titles and
+   summaries clamp independently so an unusually long property never expands
+   its tile or pushes the icon out of alignment. */
+.catalog-tile-title,.catalog-tile-desc{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.catalog-tile-title{-webkit-line-clamp:2;line-clamp:2}
+.catalog-tile-desc{-webkit-line-clamp:3;line-clamp:3}
 /* prefers-reduced-motion: playback is already discrete step cuts (no motion
    libraries), so collapse the remaining transitions to instant cuts. */
 @media(prefers-reduced-motion:reduce){
