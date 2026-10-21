@@ -31,6 +31,19 @@ export function cellCenter(index) {
 
 export const CENTERS = Array.from({ length: 9 }, (_, n) => cellCenter(n));
 
+// Margin-tick anchors just outside the Z×Z board. The board SVG and the
+// stage both let them show (overflow visible), so ticks sit in the card's
+// padding the way badges already do — no stage resize, no coordinate shift.
+export function rowGutter(row) {
+  return { x: Z + 2, y: CENTERS[row * 3].y };
+}
+export function colGutter(col) {
+  return { x: CENTERS[col].x, y: Z + 2 };
+}
+export function cornerGutter() {
+  return { x: Z + 2, y: Z + 2 };
+}
+
 export function hopLook(from, to) {
   const a = CENTERS[from];
   const b = CENTERS[to];
@@ -430,6 +443,19 @@ function renderItem(item, entering) {
       svg: _(
         "g",
         { ...attrs, children: svgChip({ ...item, at: item.at ?? 0.45 }, p.x, p.y, entering) },
+        item.key,
+      ),
+    };
+  }
+
+  if (item.type === "gutter") {
+    // A margin total: same pill as a chip, but pinned to an explicit
+    // board-coordinate point from rowGutter/colGutter/cornerGutter instead
+    // of a cell pair. Ticks pop in after the line draws (at ≈ 0.55).
+    return {
+      svg: _(
+        "g",
+        { ...attrs, children: svgChip({ ...item, at: item.at ?? 0.55 }, item.x, item.y, entering) },
         item.key,
       ),
     };

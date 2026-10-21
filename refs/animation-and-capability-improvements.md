@@ -540,7 +540,8 @@ priority roadmap.
 - [ ] Autoplay-next: roll the end of one property into the next (§3.4, §6.5)
 - [ ] Idle→play flash: fade to the gated state instead of cutting (§3.4)
 - [ ] Selection change: cross-fade the old overlay out (§3.4)
-- [ ] Sidebar progress ring on the active property's tile (§5.2)
+- [x] Sidebar progress on the active property's tile (`Step i of n` /
+  `n steps — press play`; text, not a ring) (§5.2)
 - [ ] Detail card: highlight the sentence/formula term for the step (§5.2)
 - [ ] Autoplay on select, opt-out (§5.2)
 - [ ] Chapters: each category becomes a playlist (§5.2)
@@ -548,9 +549,12 @@ priority roadmap.
 
 ### Open — annotation on and next to the square (§4 + audit)
 
-- [ ] B first: board gutters + accumulation treatment (running total in a
-  reserved gutter, tidy `= 15` end state, no chip collisions)
-- [ ] Reserved gutter/coordinate system outside `Z × Z` (unblocks E, F, G, J)
+- [x] B first: board gutters + accumulation treatment (running total in
+  the caption, tidy `= 15` margin ticks, faint eight-line end state, no
+  chip collisions)
+- [x] Reserved gutter anchors outside `Z × Z` (`rowGutter`/`colGutter`/
+  `cornerGutter` + `gutter` draw type in `js/overlay.js`; reusable for
+  E, F, G, J)
 - [ ] C/D traveling-token + modular-reduction grammar (reuse for H)
 - [ ] F/I grouping/balance and midpoint treatments
 - [ ] K: cofactor-expansion storyboard, or an explicit computed-invariant
@@ -571,7 +575,7 @@ priority roadmap.
 - [ ] Construction title cards (`write` / `swap` / `fold`) + before/after
   hold; D₄ rotation/reflection affordances (audit: Build, N)
 - [ ] Learning: predict mode, cell probe, quiz (§6.6)
-- [ ] Focus rings on caption-bar buttons (§6.9)
+- [x] Focus rings on caption-bar buttons and D₄ thumbnails (§6.9)
 
 ### Open questions
 

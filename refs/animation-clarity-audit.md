@@ -221,3 +221,41 @@ reading the long description:
 If any answer depends on a 9 px chip, a dashed line alone, or the sidebar
 caption, the animation is still a diagram with a reveal effect rather than an
 explanatory motion graphic.
+
+## Task list (2026-10-21)
+
+Tracks the Priority roadmap above. The playback/integration and capability
+halves of the program live as §12 in
+[animation-and-capability-improvements.md](animation-and-capability-improvements.md);
+this list covers only the per-property clarity treatments and their
+supporting work.
+
+- [ ] Build: three-part title card (`write` / `swap opposite corners` /
+  `fold`), ghosted pre/post locations, clean before/after hold
+- [ ] A: midpoint equation beat (`4 + 6` assembles to `10`), through-5
+  marker, persistent `opposites = 2 × 5` lockup, ordinal pair markers
+- [x] B: reserved gutters + accumulation treatment — one hero line per
+  step, running total in the caption, tidy `= 15` margin ticks, faint
+  eight-line overview (`rowGutter`/`colGutter`/`cornerGutter` in
+  `js/overlay.js`, new `gutter` draw type)
+- [ ] C/D: traveling-token + modular-reduction grammar (`13 → 3` as a
+  tens-drop event, not text)
+- [ ] H: reuse the C/D grammar in reverse, with a mod-10 gate for `1 − 6`
+- [ ] F: corner/edge brackets, animated `Σ 20` collection, equality beam
+- [ ] I: endpoint-convergence-to-center on all four axes, fixed equation
+  panel, pulse on landing
+- [x] K: decided — labeled computed-invariant card ("A computed fact,
+  not a path", `det = 360 … · computed invariant` badge), not a visual
+  proof; full cofactor storyboard deferred
+- [ ] E/G/J: group-collection treatment (collect-to-total)
+- [ ] L: center-baseline mirror with simultaneous paired growth
+- [ ] M: torus treatment (ghost edge cells, single numbered traveler,
+  solid-vs-wrapped legend)
+- [ ] N: rotation/reflection affordances (pivot arc, mirror sweep), labeled
+  poses, contact sheet only after the main-board story
+- [ ] Overview-diagram toggle where the accumulated final state is useful;
+  autoplay stays one-relationship-at-a-time
+- [ ] Supporting: reserved annotation/gutter coordinates; per-beat
+  focus→operate→result→hold phases; board ghost/focus state; ≥11–12 px
+  post-scale annotation floor; label-collision + end-state DOM checks
+  (B, C, F, I, J, M, N minimum)

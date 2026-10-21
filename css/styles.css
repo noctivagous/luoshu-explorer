@@ -99,6 +99,7 @@ html,body{height:100%;overflow:hidden}
 .anim-caption{margin:0 0 12px;width:100%;max-width:none;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto auto;align-items:center;column-gap:8px;row-gap:4px;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:6px 12px;font-size:12px;line-height:1.4}
 .anim-caption-play,.anim-caption-prev,.anim-caption-next,.anim-caption-loop{flex-shrink:0}
 .anim-rail-btn[aria-pressed="true"]{background:#1a1a1a;color:#fdf8f0}
+.anim-rail-btn:focus-visible,.d4-thumb:focus-visible{outline:2px solid #1a1a1a;outline-offset:2px}
 .anim-caption-step{font-family:monospace;font-size:10px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
 .anim-caption-text{min-width:0;overflow-wrap:anywhere}
 .anim-caption-note{grid-column:1/-1;font-family:monospace;font-size:11px;opacity:.7}

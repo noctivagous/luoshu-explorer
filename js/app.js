@@ -974,6 +974,15 @@ function LoShuApp() {
                                           className: `block mt-1 text-[12.5px] leading-[1.35] font-mono ${v ? "text-[#fdf8f0]/60" : "opacity-55"}`,
                                           children: d.shortDesc,
                                         }),
+                                        v && script &&
+                                          h("span", {
+                                            className:
+                                              "block mt-1 text-[11px] leading-[1.35] font-mono text-[#fdf8f0]/60",
+                                            children:
+                                              started && frame
+                                                ? `Step ${frame.stepIndex + 1} of ${script.steps.length}`
+                                                : `${script.steps.length} steps — press play`,
+                                          }),
                                       ],
                                     }),
                                   ],

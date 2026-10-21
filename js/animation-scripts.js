@@ -4,7 +4,7 @@
 //
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
-import { Z, hopLook } from "./overlay.js";
+import { hopLook, rowGutter, colGutter, cornerGutter } from "./overlay.js";
 
 const ALL = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const LOSHU = [4, 9, 2, 3, 5, 7, 8, 1, 6];
@@ -109,100 +109,80 @@ export const scriptA = {
   ),
 };
 
-function sumChip(anchor, dx, dy) {
+// Property B: one hero line per step with the total as a margin tick, then
+// the full eight-line overview. Ticks sit outside the board (rowGutter /
+// colGutter / cornerGutter) so they never cover a numeral.
+function heroLine(key, from, to) {
+  return { key, type: "line", from, to, extend: 12, color: "#1a1a1a", width: "2" };
+}
+
+function faintLine(key, from, to) {
   return {
-    text: "15",
-    anchor,
-    dx,
-    dy,
-    fill: "#1a1a1a",
-    color: "white",
-    w: 20,
-    h: 16,
-    rx: 8,
-    fontSize: 9,
-    weight: "400",
-    textDy: 3,
+    key,
+    type: "line",
+    from,
+    to,
+    extend: 12,
+    color: "#1a1a1a",
+    width: "1.2",
+    dash: "4 6",
+    opacity: 0.3,
   };
 }
 
-const B_ROWS = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-];
-const B_COLS = [
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-];
+function gutterTick(key, pos) {
+  return {
+    key,
+    type: "gutter",
+    at: 0.55,
+    x: pos.x,
+    y: pos.y,
+    text: "= 15",
+    fill: "#1a1a1a",
+    color: "white",
+    w: 34,
+    h: 18,
+    rx: 9,
+    fontSize: 11,
+    weight: "700",
+    textDy: 4,
+  };
+}
 
 export const scriptB = {
   id: "B",
   title: "Lines sum to 15",
   steps: [
     animStep("B-1", {
-      caption: "Each row sums to 15.",
-      durationMs: 1400,
-      overlay: { show: ["B.row-0", "B.row-1", "B.row-2"] },
-      draw: B_ROWS.map((cells, a) => ({
-        key: `B.row-${a}`,
-        type: "line",
-        from: cells[0],
-        to: cells[2],
-        extend: 28,
-        color: "#1a1a1a",
-        width: "1.3",
-        dash: "4 6",
-        opacity: 0.55,
-        chip: sumChip("end", 18, -12),
-      })),
-      matrix: { highlight: [3, 4, 5], setValues: null },
+      caption: "4 + 9 + 2 = 15 — the top row accumulates.",
+      durationMs: 1800,
+      overlay: { show: ["B.row-0", "B.tick-0"] },
+      draw: [heroLine("B.row-0", 0, 2), gutterTick("B.tick-0", rowGutter(0))],
+      matrix: { highlight: [0, 1, 2], setValues: null },
     }),
     animStep("B-2", {
-      caption: "Each column sums to 15.",
-      durationMs: 1400,
-      overlay: { show: ["B.col-0", "B.col-1", "B.col-2"] },
-      draw: B_COLS.map((cells, a) => ({
-        key: `B.col-${a}`,
-        type: "line",
-        from: cells[0],
-        to: cells[2],
-        extend: 28,
-        color: "#1a1a1a",
-        width: "1.3",
-        dash: "4 6",
-        opacity: 0.55,
-        chip: sumChip("end", 14, 18),
-      })),
-      matrix: { highlight: [1, 4, 7], setValues: null },
+      caption: "4 + 3 + 8 = 15 — the left column.",
+      durationMs: 1800,
+      overlay: { show: ["B.col-0", "B.tick-1"] },
+      draw: [heroLine("B.col-0", 0, 6), gutterTick("B.tick-1", colGutter(0))],
+      matrix: { highlight: [0, 3, 6], setValues: null },
     }),
     animStep("B-3", {
       caption: "Diagonals too — 8 lines, one constant.",
-      durationMs: 1600,
-      overlay: { show: ["B.diags"] },
+      durationMs: 1800,
+      overlay: {
+        show: ["B.diag-0", "B.diag-1", "B.tick-2", "B.ctx-0", "B.ctx-1", "B.ctx-2", "B.ctx-3"],
+      },
       draw: [
-        {
-          key: "B.diags",
-          type: "segments",
-          opacity: 0.7,
-          parts: [
-            { from: 0, to: 8, extend: 18, color: "#c96442", width: "2", chip: {
-              text: "15",
-              x: Z / 2,
-              y: Z / 2 - 28,
-              fill: "#c96442",
-              color: "white",
-              w: 24,
-              h: 20,
-              fontSize: 10,
-              textDy: 4,
-            } },
-            { from: 2, to: 6, extend: 18, color: "#c96442", width: "2" },
-          ],
-        },
+        heroLine("B.diag-0", 0, 8),
+        heroLine("B.diag-1", 2, 6),
+        gutterTick("B.tick-2", cornerGutter()),
+        faintLine("B.ctx-0", 3, 5),
+        faintLine("B.ctx-1", 6, 8),
+        faintLine("B.ctx-2", 1, 7),
+        faintLine("B.ctx-3", 2, 8),
       ],
-      matrix: { highlight: [4], setValues: null },
+      matrix: { highlight: ALL, setValues: null },
     }),
   ],
 };
@@ -603,7 +583,7 @@ export const scriptK = {
   title: "Determinant 360",
   steps: [
     animStep("K-1", {
-      caption: "One number hides in the whole square.",
+      caption: "A computed fact, not a path: one number hides in the whole square.",
       durationMs: 1400,
       overlay: { show: [] },
       matrix: { highlight: ALL, setValues: null },
@@ -616,7 +596,7 @@ export const scriptK = {
         {
           key: "K.badge",
           type: "badge",
-          text: "det = 360 = 3×4×5×6 (reflections flip the sign)",
+          text: "det = 360 = 3×4×5×6 · computed invariant",
           className:
             "absolute left-1/2 -translate-x-1/2 text-[10px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full whitespace-nowrap pointer-events-none",
           style: { bottom: -36 },

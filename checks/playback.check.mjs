@@ -67,6 +67,10 @@ const key = (k) => window.dispatchEvent(new window.KeyboardEvent('keydown', { ke
 key('ArrowRight');
 await needSeen(stepText, 'Step 3 of 4', 'ArrowRight should advance one step');
 need(dom.window.location.hash === '#/luoshu/C?step=3', 'hash should follow stepping');
+need(
+  (document.querySelector('#root aside')?.textContent || '').includes('Step 3 of 4'),
+  'sidebar tile should track the playback step'
+);
 key('ArrowRight');
 await needSeen(stepText, 'Step 4 of 4', 'ArrowRight should reach the last step');
 key('r');

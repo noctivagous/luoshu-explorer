@@ -63,6 +63,31 @@ for (const [id, script] of Object.entries(demoScripts)) {
   });
 }
 
+// Property B: one hero line per step, margin ticks, restrained end state.
+{
+  const b = demoScripts.B;
+  need(b.steps.length === 3, 'script B should stay at 3 steps');
+  const idleB = markup(frameFor(b, 2, 1));
+  const ticks = idleB.match(/= 15/g) || [];
+  need(ticks.length === 3, `idle B should carry three gutter ticks (got ${ticks.length})`);
+  need(b.steps[0].draw[0].dash === undefined, 'B hero lines should be solid, not dashed');
+  need(b.steps[0].draw[1].type === 'gutter', 'B totals should be gutter ticks, not on-line pills');
+  need(
+    JSON.stringify(frameFor(b, 0, 0).visibleKeys) === JSON.stringify(['B.row-0']),
+    'B tick should wait for its beat inside the step'
+  );
+  need(
+    frameFor(b, 2, 1).highlight.length === 9,
+    'B overview should highlight the whole square'
+  );
+}
+
+// Property K is framed as a computed fact, not a visual proof.
+need(
+  demoScripts.K.steps[0].caption.toLowerCase().includes('computed'),
+  'K should be framed as a computed fact'
+);
+
 // No step may be a pure no-op: it must reveal an overlay key, change the
 // highlight, override values, or advance the construction count.
 for (const [id, script] of Object.entries(demoScripts)) {
