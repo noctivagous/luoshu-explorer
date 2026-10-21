@@ -23,6 +23,9 @@
 //   real Lo Shu numbers". Construction scripts use {visibleCount} instead via
 //   setValues built step by step (see animation-scripts.js).
 // - `matrix.visibleCount` (optional) reveals only the first N construction cells.
+// - A `draw` item with `transient: true` is visible only during its own step.
+//   Use it for a focused worked example that should clear before the next
+//   example; ordinary draw items continue to accumulate into the overview.
 
 export const SPEEDS = [0.5, 1, 2];
 export const DEFAULT_STEP_MS = 1200;
@@ -74,6 +77,8 @@ export function validateScript(script) {
             errors.push(`${at}.draw[${j}].key must be a non-empty string`);
           if (item.at !== undefined && !(typeof item.at === "number" && item.at >= 0 && item.at <= 1))
             errors.push(`${at}.draw[${j}].at must be between 0 and 1`);
+          if (item.transient !== undefined && typeof item.transient !== "boolean")
+            errors.push(`${at}.draw[${j}].transient must be a boolean`);
         });
     }
     if (s.matrix !== undefined) {
@@ -154,6 +159,7 @@ export function frameFor(script, stepIndex, progress = 1) {
     const st = steps[i];
     const g = i < clamped ? 1 : gate;
     const items = st.draw || [];
+    const transientKeys = new Set(items.filter((item) => item.transient).map((item) => item.key));
     const atFor = new Map();
     for (const item of items) {
       const at = item.at ?? 0;
@@ -161,12 +167,14 @@ export function frameFor(script, stepIndex, progress = 1) {
     }
     const show = new Set([...(st.overlay?.show || []), ...items.map((item) => item.key)]);
     for (const k of show) {
+      if (i < clamped && transientKeys.has(k)) continue;
       const at = atFor.has(k) ? atFor.get(k) : 0;
       if (!due(at, g) || seenKeys.has(k)) continue;
       seenKeys.add(k);
       visibleKeys.push(k);
     }
     for (const item of items) {
+      if (i < clamped && item.transient) continue;
       if (!due(item.at ?? 0, g) || seenDraw.has(item.key)) continue;
       seenDraw.add(item.key);
       draw.push(item);
@@ -180,8 +188,12 @@ export function frameFor(script, stepIndex, progress = 1) {
 
   const prior = new Set();
   for (let i = 0; i < clamped; i++) {
-    for (const k of steps[i].overlay?.show || []) prior.add(k);
-    for (const item of steps[i].draw || []) prior.add(item.key);
+    const items = steps[i].draw || [];
+    const transientKeys = new Set(items.filter((item) => item.transient).map((item) => item.key));
+    for (const k of steps[i].overlay?.show || [])
+      if (!transientKeys.has(k)) prior.add(k);
+    for (const item of items)
+      if (!item.transient) prior.add(item.key);
   }
   const enteringKeys = visibleKeys.filter((k) => !prior.has(k));
   const moves = steps[clamped].matrix?.moves || null;

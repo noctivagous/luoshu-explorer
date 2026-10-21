@@ -553,24 +553,24 @@ export const scriptD = {
   }),
 };
 
-// Property E: three deliberately different groupings instead of decorative
-// rings. All nine cells collect to 45, one opposite pair joins to 10, one
-// magic line accumulates to 15 — then the three totals snap into a fact
-// stack on the right margin, reusing B's gutter pattern.
-function eTotal(key, pos, text, at = 0.55) {
+// Property E: establish the center as the mean, then show three separate
+// worked proofs. Each proof is transient: a clean focus → equation → result
+// beat clears before the next one begins. Only the final fact stack persists.
+function eEquation(key, text, at = 0.48, width = 152) {
   return {
     key,
     type: "gutter",
     at,
-    x: pos.x,
-    y: pos.y,
+    transient: true,
+    x: Z / 2,
+    y: -16,
     text,
     fill: "#1a1a1a",
     color: "white",
-    w: 110,
+    w: width,
     h: 22,
     rx: 11,
-    fontSize: 13,
+    fontSize: 12,
     weight: "700",
     textDy: 4,
   };
@@ -581,67 +581,58 @@ export const scriptE = {
   title: "Five rules everything",
   steps: [
     animStep("E-1", {
-      caption: "All nine cells collect to 45 — nine times 5.",
+      caption: "Start at the center: 5 is the mean of the nine values.",
       durationMs: 1800,
-      overlay: { show: ["E.tot-all"] },
-      draw: [eTotal("E.tot-all", { x: Z / 2, y: -16 }, "Σ 45 = 9×5")],
-      matrix: { highlight: ALL, setValues: null },
+      overlay: { show: ["E.center"] },
+      draw: [
+        {
+          key: "E.center",
+          type: "mark",
+          transient: true,
+          text: "5",
+          r: 23,
+          fill: "#1a1a1a",
+        },
+      ],
+      matrix: { highlight: [4], setValues: null },
     }),
     animStep("E-2", {
-      caption: "One opposite pair joins to 10 — two times 5.",
-      durationMs: 1800,
-      overlay: { show: ["E.pair", "E.tot-pair"] },
+      caption: "The average of 1 through 9 is 5.",
+      durationMs: 1900,
+      overlay: { show: ["E.mean"] },
+      draw: [eEquation("E.mean", "(1 + 2 + … + 9) ÷ 9 = 5", 0.35, 176)],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("E-3", {
+      caption: "Nine values at an average of 5 total 45: 9 × 5.",
+      durationMs: 2200,
+      overlay: { show: ["E.all"] },
+      draw: [eEquation("E.all", "1 + 2 + … + 9 = 45 = 9 × 5", 0.48, 176)],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("E-4", {
+      caption: "One opposite pair: 4 + 6 = 10, or 2 × 5.",
+      durationMs: 2100,
+      overlay: { show: ["E.pair", "E.pair-eq"] },
       draw: [
-        { key: "E.pair", type: "line", from: 0, to: 8, color: "#b89a5a", width: "2" },
-        {
-          key: "E.tot-pair",
-          type: "chip",
-          at: 0.55,
-          from: 0,
-          to: 8,
-          dx: -58,
-          dy: -34,
-          text: "10 = 2×5",
-          fill: "#b89a5a",
-          stroke: "#b89a5a",
-          color: "white",
-          w: 84,
-          h: 22,
-          fontSize: 12,
-          weight: "700",
-        },
+        { key: "E.pair", type: "line", transient: true, from: 0, to: 8, color: "#b89a5a", width: "2.4" },
+        eEquation("E.pair-eq", "4 + 6 = 10 = 2 × 5", 0.5),
       ],
       matrix: { highlight: [0, 8], setValues: null },
     }),
-    animStep("E-3", {
-      caption: "One magic line accumulates to 15 — three times 5.",
-      durationMs: 1800,
-      overlay: { show: ["E.row", "E.tot-row"] },
+    animStep("E-5", {
+      caption: "One magic line: 3 + 5 + 7 = 15, or 3 × 5.",
+      durationMs: 2100,
+      overlay: { show: ["E.row", "E.row-eq"] },
       draw: [
-        { key: "E.row", type: "line", from: 3, to: 5, extend: 12, color: "#1a1a1a", width: "2" },
-        {
-          key: "E.tot-row",
-          type: "chip",
-          at: 0.55,
-          from: 3,
-          to: 5,
-          dx: 58,
-          dy: -34,
-          text: "15 = 3×5",
-          fill: "#1a1a1a",
-          stroke: "#1a1a1a",
-          color: "white",
-          w: 84,
-          h: 22,
-          fontSize: 12,
-          weight: "700",
-        },
+        { key: "E.row", type: "line", transient: true, from: 3, to: 5, extend: 12, color: "#1a1a1a", width: "2.4" },
+        eEquation("E.row-eq", "3 + 5 + 7 = 15 = 3 × 5", 0.5, 168),
       ],
       matrix: { highlight: [3, 4, 5], setValues: null },
     }),
-    animStep("E-4", {
-      caption: "Three faces of 5 — 45, 10, 15.",
-      durationMs: 1800,
+    animStep("E-6", {
+      caption: "Five organizes the whole square: 9 × 5, 2 × 5, and 3 × 5.",
+      durationMs: 2300,
       overlay: { show: ["E.stk-0", "E.stk-1", "E.stk-2"] },
       draw: [
         ["E.stk-0", 0, "45 = 9×5", 0.3],

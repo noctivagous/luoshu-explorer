@@ -28,16 +28,21 @@ function markup(frame) {
   return renderToStaticMarkup(React.createElement(React.Fragment, null, ...svg, ...html));
 }
 
-// Every overlay key is a rendered data-anim-key at idle and at each step.
-// Keys that belong to later steps stay out of the earlier frames. Construction
-// and N move the cells themselves, so they are allowed to have no overlay keys.
+// Every persistent overlay key is a rendered data-anim-key at idle and at each
+// step. Transient keys render only in their own worked-example beat. Keys that
+// belong to later steps stay out of earlier frames. Construction and N move the
+// cells themselves, so they are allowed to have no overlay keys.
 for (const [id, script] of allScripts) {
   if (id === 'intro') continue;
   const keys = new Set();
+  const transientKeys = new Set();
   for (const st of script.steps) for (const k of st.overlay?.show || []) keys.add(k);
+  for (const st of script.steps)
+    for (const item of st.draw || []) if (item.transient) transientKeys.add(item.key);
   if (id !== 'construction' && id !== 'N') need(keys.size > 0, `script ${id} reveals no overlay keys`);
   const idleHtml = markup(frameFor(script, script.steps.length - 1, 1));
   for (const k of keys) {
+    if (transientKeys.has(k)) continue;
     need(idleHtml.includes(`data-anim-key="${k}"`), `idle ${id} missing rendered key "${k}"`);
   }
   for (const item of script.chrome || []) {
@@ -179,14 +184,21 @@ for (const [id, script] of allScripts) {
   );
 }
 
-// Property E: three groupings, then a fact stack on the right margin.
+// Property E: establish 5 as mean, then show three focused proofs that clear
+// before the persistent fact stack appears.
 {
   const e = demoScripts.E;
-  need(e.steps.length === 4, 'script E should have 4 steps');
+  need(e.steps.length === 6, 'script E should have 6 explanatory steps');
   need(e.steps.every((st) => st.durationMs >= 1800), 'E beats should be readable (1800ms+)');
-  const stackats = e.steps[3].draw.map((d) => d.at);
+  need(e.steps[0].draw.some((d) => d.key === 'E.center' && d.transient), 'E should establish the center 5 first');
+  need(e.steps[1].draw.some((d) => String(d.text).includes('÷ 9 = 5')), 'E should name 5 as the mean');
+  need(e.steps[2].draw.some((d) => String(d.text).includes('45 = 9 × 5')), 'E should show the all-cell total');
+  need(e.steps[3].draw.some((d) => String(d.text).includes('4 + 6 = 10')), 'E should show pair operands');
+  need(e.steps[4].draw.some((d) => String(d.text).includes('3 + 5 + 7 = 15')), 'E should show line operands');
+  need(e.steps.slice(0, 5).every((st) => st.draw.every((d) => d.transient)), 'E worked proofs should clear between beats');
+  const stackats = e.steps[5].draw.map((d) => d.at);
   need(JSON.stringify(stackats) === JSON.stringify([0.3, 0.5, 0.7]), 'E stack should accumulate one total per beat');
-  const idleE = markup(frameFor(e, 3, 1));
+  const idleE = markup(frameFor(e, 5, 1));
   need(idleE.includes('45 = 9×5') && idleE.includes('10 = 2×5') && idleE.includes('15 = 3×5'), 'idle E should hold the three-totals stack');
 }
 

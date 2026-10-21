@@ -34,12 +34,14 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
   need(validateScript(s).length === 0, `script ${id} invalid`);
   need(s.steps.length >= 2 && s.steps.length <= 9, `script ${id} should have 2-9 steps`);
   need(s.steps.every((st) => typeof st.caption === 'string' && st.caption.length > 0), `script ${id} steps need captions`);
-  // Overlay keys accumulate monotonically across steps.
-  let seen = 0;
+  // Ordinary overlay keys accumulate; focused worked examples may opt out
+  // with `transient: true` so the next proof can start on a clean board.
+  const persistent = new Set();
   s.steps.forEach((st, k) => {
+    for (const item of st.draw || []) if (!item.transient) persistent.add(item.key);
     const f = frameFor(s, k);
-    need(f.visibleKeys.length >= seen, `script ${id} step ${k} keys should accumulate`);
-    seen = f.visibleKeys.length;
+    for (const key of persistent)
+      need(f.visibleKeys.includes(key), `script ${id} step ${k} should retain persistent key ${key}`);
   });
 }
 
@@ -55,11 +57,12 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
       v.script.steps.every((st) => typeof st.caption === 'string' && st.caption.length > 0),
       `variant ${id}:${v.key} steps need captions`
     );
-    let seen = 0;
+    const persistent = new Set();
     v.script.steps.forEach((st, k) => {
+      for (const item of st.draw || []) if (!item.transient) persistent.add(item.key);
       const f = frameFor(v.script, k);
-      need(f.visibleKeys.length >= seen, `variant ${id}:${v.key} step ${k} keys should accumulate`);
-      seen = f.visibleKeys.length;
+      for (const key of persistent)
+        need(f.visibleKeys.includes(key), `variant ${id}:${v.key} step ${k} should retain persistent key ${key}`);
     });
   }
 }
