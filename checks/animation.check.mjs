@@ -2,7 +2,7 @@
 // Run: npm run check. No DOM or wall-clock timing: the player takes an
 // injected clock and tick() advances it manually.
 import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio } from '../js/animation.js';
-import { constructionScript, scriptA, scriptFor, demoScripts } from '../js/animation-scripts.js';
+import { constructionScript, scriptA, scriptFor, variantsFor, demoScripts } from '../js/animation-scripts.js';
 
 const failures = [];
 const need = (cond, msg) => {
@@ -20,6 +20,12 @@ need(scriptFor(null) === constructionScript, 'no selection should route to const
 need(scriptFor(undefined) === constructionScript, 'undefined selection should route to construction');
 need(scriptFor('intro') === constructionScript, 'intro should route to construction');
 need(scriptFor('A') === scriptA, 'property A should route to script A');
+need(
+  scriptFor('B', 'families') != null && scriptFor('B', 'families') !== scriptFor('B'),
+  'property B should offer a second animation'
+);
+need(scriptFor('B', 'bogus') === scriptFor('B'), 'unknown variant should fall back to the default script');
+need(variantsFor('C').length === 1, 'single-animation properties should list one variant');
 
 // Every property A-N routes to a valid, well-formed script.
 for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']) {
@@ -35,6 +41,27 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
     need(f.visibleKeys.length >= seen, `script ${id} step ${k} keys should accumulate`);
     seen = f.visibleKeys.length;
   });
+}
+
+// Non-default variants meet the same bar as defaults.
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']) {
+  for (const v of variantsFor(id)) {
+    if (v.script === scriptFor(id)) continue;
+    need(typeof v.key === 'string' && v.key, `variant of ${id} needs a key`);
+    need(typeof v.label === 'string' && v.label, `variant ${id}:${v.key} needs a label`);
+    need(validateScript(v.script).length === 0, `variant ${id}:${v.key} invalid`);
+    need(v.script.steps.length >= 2 && v.script.steps.length <= 9, `variant ${id}:${v.key} should have 2-9 steps`);
+    need(
+      v.script.steps.every((st) => typeof st.caption === 'string' && st.caption.length > 0),
+      `variant ${id}:${v.key} steps need captions`
+    );
+    let seen = 0;
+    v.script.steps.forEach((st, k) => {
+      const f = frameFor(v.script, k);
+      need(f.visibleKeys.length >= seen, `variant ${id}:${v.key} step ${k} keys should accumulate`);
+      seen = f.visibleKeys.length;
+    });
+  }
 }
 need(
   JSON.stringify(Object.keys(demoScripts).sort()) ===

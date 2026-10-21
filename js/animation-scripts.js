@@ -241,6 +241,78 @@ export const scriptB = {
   ],
 };
 
+// Property B, second animation: the family tour. Instead of one hero line
+// per beat, each family (rows, columns, diagonals) accumulates together with
+// its margin ticks, closing on the same eight-line overview.
+export const scriptBFamilies = {
+  id: "B",
+  title: "Lines sum to 15",
+  steps: [
+    animStep("BF-1", {
+      caption: "Rows first: 492, 357, 816 — each 15.",
+      durationMs: 1800,
+      overlay: { show: ["BF.rows", "BF.tick-r0", "BF.tick-r1", "BF.tick-r2"] },
+      draw: [
+        {
+          key: "BF.rows",
+          type: "segments",
+          opacity: 0.9,
+          parts: [[0, 2], [3, 5], [6, 8]].map(([from, to]) => ({ from, to, color: "#b89a5a", width: "2" })),
+        },
+        gutterTick("BF.tick-r0", rowGutter(0)),
+        gutterTick("BF.tick-r1", rowGutter(1)),
+        gutterTick("BF.tick-r2", rowGutter(2)),
+      ].map((item, i) => (i === 0 ? item : { ...item, at: 0.3 + 0.2 * (i - 1) })),
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("BF-2", {
+      caption: "Columns next: 438, 951, 276 — each 15.",
+      durationMs: 1800,
+      overlay: { show: ["BF.cols", "BF.tick-c0", "BF.tick-c1", "BF.tick-c2"] },
+      draw: [
+        {
+          key: "BF.cols",
+          type: "segments",
+          opacity: 0.9,
+          parts: [[0, 6], [1, 7], [2, 8]].map(([from, to]) => ({ from, to, color: "#4a6741", width: "2" })),
+        },
+        gutterTick("BF.tick-c0", colGutter(0)),
+        gutterTick("BF.tick-c1", colGutter(1)),
+        gutterTick("BF.tick-c2", colGutter(2)),
+      ].map((item, i) => (i === 0 ? item : { ...item, at: 0.3 + 0.2 * (i - 1) })),
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("BF-3", {
+      caption: "Diagonals: 4 + 5 + 6 and 2 + 5 + 8 — each 15.",
+      durationMs: 1800,
+      overlay: { show: ["BF.diag-a", "BF.diag-b", "BF.tick-d"] },
+      draw: [
+        heroLine("BF.diag-a", 0, 8),
+        heroLine("BF.diag-b", 2, 6),
+        gutterTick("BF.tick-d", cornerGutter()),
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("BF-4", {
+      caption: "Eight lines, one constant — 15 everywhere.",
+      durationMs: 2000,
+      overlay: { show: ["BF.lock"] },
+      draw: [
+        {
+          key: "BF.lock",
+          type: "badge",
+          at: 0.4,
+          text: "8 lines · always 15",
+          className:
+            "absolute text-[13px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full shadow pointer-events-none whitespace-nowrap",
+          style: { left: "50%", top: -18, transform: "translateX(-50%)" },
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+  ],
+};
+
 // Property C: traveling token around the perimeter. Each step draws the two
 // hero hops solid, assembles the equation mid-step, then lands the result
 // near the target cell. Overflow steps split the tens: a muted sum drops
@@ -1347,7 +1419,25 @@ export const demoScripts = {
   N: scriptN,
 };
 
-export function scriptFor(propertyId) {
+// Multiple animations per property. Each id keeps its default script in
+// demoScripts (so scriptFor(id) never changes meaning); extra animations
+// register here as labeled variants. The rail select lists variantsFor(e).
+export const animationVariants = {
+  B: [
+    { key: "hero-lines", label: "One line at a time", script: scriptB },
+    { key: "families", label: "Family tour", script: scriptBFamilies },
+  ],
+};
+
+export function variantsFor(propertyId) {
+  if (animationVariants[propertyId]) return animationVariants[propertyId];
+  const script = demoScripts[propertyId] || null;
+  return script ? [{ key: "standard", label: "Standard", script }] : [];
+}
+
+export function scriptFor(propertyId, variantKey) {
   if (!propertyId) return constructionScript;
-  return demoScripts[propertyId] || null;
+  if (!variantKey) return demoScripts[propertyId] || null;
+  const hit = variantsFor(propertyId).find((v) => v.key === variantKey);
+  return (hit && hit.script) || demoScripts[propertyId] || null;
 }

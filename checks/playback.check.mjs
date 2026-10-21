@@ -21,10 +21,12 @@ const at = (hash) => {
   dom.window.location.hash = hash;
   return parseDeepLink();
 };
-need(JSON.stringify(at('#/luoshu/C?step=2')) === JSON.stringify({ id: 'C', step: 2, speed: 1 }), 'deep link C step 2 should parse');
+need(JSON.stringify(at('#/luoshu/C?step=2')) === JSON.stringify({ id: 'C', step: 2, speed: 1, anim: 'standard' }), 'deep link C step 2 should parse');
 need(at('#/luoshu/k').id === 'K', 'deep link id should be case-insensitive');
 need(at('#/luoshu/construction').id === 'intro', 'construction should alias to intro');
-need(JSON.stringify(at('#/luoshu/J?step=1&speed=2')) === JSON.stringify({ id: 'J', step: 1, speed: 2 }), 'deep link speed should parse');
+need(JSON.stringify(at('#/luoshu/J?step=1&speed=2')) === JSON.stringify({ id: 'J', step: 1, speed: 2, anim: 'standard' }), 'deep link speed should parse');
+need(JSON.stringify(at('#/luoshu/B?anim=families&step=2')) === JSON.stringify({ id: 'B', step: 2, speed: 1, anim: 'families' }), 'deep link anim should parse');
+need(at('#/luoshu/B?anim=bogus').anim === 'hero-lines', 'bad anim should fall back to the default variant');
 need(at('#/luoshu/J?speed=5').speed === 1, 'bad speed should fall back to 1');
 need(at('#/luoshu/Z') === null, 'unknown id should not parse');
 need(at('#nope') === null, 'non-luoshu hash should not parse');
@@ -110,6 +112,31 @@ await needSeen(stepText, 'Step 2 of 4', 'overview should keep the playback step'
 overviewBtn.click();
 await needSeen(() => overviewBtn.getAttribute('aria-pressed'), 'false', 'overview toggle should disarm');
 need(document.querySelector('[data-anim-key="C.res-3"]') === null, 'leaving overview should gate future keys again');
+
+// Variant select: B offers two animations; switching resets to step 1.
+const bTile = [...document.querySelectorAll('#root aside button')].find((btn) =>
+  (btn.textContent || '').includes('Lines sum to 15')
+);
+need(!!bTile, 'B sidebar tile should exist');
+bTile.click();
+await needSeen(stepText, 'Step 1 of 4', 'selecting B should show its first step');
+const animSel = document.querySelector('select[aria-label="Animation"]');
+need(animSel !== null, 'animation select should exist');
+need(animSel.querySelectorAll('option').length === 2, 'B should offer two animations');
+need(animSel.disabled === false, 'multi-animation select should be enabled');
+// Drive the native value setter so React's onChange fires.
+Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(animSel, 'families');
+animSel.dispatchEvent(new window.Event('change', { bubbles: true }));
+await needSeen(
+  () => (document.querySelector('[data-anim-key="BF.rows"]') ? 'families' : ''),
+  'families',
+  'switching should render the family tour'
+);
+await needSeen(stepText, 'Step 1 of 4', 'switching animation should reset to step 1');
+need(
+  (dom.window.location.hash || '').includes('anim=families'),
+  `hash should carry the variant: ${dom.window.location.hash}`
+);
 
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);

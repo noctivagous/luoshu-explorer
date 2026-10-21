@@ -14,7 +14,7 @@ import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime } from "./animation.js";
-import { scriptFor } from "./animation-scripts.js";
+import { scriptFor, variantsFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant } from "./verify.js";
 
@@ -567,9 +567,11 @@ function iconGlyphs(e) {
     }),
   ]);
 }
-// Shareable step address: #/luoshu/<id>?step=<1-based>&speed=<0.5|1|2>.
+// Shareable step address: #/luoshu/<id>?anim=<key>&step=<1-based>&speed=<0.5|1|2>.
 // <id> is "intro" or a property A–N ("construction" aliases to intro).
-// Unknown ids and out-of-range steps fall back to the start of the intro.
+// Unknown ids and out-of-range steps fall back to the start of the intro;
+// unknown anim keys fall back to the property's default animation, and the
+// default animation is omitted from written hashes so old links keep working.
 function parseDeepLink() {
   try {
     const m = (window.location.hash || "").match(/^#\/luoshu\/([A-Za-z]+)(?:\?(.*))?$/);
@@ -581,10 +583,13 @@ function parseDeepLink() {
     const q = new URLSearchParams(m[2] || "");
     const rawStep = parseInt(q.get("step") || "", 10);
     const rawSpeed = parseFloat(q.get("speed") || "");
+    const variantKeys = variantsFor(id).map((v) => v.key);
+    const rawAnim = q.get("anim") || "";
     return {
       id,
       step: Number.isInteger(rawStep) && rawStep > 0 ? rawStep : 1,
       speed: [0.5, 1, 2].includes(rawSpeed) ? rawSpeed : 1,
+      anim: variantKeys.includes(rawAnim) ? rawAnim : variantKeys[0] || null,
     };
   } catch {
     return null;
@@ -592,6 +597,9 @@ function parseDeepLink() {
 }
 function LoShuApp() {
   let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
+    // Active animation variant for the selected property. One select in the
+    // rail switches it; switching properties resets to that id's default.
+    [variant, setVariant] = React.useState(() => parseDeepLink()?.anim || "standard"),
     [t, r] = React.useState(() => new Set(CATEGORIES.map((i) => i.name))),
     l = React.useRef(null),
     o = React.useMemo(() => PROPERTIES.find((i) => i.id === e) || null, [e]),
@@ -604,12 +612,13 @@ function LoShuApp() {
       });
     },
     s = (i) => {
+      setVariant(variantsFor(i)[0]?.key || "standard");
       if ((n(i), window.innerWidth < 1024))
         setTimeout(() => {
           l.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 80);
     },
-    script = scriptFor(e),
+    script = scriptFor(e, variant),
     playerRef = React.useRef(null),
     [frame, setFrame] = React.useState(null),
     // Last triple rendered into React state. Progress-only rAF ticks update
@@ -733,15 +742,17 @@ function LoShuApp() {
       }
     }
     return () => p.dispose();
-  }, [e]);
+  }, [e, variant]);
   // Keep the address bar on the visible step so any step is shareable.
   // replaceState avoids history spam while scrubbing or looping.
   React.useEffect(() => {
     try {
       const step = started && frame ? frame.stepIndex + 1 : 1;
-      window.history.replaceState(null, "", `#/luoshu/${e}?step=${step}`);
+      const vDefault = variantsFor(e)[0]?.key;
+      const animPart = variant && variant !== vDefault ? `&anim=${variant}` : "";
+      window.history.replaceState(null, "", `#/luoshu/${e}?step=${step}${animPart}`);
     } catch {}
-  }, [e, started, frame && frame.stepIndex]);
+  }, [e, variant, started, frame && frame.stepIndex]);
   // Playback shortcuts. Space toggles (preventDefault also blocks the button
   // activation when a control has focus), arrows step, R resets.
   React.useEffect(() => {
@@ -1064,6 +1075,21 @@ function LoShuApp() {
                             "aria-pressed": overview ? "true" : "false",
                             title: "Overview (full diagram)",
                             children: "▦",
+                          }),
+                          h("select", {
+                            value: variant,
+                            onChange: (ev) => {
+                              setVariant(ev.target.value);
+                              playerRef.current?.reset();
+                              setStarted(false);
+                            },
+                            className: "anim-rail-btn anim-caption-variant",
+                            "aria-label": "Animation",
+                            title: "Choose animation",
+                            disabled: variantsFor(e).length < 2,
+                            children: variantsFor(e).map((v) =>
+                              h("option", { value: v.key, children: v.label }, v.key),
+                            ),
                           }),
                           formLine &&
                             h("span", { className: "anim-caption-note", children: formLine }),

@@ -45,6 +45,10 @@ need(document.querySelectorAll('#root button').length === 33, 'expected 33 butto
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
+const animSel = document.querySelector('select[aria-label="Animation"]');
+need(animSel !== null, 'animation select should exist');
+need(animSel.querySelectorAll('option').length === 1, 'intro should offer one animation');
+need(animSel.disabled === true, 'single-animation select should start disabled');
 need(text.includes('Correspondences'), 'missing correspondences legend');
 const pressed = [...document.querySelectorAll('#root button')].filter(
   (b) => b.getAttribute('aria-pressed') === 'true',

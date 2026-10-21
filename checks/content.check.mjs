@@ -3,7 +3,16 @@
 // when a step reveals nothing, or when the property text drifts from the math.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { demoScripts } from '../js/animation-scripts.js';
+import { demoScripts, variantsFor } from '../js/animation-scripts.js';
+
+// Every script the app can show: defaults plus non-default variants.
+const allScripts = [...Object.entries(demoScripts)];
+for (const id of Object.keys(demoScripts)) {
+  for (const v of variantsFor(id)) {
+    if (v.script === demoScripts[id]) continue;
+    allScripts.push([`${id}:${v.key}`, v.script]);
+  }
+}
 import { frameFor } from '../js/animation.js';
 import { renderOverlay, CENTERS, Z } from '../js/overlay.js';
 import { verifyAll, determinant } from '../js/verify.js';
@@ -22,7 +31,7 @@ function markup(frame) {
 // Every overlay key is a rendered data-anim-key at idle and at each step.
 // Keys that belong to later steps stay out of the earlier frames. Construction
 // and N move the cells themselves, so they are allowed to have no overlay keys.
-for (const [id, script] of Object.entries(demoScripts)) {
+for (const [id, script] of allScripts) {
   if (id === 'intro') continue;
   const keys = new Set();
   for (const st of script.steps) for (const k of st.overlay?.show || []) keys.add(k);
@@ -75,6 +84,19 @@ for (const [id, script] of Object.entries(demoScripts)) {
   const flash = b.steps[3].draw.find((d) => d.key === 'B.tick-3');
   need(flash && flash.at >= 0.7, 'B should flash the = 15 late in the final beat');
   need(b.steps[3].durationMs >= 2200, 'B final beat should hold a pause after the flash');
+
+// Property B, Family tour: families accumulate together, same overview.
+{
+  const bf = Object.fromEntries(allScripts)['B:families'];
+  need(!!bf, 'B:families variant should be gated');
+  need(bf.steps.length === 4, 'B:families should have 4 beats');
+  need(
+    JSON.stringify(frameFor(bf, 0, 0).visibleKeys) === JSON.stringify(['BF.rows']),
+    'B:families rows beat should group before the ticks land'
+  );
+  const idleBF = markup(frameFor(bf, 3, 1));
+  need(idleBF.includes('8 lines · always 15'), 'B:families should close with the lockup');
+}
   const idleB = markup(frameFor(b, 3, 1));
   const ticks = idleB.match(/= 15/g) || [];
   need(ticks.length === 4, `idle B should carry four gutter ticks (got ${ticks.length})`);
@@ -277,11 +299,11 @@ for (const [id, script] of Object.entries(demoScripts)) {
     if (item.type !== 'chip') return null;
     const a = CENTERS[item.from];
     const b = CENTERS[item.to];
-    const t = item.anchor === 'end' ? 1 : item.anchor === 'start' ? 0 : 0.5;
+    const t = item.anchor === 'end' ? 1 : item.anchor === 'start' ? 0 : (item.t ?? 0.5);
     return [a.x + (b.x - a.x) * t + (item.dx || 0), a.y + (b.y - a.y) * t + (item.dy || 0)];
   };
   const labelOf = (item) => String(item.text ?? item.key);
-  for (const [id, script] of Object.entries(demoScripts)) {
+  for (const [id, script] of allScripts) {
     if (id === 'intro') continue;
     const seen = new Map();
     for (const st of script.steps) {
@@ -316,7 +338,7 @@ need(
 
 // No step may be a pure no-op: it must reveal an overlay key, change the
 // highlight, override values, or advance the construction count.
-for (const [id, script] of Object.entries(demoScripts)) {
+for (const [id, script] of allScripts) {
   script.steps.forEach((st, k) => {
     const live =
       (st.overlay?.show?.length || 0) > 0 ||
