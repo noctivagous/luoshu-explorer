@@ -512,3 +512,68 @@ full drawing.
   main board (four rotations, then four reflections). A thumbnail strip
   seeks to a form. The caption notes that lines still sum to 15 and shows
   the determinant, which flips sign on reflection.
+
+---
+
+## 12. Task list (2026-10-21)
+
+Checked items are landed and gated by `npm run check`. Open items are the
+remaining work from §3–§6 and the [clarity audit](animation-clarity-audit.md)
+priority roadmap.
+
+### Landed
+
+- [x] Phases 0–2: content fixes, frame-rate decoupling, on-card caption
+  strip (§7, §3.1, §4.2–4.4)
+- [x] Phase 5.1: declarative overlay + generic `<Overlay>` (§5.1)
+- [x] Phases 3.2–3.3: draw-on tweens, intra-step beats, scrubber (§3.2–3.3)
+- [x] Ordinal construction + D₄ main-board transforms (§6.1 beat 1, §6.3)
+- [x] Correspondences legend toggles beneath the matrix (§6.4)
+- [x] `checks/content.check.mjs`: overlay keys, no-op steps, `verify()` (§8)
+- [x] Loop toggle: wraps the last step back to the first (§3.4, §6.5)
+- [x] Keyboard: `Space` play/pause, `←`/`→` step, `R` reset (§5.2)
+- [x] Deep links `#/luoshu/<id>?step=<n>&speed=<s>`, hash tracks the
+  step, `checks/playback.check.mjs` gate (§5.2)
+
+### Open — playback and integration (§3.4, §5.2)
+
+- [ ] Autoplay-next: roll the end of one property into the next (§3.4, §6.5)
+- [ ] Idle→play flash: fade to the gated state instead of cutting (§3.4)
+- [ ] Selection change: cross-fade the old overlay out (§3.4)
+- [ ] Sidebar progress ring on the active property's tile (§5.2)
+- [ ] Detail card: highlight the sentence/formula term for the step (§5.2)
+- [ ] Autoplay on select, opt-out (§5.2)
+- [ ] Chapters: each category becomes a playlist (§5.2)
+- [ ] Speed slider (0.25×–3×) and timeline scrubber with step ticks (§3.5)
+
+### Open — annotation on and next to the square (§4 + audit)
+
+- [ ] B first: board gutters + accumulation treatment (running total in a
+  reserved gutter, tidy `= 15` end state, no chip collisions)
+- [ ] Reserved gutter/coordinate system outside `Z × Z` (unblocks E, F, G, J)
+- [ ] C/D traveling-token + modular-reduction grammar (reuse for H)
+- [ ] F/I grouping/balance and midpoint treatments
+- [ ] K: cofactor-expansion storyboard, or an explicit computed-invariant
+  card instead of an animation
+- [ ] Group collection for E, G, J; paired motion for A, L; torus and
+  transform cues for M, N; overview-diagram toggle per property
+- [ ] Worked-example tape, bidirectional tape↔cell linking, formula tokens,
+  collision handling, equation hierarchy (18–24 px results, 13–15 px
+  totals), ghost/focus board state
+
+### Open — capabilities (§6)
+
+- [ ] "What breaks?" swap playground on `verify()` with an A–N checklist (§6.2)
+- [ ] Surface `verify()` live in the UI ("computed" per caption) (§6.7)
+- [ ] Play-all tour through A–N with chapter cards (§6.5)
+- [ ] Compare mode: two properties, two legends (§6.5)
+- [ ] PNG/SVG snapshot, GIF/WebM export, print storyboard (§6.8)
+- [ ] Construction title cards (`write` / `swap` / `fold`) + before/after
+  hold; D₄ rotation/reflection affordances (audit: Build, N)
+- [ ] Learning: predict mode, cell probe, quiz (§6.6)
+- [ ] Focus rings on caption-bar buttons (§6.9)
+
+### Open questions
+
+- [ ] Q5: which Five Elements / trigram source should the legend follow?
+  (Q1–Q4 resolved in §11.)

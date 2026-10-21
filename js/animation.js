@@ -248,6 +248,7 @@ export function createPlayer(script, opts = {}) {
   let stepIndex = 0;
   let playing = false;
   let speed = 1;
+  let loop = !!opts.loop;
   let stepElapsed = 0;
   let lastTick = 0;
   let rafId = null;
@@ -258,7 +259,7 @@ export function createPlayer(script, opts = {}) {
     const clampedP = Math.max(0, Math.min(1, raw));
     const reduce = typeof opts.reducedMotion === "function" && opts.reducedMotion();
     const progress = reduce ? (clampedP > 0 ? 1 : 0) : clampedP;
-    return { ...frameFor(script, stepIndex, progress), playing, speed, stepElapsed, progress };
+    return { ...frameFor(script, stepIndex, progress), playing, speed, loop, stepElapsed, progress };
   };
 
   const emit = () => onFrame(snapshot());
@@ -270,27 +271,40 @@ export function createPlayer(script, opts = {}) {
     }
   };
 
-  const loop = (now) => {
+  // End of the current step: advance, or wrap to the start when looping
+  // instead of stopping dead on the last frame.
+  const advance = (now) => {
+    if (stepIndex >= totalSteps - 1) {
+      if (loop) {
+        stepIndex = 0;
+        stepElapsed = 0;
+        lastTick = now;
+        return true;
+      }
+      playing = false;
+      stepElapsed = script.steps[stepIndex].durationMs || DEFAULT_STEP_MS;
+      return false;
+    }
+    stepIndex += 1;
+    stepElapsed = 0;
+    lastTick = now;
+    return true;
+  };
+
+  const tickLoop = (now) => {
     if (!playing) return;
     if (!lastTick) lastTick = now;
     const dt = Math.min(now - lastTick, 250);
     lastTick = now;
     stepElapsed += dt * speed;
     const dur = script.steps[stepIndex].durationMs || DEFAULT_STEP_MS;
-    if (stepElapsed >= dur) {
-      if (stepIndex >= totalSteps - 1) {
-        playing = false;
-        stepElapsed = dur;
-        emit();
-        stopLoop();
-        return;
-      }
-      stepIndex += 1;
-      stepElapsed = 0;
-      lastTick = now;
+    if (stepElapsed >= dur && !advance(now)) {
+      emit();
+      stopLoop();
+      return;
     }
     emit();
-    rafId = raf(loop);
+    rafId = raf(tickLoop);
   };
 
   return {
@@ -309,7 +323,7 @@ export function createPlayer(script, opts = {}) {
       lastTick = 0;
       emit();
       stopLoop();
-      rafId = raf(loop);
+      rafId = raf(tickLoop);
     },
     pause() {
       playing = false;
@@ -364,19 +378,15 @@ export function createPlayer(script, opts = {}) {
       speed = s;
       emit();
     },
+    setLoop(b) {
+      loop = !!b;
+      emit();
+    },
     // Advance the clock manually (tests). No rAF involved.
     tick(ms) {
       stepElapsed += ms * speed;
       const dur = script.steps[stepIndex].durationMs || DEFAULT_STEP_MS;
-      if (stepElapsed >= dur) {
-        if (stepIndex >= totalSteps - 1) {
-          playing = false;
-          stepElapsed = dur;
-        } else {
-          stepIndex += 1;
-          stepElapsed = 0;
-        }
-      }
+      if (stepElapsed >= dur) advance(0);
       emit();
     },
     dispose() {

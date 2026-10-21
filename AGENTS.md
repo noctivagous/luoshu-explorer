@@ -16,7 +16,9 @@ Interactive React 18.3.1 SPA exploring the 14 arithmetic properties (A–N) of t
 ├── checks/
 │   ├── spa-shell.check.mjs     # CSS shell regression (viewport lock)
 │   ├── render-smoke.check.mjs  # JSDOM mount + DOM assertions
-│   └── animation.check.mjs     # Animation state machine checks
+│   ├── animation.check.mjs     # Animation state machine checks
+│   ├── playback.check.mjs      # Deep links, keyboard, loop toggle
+│   └── content.check.mjs       # Overlay keys, verify() predicates, text/math agreement
 └── archive-artifacts/        # Original minified bundle (workspace root)
 ```
 

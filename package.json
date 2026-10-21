@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node checks/spa-shell.check.mjs && node checks/render-smoke.check.mjs && node checks/animation.check.mjs && node checks/content.check.mjs"
+    "check": "node checks/spa-shell.check.mjs && node checks/render-smoke.check.mjs && node checks/animation.check.mjs && node checks/playback.check.mjs && node checks/content.check.mjs"
   },
   "devDependencies": {
     "jsdom": "^30.1.3",

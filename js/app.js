@@ -567,8 +567,31 @@ function iconGlyphs(e) {
     }),
   ]);
 }
+// Shareable step address: #/luoshu/<id>?step=<1-based>&speed=<0.5|1|2>.
+// <id> is "intro" or a property A–N ("construction" aliases to intro).
+// Unknown ids and out-of-range steps fall back to the start of the intro.
+function parseDeepLink() {
+  try {
+    const m = (window.location.hash || "").match(/^#\/luoshu\/([A-Za-z]+)(?:\?(.*))?$/);
+    if (!m) return null;
+    let id = m[1].toLowerCase() === "intro" ? "intro" : m[1].toUpperCase();
+    if (id === "CONSTRUCTION") id = "intro";
+    if (id !== "intro" && !/^[A-N]$/.test(id)) return null;
+    if (!scriptFor(id)) return null;
+    const q = new URLSearchParams(m[2] || "");
+    const rawStep = parseInt(q.get("step") || "", 10);
+    const rawSpeed = parseFloat(q.get("speed") || "");
+    return {
+      id,
+      step: Number.isInteger(rawStep) && rawStep > 0 ? rawStep : 1,
+      speed: [0.5, 1, 2].includes(rawSpeed) ? rawSpeed : 1,
+    };
+  } catch {
+    return null;
+  }
+}
 function LoShuApp() {
-  let [e, n] = React.useState("intro"),
+  let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
     [t, r] = React.useState(() => new Set(CATEGORIES.map((i) => i.name))),
     l = React.useRef(null),
     o = React.useMemo(() => PROPERTIES.find((i) => i.id === e) || null, [e]),
@@ -596,9 +619,30 @@ function LoShuApp() {
     [started, setStarted] = React.useState(false),
     [animPlaying, setAnimPlaying] = React.useState(false),
     [animSpeed, setAnimSpeed] = React.useState(1),
+    // Loop wraps the last step back to the first instead of stopping.
+    // loopRef mirrors the state for the player effect and key handler.
+    [animLoop, setAnimLoop] = React.useState(false),
+    loopRef = React.useRef(false),
+    startedRef = React.useRef(false),
+    animLoopToggle = () => {
+      const next = !loopRef.current;
+      loopRef.current = next;
+      setAnimLoop(next);
+      try {
+        playerRef.current?.setLoop(next);
+      } catch {}
+    },
     // Active correspondences layers (empty set = plain numbers).
     [legend, setLegend] = React.useState(() => new Set());
   const toggleLegend = (id) => {
+    // Correspondence labels occupy the same small cells as the animation.
+    // Selecting a layer must therefore leave the board in its stable state;
+    // otherwise the chip appears selected but its labels stay hidden by the
+    // animation-only rendering gate below.
+    if (id !== "off" && started) {
+      playerRef.current?.reset();
+      setStarted(false);
+    }
     if (id === "off") {
       setLegend(new Set());
       return;
@@ -610,9 +654,21 @@ function LoShuApp() {
       return next;
     });
   };
+  // Ref mirror so the mount-once keyboard handler can branch on it.
+  startedRef.current = started;
+  // Deep link frozen at selection time: the player effect re-runs under
+  // StrictMode and the hash-sync effect below rewrites the hash, so reading
+  // it fresh inside the effect would land on step 1 the second time.
+  const deepRef = React.useRef({ e: null, deep: null });
+  if (deepRef.current.e !== e) deepRef.current = { e, deep: parseDeepLink() };
+  const deepSel = deepRef.current;
   React.useEffect(() => {
     if (playerRef.current) playerRef.current.dispose();
     playerRef.current = null;
+    // A new player is a new frame stream: drop the render-dedup cache, or
+    // the first identical frame (e.g. a deep-link seek re-applied after a
+    // StrictMode remount) is swallowed as progress-only noise.
+    lastRenderRef.current = null;
     setStarted(false);
     setAnimPlaying(false);
     setAnimSpeed(1);
@@ -621,6 +677,7 @@ function LoShuApp() {
       return;
     }
     const p = createPlayer(script, {
+      loop: loopRef.current,
       reducedMotion: () =>
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -655,8 +712,68 @@ function LoShuApp() {
     });
     playerRef.current = p;
     setFrame(p.getState());
+    // A deep link lands paused on its step, fully revealed: the shared
+    // address must show the same frame the sender saw.
+    const deep = deepSel.deep;
+    if (deep && deep.id === e) {
+      if (deep.speed !== 1) {
+        try {
+          p.setSpeed(deep.speed);
+        } catch {}
+        setAnimSpeed(deep.speed);
+      }
+      if (deep.step > 1) {
+        const idx = Math.min(deep.step, script.steps.length) - 1;
+        p.seekAt(idx, script.steps[idx].durationMs || DEFAULT_STEP_MS);
+        setStarted(true);
+      }
+    }
     return () => p.dispose();
   }, [e]);
+  // Keep the address bar on the visible step so any step is shareable.
+  // replaceState avoids history spam while scrubbing or looping.
+  React.useEffect(() => {
+    try {
+      const step = started && frame ? frame.stepIndex + 1 : 1;
+      window.history.replaceState(null, "", `#/luoshu/${e}?step=${step}`);
+    } catch {}
+  }, [e, started, frame && frame.stepIndex]);
+  // Playback shortcuts. Space toggles (preventDefault also blocks the button
+  // activation when a control has focus), arrows step, R resets.
+  React.useEffect(() => {
+    const onKey = (ev) => {
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      const t = ev.target;
+      if (
+        t &&
+        (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)
+      )
+        return;
+      const p = playerRef.current;
+      if (!p) return;
+      if (ev.key === " ") {
+        ev.preventDefault();
+        if (p.getState().playing) p.pause();
+        else {
+          setStarted(true);
+          p.play();
+        }
+      } else if (ev.key === "ArrowRight") {
+        ev.preventDefault();
+        if (!startedRef.current) setStarted(true);
+        else p.stepNext();
+      } else if (ev.key === "ArrowLeft") {
+        ev.preventDefault();
+        if (!startedRef.current) setStarted(true);
+        else p.stepPrev();
+      } else if (ev.key === "r" || ev.key === "R") {
+        p.reset();
+        setStarted(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const animOn = started && frame && script,
     animPlay = () => {
       if (!playerRef.current) return;
@@ -894,7 +1011,7 @@ function LoShuApp() {
                             "aria-label": animPlaying
                               ? "Pause animation"
                               : "Play animation",
-                            title: animPlaying ? "Pause" : "Play",
+                            title: animPlaying ? "Pause (Space)" : "Play (Space)",
                             children: animPlaying ? "❚❚" : "▶",
                           }),
                           h("span", {
@@ -909,15 +1026,23 @@ function LoShuApp() {
                             onClick: animPrev,
                             className: "anim-rail-btn anim-caption-prev",
                             "aria-label": "Previous animation step",
-                            title: "Previous step",
+                            title: "Previous step (←)",
                             children: "‹",
                           }),
                           h("button", {
                             onClick: animNext,
                             className: "anim-rail-btn anim-caption-next",
                             "aria-label": "Next animation step",
-                            title: "Next step",
+                            title: "Next step (→)",
                             children: "›",
+                          }),
+                          h("button", {
+                            onClick: animLoopToggle,
+                            className: "anim-rail-btn anim-caption-loop",
+                            "aria-label": "Loop animation",
+                            "aria-pressed": animLoop ? "true" : "false",
+                            title: "Loop (restart at the last step)",
+                            children: "⟳",
                           }),
                           formLine &&
                             h("span", { className: "anim-caption-note", children: formLine }),
@@ -1011,7 +1136,9 @@ function LoShuApp() {
                                 valueOn = animOn && frame?.setValues,
                                 cellVal = valueOn ? (frame.setValues[a] ?? "") : i,
                                 hideNum = moving.has(a),
-                                // Correspondences: independent slots, idle only.
+                                // Correspondences: independent slots. Selecting one
+                                // resets playback above, so their labels are never
+                                // silently hidden behind an active animation.
                                 legendOn = legend.size > 0 && !animOn,
                                 corr = legendOn ? CORRESPONDENCES[i] : null,
                                 showLayer = (id) =>
@@ -1415,4 +1542,4 @@ createRoot(document.getElementById("root")).render(
   h(React.StrictMode, { children: h(LoShuApp, {}) }),
 );
 
-export { LoShuApp, iconGlyphs, PROPERTIES, CATEGORIES, SQUARE };
+export { LoShuApp, iconGlyphs, PROPERTIES, CATEGORIES, SQUARE, parseDeepLink };

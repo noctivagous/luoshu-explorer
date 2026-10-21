@@ -100,6 +100,26 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   p.seek(3);
   p.tick(1400);
   need(p.getState().playing === false, 'ticking past the last step should stop');
+  need(p.getState().loop === false, 'loop should default to off');
+  p.setLoop(true);
+  need(p.getState().loop === true, 'setLoop(true) should apply');
+  p.seek(3);
+  p.tick(1400);
+  need(
+    p.getState().stepIndex === 0 && p.getState().stepElapsed === 0,
+    'looping past the last step should wrap to the first'
+  );
+  p.seek(3);
+  p.play();
+  p.tick(1400);
+  need(
+    p.getState().stepIndex === 0 && p.getState().playing === true,
+    'looping while playing should keep playing from the first step'
+  );
+  p.setLoop(false);
+  p.seek(3);
+  p.tick(1400);
+  need(p.getState().playing === false, 'unlooped tick past the last step should stop');
   p.reset();
   const r = p.getState();
   need(r.stepIndex === 0 && r.speed === 1 && r.playing === false, 'reset should restore the initial state');
