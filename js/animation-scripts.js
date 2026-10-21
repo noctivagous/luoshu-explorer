@@ -4,7 +4,7 @@
 //
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
-import { hopLook, rowGutter, colGutter, cornerGutter } from "./overlay.js";
+import { Z, hopLook, rowGutter, colGutter, cornerGutter } from "./overlay.js";
 
 const ALL = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const LOSHU = [4, 9, 2, 3, 5, 7, 8, 1, 6];
@@ -427,59 +427,89 @@ export const scriptD = {
   }),
 };
 
-const E_BADGE = "absolute text-[10px] font-mono pointer-events-none px-2.5 py-1 rounded-full";
+// Property E: three deliberately different groupings instead of decorative
+// rings. All nine cells collect to 45, one opposite pair joins to 10, one
+// magic line accumulates to 15 — then the three totals snap into a fact
+// stack on the right margin, reusing B's gutter pattern.
+function eTotal(key, pos, text, at = 0.55) {
+  return {
+    key,
+    type: "gutter",
+    at,
+    x: pos.x,
+    y: pos.y,
+    text,
+    fill: "#1a1a1a",
+    color: "white",
+    w: 110,
+    h: 22,
+    rx: 11,
+    fontSize: 13,
+    weight: "700",
+    textDy: 4,
+  };
+}
 
 export const scriptE = {
   id: "E",
   title: "Five rules everything",
   steps: [
     animStep("E-1", {
-      caption: "Total 45 = 9 × 5.",
-      durationMs: 1400,
-      overlay: { show: ["E.ring-2", "E.badge-total"] },
-      draw: [
-        { key: "E.ring-2", type: "ring", r: 148, color: "#c96442", width: "1", dash: "2 10", opacity: 0.2 },
-        {
-          key: "E.badge-total",
-          type: "badge",
-          text: "Total 45 = 9×5",
-          className: `${E_BADGE} bg-[#1a1a1a] text-white`,
-          style: { left: "50%", top: -16, transform: "translateX(-50%)" },
-        },
-      ],
+      caption: "All nine cells collect to 45 — nine times 5.",
+      durationMs: 1800,
+      overlay: { show: ["E.tot-all"] },
+      draw: [eTotal("E.tot-all", { x: Z / 2, y: -16 }, "Σ 45 = 9×5")],
       matrix: { highlight: ALL, setValues: null },
     }),
     animStep("E-2", {
-      caption: "Opposite 10 = 2 × 5.",
-      durationMs: 1400,
-      overlay: { show: ["E.ring-0", "E.badge-opp"] },
+      caption: "One opposite pair joins to 10 — two times 5.",
+      durationMs: 1800,
+      overlay: { show: ["E.pair", "E.tot-pair"] },
       draw: [
-        { key: "E.ring-0", type: "ring", r: 62, color: "#b89a5a", width: "1", dash: "4 6", opacity: 0.6 },
-        {
-          key: "E.badge-opp",
-          type: "badge",
-          text: "Opposite 10 = 2×5",
-          className: `${E_BADGE} bg-[#b89a5a] text-white`,
-          style: { left: "50%", top: "50%", transform: "translate(-50%, -88px)" },
-        },
+        { key: "E.pair", type: "line", from: 0, to: 8, color: "#b89a5a", width: "2" },
+        eTotal("E.tot-pair", { x: Z / 2, y: -16 }, "10 = 2×5"),
       ],
       matrix: { highlight: [0, 8], setValues: null },
     }),
     animStep("E-3", {
-      caption: "Magic 15 = 3 × 5.",
-      durationMs: 1400,
-      overlay: { show: ["E.ring-1", "E.badge-magic"] },
+      caption: "One magic line accumulates to 15 — three times 5.",
+      durationMs: 1800,
+      overlay: { show: ["E.row", "E.tot-row"] },
       draw: [
-        { key: "E.ring-1", type: "ring", r: 108, color: "#1a1a1a", width: "1", dash: "2 8", opacity: 0.25 },
-        {
-          key: "E.badge-magic",
-          type: "badge",
-          text: "Magic 15 = 3×5",
-          className: `${E_BADGE} bg-white border`,
-          style: { left: "50%", top: "50%", transform: "translate(-50%, 78px)" },
-        },
+        { key: "E.row", type: "line", from: 3, to: 5, extend: 12, color: "#1a1a1a", width: "2" },
+        eTotal("E.tot-row", { x: Z / 2, y: -16 }, "15 = 3×5"),
       ],
       matrix: { highlight: [3, 4, 5], setValues: null },
+    }),
+    animStep("E-4", {
+      caption: "Three faces of 5 — 45, 10, 15.",
+      durationMs: 1800,
+      overlay: { show: ["E.stk-0", "E.stk-1", "E.stk-2"] },
+      draw: [
+        ["E.stk-0", 0, "45 = 9×5", 0.3],
+        ["E.stk-1", 1, "10 = 2×5", 0.5],
+        ["E.stk-2", 2, "15 = 3×5", 0.7],
+      ].map(([key, row, text, at]) => {
+        const pos = rowGutter(row);
+        return {
+          key,
+          type: "gutter",
+          at,
+          x: pos.x,
+          y: pos.y,
+          text,
+          fill: "white",
+          stroke: "#1a1a1a",
+          color: "#1a1a1a",
+          w: 78,
+          h: 20,
+          rx: 10,
+          fontSize: 11,
+          weight: "700",
+          textDy: 4,
+        };
+      }),
+      matrix: { highlight: [4], setValues: null },
     }),
   ],
 };
@@ -579,30 +609,111 @@ export const scriptF = {
   ],
 };
 
+// Property G: the deviations are already on the board after subtracting 5;
+// this makes the cancellation visible. One middle-row beat shows opposite
+// tokens canceling to a quiet margin mark, then the column and diagonal
+// families join it so the end state is three restrained Σ 0 ticks.
 export const scriptG = {
   id: "G",
   title: "Zero-balanced form",
   steps: [
     animStep("G-1", {
-      caption: "Positive cells: +4, +2, +3, +1.",
-      durationMs: 1400,
+      caption: "Positives after −5: +4, +2, +3, +1.",
+      durationMs: 1800,
       overlay: { show: ["G.pos"] },
       draw: [{ key: "G.pos", type: "cellTag", cells: [1, 5, 6, 8], texts: ["+4", "+2", "+3", "+1"] }],
       matrix: { highlight: [1, 5, 6, 8], setValues: null },
     }),
     animStep("G-2", {
-      caption: "Negative cells: −1, −3, −2, −4.",
-      durationMs: 1400,
+      caption: "Negatives: −1, −3, −2, −4.",
+      durationMs: 1800,
       overlay: { show: ["G.neg"] },
       draw: [{ key: "G.neg", type: "cellTag", cells: [0, 2, 3, 7], texts: ["-1", "-3", "-2", "-4"] }],
       matrix: { highlight: [0, 2, 3, 7], setValues: null },
     }),
     animStep("G-3", {
-      caption: "Center 0 — every line sums to 0.",
-      durationMs: 1600,
-      overlay: { show: ["G.center"] },
-      draw: [{ key: "G.center", type: "cellTag", cells: [4], texts: ["0"] }],
-      matrix: { highlight: [4], setValues: null },
+      caption: "Middle row cancels: −2 + 0 + 2 = 0.",
+      durationMs: 1800,
+      overlay: { show: ["G.cancel", "G.mid0", "G.eq", "G.zero"] },
+      draw: [
+        { key: "G.cancel", type: "line", from: 3, to: 5, color: "#1a1a1a", width: "2" },
+        { key: "G.mid0", type: "cellTag", cells: [4], texts: ["0"] },
+        {
+          key: "G.eq",
+          type: "chip",
+          at: 0.3,
+          from: 3,
+          to: 5,
+          anchor: "end",
+          dy: -32,
+          text: "−2+0+2",
+          fill: "white",
+          stroke: "#1a1a1a",
+          color: "#1a1a1a",
+          w: 64,
+          h: 20,
+          fontSize: 11,
+        },
+        {
+          key: "G.zero",
+          type: "gutter",
+          at: 0.6,
+          x: rowGutter(1).x,
+          y: rowGutter(1).y,
+          text: "= 0",
+          fill: "#1a1a1a",
+          color: "white",
+          w: 40,
+          h: 20,
+          rx: 10,
+          fontSize: 13,
+          weight: "700",
+          textDy: 4,
+        },
+      ],
+      matrix: { highlight: [3, 4, 5], setValues: null },
+    }),
+    animStep("G-4", {
+      caption: "Every line sums to 0 — rows, columns, diagonals.",
+      durationMs: 1800,
+      overlay: { show: ["G.tick-c", "G.tick-d"] },
+      draw: [
+        {
+          key: "G.tick-c",
+          type: "gutter",
+          at: 0.35,
+          x: colGutter(1).x,
+          y: colGutter(1).y,
+          text: "Σ 0",
+          fill: "white",
+          stroke: "#1a1a1a",
+          color: "#1a1a1a",
+          w: 44,
+          h: 20,
+          rx: 10,
+          fontSize: 12,
+          weight: "700",
+          textDy: 4,
+        },
+        {
+          key: "G.tick-d",
+          type: "gutter",
+          at: 0.55,
+          x: cornerGutter().x,
+          y: cornerGutter().y,
+          text: "Σ 0",
+          fill: "white",
+          stroke: "#1a1a1a",
+          color: "#1a1a1a",
+          w: 44,
+          h: 20,
+          rx: 10,
+          fontSize: 12,
+          weight: "700",
+          textDy: 4,
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
     }),
   ],
 };
@@ -744,19 +855,46 @@ function jLines(key, triples, color) {
   };
 }
 
+// Property J: rows fuse into horizontal number ribbons in the right margin,
+// columns into ribbons along the bottom margin; each family stacks into
+// 1665, and the payoff step lands the large reduction 1665 = 15 × 111.
+function jRibbon(key, pos, text, at, color) {
+  return {
+    key,
+    type: "gutter",
+    at,
+    x: pos.x,
+    y: pos.y,
+    text,
+    fill: "white",
+    stroke: color,
+    color: "#1a1a1a",
+    w: 46,
+    h: 20,
+    rx: 10,
+    fontSize: 12,
+    weight: "700",
+    textDy: 4,
+  };
+}
+
 export const scriptJ = {
   id: "J",
   title: "111 property",
   steps: [
     animStep("J-1", {
-      caption: "Rows as numbers: 492 + 357 + 816.",
-      durationMs: 1500,
-      overlay: { show: ["J.rows", "J.badge-rows"] },
+      caption: "Rows read as numbers — 492, 357, 816.",
+      durationMs: 1800,
+      overlay: { show: ["J.rows", "J.rib-0", "J.rib-1", "J.rib-2", "J.badge-rows"] },
       draw: [
         jLines("J.rows", [[0, 2], [3, 5], [6, 8]], "#b89a5a"),
+        jRibbon("J.rib-0", rowGutter(0), "492", 0.3, "#b89a5a"),
+        jRibbon("J.rib-1", rowGutter(1), "357", 0.5, "#b89a5a"),
+        jRibbon("J.rib-2", rowGutter(2), "816", 0.7, "#b89a5a"),
         {
           key: "J.badge-rows",
           type: "badge",
+          at: 0.85,
           row: "j-rows",
           rowStyle: { bottom: -38 },
           text: "492 + 357 + 816 = 1665",
@@ -766,14 +904,18 @@ export const scriptJ = {
       matrix: { highlight: [0, 1, 2], setValues: null },
     }),
     animStep("J-2", {
-      caption: "Columns: 438 + 951 + 276.",
-      durationMs: 1500,
-      overlay: { show: ["J.cols", "J.badge-cols"] },
+      caption: "Columns read down — 438, 951, 276.",
+      durationMs: 1800,
+      overlay: { show: ["J.cols", "J.rib-3", "J.rib-4", "J.rib-5", "J.badge-cols"] },
       draw: [
         jLines("J.cols", [[0, 6], [1, 7], [2, 8]], "#4a6741"),
+        jRibbon("J.rib-3", colGutter(0), "438", 0.3, "#4a6741"),
+        jRibbon("J.rib-4", colGutter(1), "951", 0.5, "#4a6741"),
+        jRibbon("J.rib-5", colGutter(2), "276", 0.7, "#4a6741"),
         {
           key: "J.badge-cols",
           type: "badge",
+          at: 0.85,
           row: "j-cols",
           rowStyle: { top: -34 },
           text: "438 + 951 + 276 = 1665",
@@ -783,20 +925,21 @@ export const scriptJ = {
       matrix: { highlight: [0, 3, 6], setValues: null },
     }),
     animStep("J-3", {
-      caption: "Both sum to 1665 = 15 × 111.",
-      durationMs: 1600,
+      caption: "Both directions agree: 1665 = 15 × 111.",
+      durationMs: 1800,
       overlay: { show: ["J.badge-reveal"] },
       draw: [
         {
           key: "J.badge-reveal",
           type: "badge",
+          at: 0.4,
           row: "j-rows",
           rowStyle: { bottom: -38 },
-          text: "15×111",
-          className: `${J_PILL} bg-[#1a1a1a] text-white`,
+          text: "1665 = 15 × 111",
+          className: "text-[13px] font-mono px-3 py-1 rounded-full bg-[#1a1a1a] text-white",
         },
       ],
-      matrix: { highlight: [4], setValues: null },
+      matrix: { highlight: ALL, setValues: null },
     }),
   ],
 };

@@ -555,12 +555,15 @@ priority roadmap.
 - [x] Reserved gutter anchors outside `Z × Z` (`rowGutter`/`colGutter`/
   `cornerGutter` + `gutter` draw type in `js/overlay.js`; reusable for
   E, F, G, J)
-- [ ] C/D traveling-token + modular-reduction grammar (reuse for H)
-- [ ] F/I grouping/balance and midpoint treatments
-- [ ] K: cofactor-expansion storyboard, or an explicit computed-invariant
-  card instead of an animation
-- [ ] Group collection for E, G, J; paired motion for A, L; torus and
-  transform cues for M, N; overview-diagram toggle per property
+- [x] C/D traveling-token + modular-reduction grammar, reused by H
+  (landed 2026-10-21)
+- [x] F/I grouping/balance and midpoint treatments (landed 2026-10-21)
+- [x] K: decided — explicit computed-invariant card, not a storyboard
+  (`det = 360 = 3×4×5×6 · computed invariant` badge; full cofactor
+  storyboard deferred)
+- [x] Group collection for E, G, J (landed 2026-10-21)
+- [ ] Paired motion for A, L; torus and transform cues for M, N;
+  overview-diagram toggle per property
 - [ ] Worked-example tape, bidirectional tape↔cell linking, formula tokens,
   collision handling, equation hierarchy (18–24 px results, 13–15 px
   totals), ghost/focus board state

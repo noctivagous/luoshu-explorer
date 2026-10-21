@@ -149,6 +149,47 @@ for (const [id, script] of Object.entries(demoScripts)) {
   );
 }
 
+// Property E: three groupings, then a fact stack on the right margin.
+{
+  const e = demoScripts.E;
+  need(e.steps.length === 4, 'script E should have 4 steps');
+  need(e.steps.every((st) => st.durationMs >= 1800), 'E beats should be readable (1800ms+)');
+  const stackats = e.steps[3].draw.map((d) => d.at);
+  need(JSON.stringify(stackats) === JSON.stringify([0.3, 0.5, 0.7]), 'E stack should accumulate one total per beat');
+  const idleE = markup(frameFor(e, 3, 1));
+  need(idleE.includes('45 = 9×5') && idleE.includes('10 = 2×5') && idleE.includes('15 = 3×5'), 'idle E should hold the three-totals stack');
+}
+
+// Property G: middle-row cancellation, then quiet Σ 0 margin marks.
+{
+  const g = demoScripts.G;
+  need(g.steps.length === 4, 'script G should have 4 steps');
+  need(g.steps[2].draw.some((d) => d.key === 'G.cancel'), 'G should draw the canceling row');
+  need(
+    JSON.stringify(frameFor(g, 2, 0).visibleKeys) === JSON.stringify(['G.pos', 'G.neg', 'G.cancel', 'G.mid0']),
+    'G cancel step should group before the equation lands'
+  );
+  const idleG = markup(frameFor(g, 3, 1));
+  need(idleG.includes('= 0'), 'idle G should carry the row cancellation mark');
+  const zeros = idleG.match(/Σ 0/g) || [];
+  need(zeros.length === 2, `idle G should carry two Σ 0 ticks (got ${zeros.length})`);
+}
+
+// Property J: number ribbons fuse rows and columns, payoff lands the reduction.
+{
+  const j = demoScripts.J;
+  need(j.steps.length === 3, 'script J should stay at 3 steps');
+  const ribbons = j.steps[0].draw.filter((d) => d.type === 'gutter');
+  need(ribbons.length === 3, `J rows step should fuse three ribbons (got ${ribbons.length})`);
+  need(
+    JSON.stringify(ribbons.map((d) => d.at)) === JSON.stringify([0.3, 0.5, 0.7]),
+    'J ribbons should fuse one per beat'
+  );
+  const idleJ = markup(frameFor(j, 2, 1));
+  need(idleJ.includes('492') && idleJ.includes('438'), 'idle J should hold row and column ribbons');
+  need(idleJ.includes('1665 = 15 × 111'), 'idle J should land the large reduction');
+}
+
 // Property K is framed as a computed fact, not a visual proof.
 need(
   demoScripts.K.steps[0].caption.toLowerCase().includes('computed'),

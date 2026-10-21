@@ -238,16 +238,20 @@ supporting work.
   step, running total in the caption, tidy `= 15` margin ticks, faint
   eight-line overview (`rowGutter`/`colGutter`/`cornerGutter` in
   `js/overlay.js`, new `gutter` draw type)
-- [ ] C/D: traveling-token + modular-reduction grammar (`13 → 3` as a
-  tens-drop event, not text)
-- [ ] H: reuse the C/D grammar in reverse, with a mod-10 gate for `1 − 6`
-- [ ] F: corner/edge brackets, animated `Σ 20` collection, equality beam
-- [ ] I: endpoint-convergence-to-center on all four axes, fixed equation
-  panel, pulse on landing
+- [x] C/D: traveling-token + modular-reduction grammar — hero segments,
+  equation chip, muted-sum / bold-result tens-drop (landed 2026-10-21)
+- [x] H: reuses the C/D grammar in reverse, mod-10 gate badge on both
+  overflow steps, residual `5` lands at the center (landed 2026-10-21)
+- [x] F: X/plus groupings, `Σ 20` margin totals with E/O tags, `20 = 20`
+  equality badge (landed 2026-10-21)
+- [x] I: fixed top-center equation panel on all four axes, `5` mark pulse
+  on landing (landed 2026-10-21)
 - [x] K: decided — labeled computed-invariant card ("A computed fact,
   not a path", `det = 360 … · computed invariant` badge), not a visual
   proof; full cofactor storyboard deferred
-- [ ] E/G/J: group-collection treatment (collect-to-total)
+- [x] E/G/J: group-collection treatment — E three groupings + margin
+  fact stack, G middle-row cancel + `Σ 0` ticks, J number ribbons +
+  `1665 = 15 × 111` payoff (landed 2026-10-21)
 - [ ] L: center-baseline mirror with simultaneous paired growth
 - [ ] M: torus treatment (ghost edge cells, single numbered traveler,
   solid-vs-wrapped legend)
