@@ -754,7 +754,7 @@ export const scriptF = {
           weight: "700",
           textDy: 4,
         },
-        { key: "F.ptag-c", type: "cellTag", cells: [0, 2, 6, 8], texts: ["E", "E", "E", "E"] },
+        { key: "F.ptag-c", type: "cellTag", cells: [0, 2, 6, 8], texts: ["Even", "Even", "Even", "Even"] },
       ],
       matrix: { highlight: [0, 2, 6, 8], setValues: null },
     }),
@@ -787,7 +787,7 @@ export const scriptF = {
           weight: "700",
           textDy: 4,
         },
-        { key: "F.ptag-e", type: "cellTag", cells: [1, 3, 5, 7], texts: ["O", "O", "O", "O"] },
+        { key: "F.ptag-e", type: "cellTag", cells: [1, 3, 5, 7], texts: ["Odd", "Odd", "Odd", "Odd"] },
       ],
       matrix: { highlight: [1, 3, 5, 7], setValues: null },
     }),
@@ -1483,4 +1483,27 @@ export function scriptFor(propertyId, variantKey) {
   if (!variantKey) return demoScripts[propertyId] || null;
   const hit = variantsFor(propertyId).find((v) => v.key === variantKey);
   return (hit && hit.script) || demoScripts[propertyId] || null;
+}
+
+// Cell probe: for each board index, the properties whose steps highlight or
+// move it, with the step count. N acts on the whole square (its center stays
+// fixed), so it lists under every cell.
+export function cellProperties() {
+  const per = Array.from({ length: 9 }, () => new Map());
+  for (const [id, sc] of Object.entries(demoScripts)) {
+    if (id === "construction" || id === "intro") continue;
+    for (const st of sc.steps) {
+      const touched = new Set([
+        ...(st.matrix.highlight || []),
+        ...((st.matrix.moves || []).flatMap((m) => [m.from, m.to])),
+      ]);
+      touched.forEach((c) => per[c].set(id, (per[c].get(id) || 0) + 1));
+    }
+  }
+  for (let c = 0; c < 9; c++) per[c].set("N", demoScripts.N.steps.length);
+  return per.map((m) =>
+    [...m.entries()]
+      .map(([id, n]) => ({ id, n }))
+      .sort((a, b) => (a.id < b.id ? -1 : 1)),
+  );
 }

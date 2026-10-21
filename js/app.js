@@ -13,8 +13,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
-import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS } from "./animation.js";
-import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
+import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor } from "./animation.js";
+import { scriptFor, variantsFor, ledgerFor, cellProperties } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll } from "./verify.js";
 
@@ -634,6 +634,9 @@ function storePref(key, on) {
     window.localStorage.setItem(key, on ? "1" : "0");
   } catch {}
 }
+// Cell probe index: per board cell, the properties whose steps highlight or
+// move it. Computed once from the same scripts the player runs.
+const CELL_PROPS = cellProperties();
 function LoShuApp() {
   let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
     // Active animation variant for the selected property. One select in the
@@ -680,6 +683,9 @@ function LoShuApp() {
     startedRef = React.useRef(false),
     autoSelectRef = React.useRef(false),
     autoNextRef = React.useRef(false),
+    predictRef = React.useRef(false),
+    predictStepRef = React.useRef(null),
+    predictDoneRef = React.useRef(null),
     animLoopToggle = () => {
       const next = !loopRef.current;
       loopRef.current = next;
@@ -704,7 +710,13 @@ function LoShuApp() {
     // the armed swap cell, and whether the playground section is open.
     [playground, setPlayground] = React.useState(false),
     [playGrid, setPlayGrid] = React.useState(null),
-    [swapArm, setSwapArm] = React.useState(null);
+    [swapArm, setSwapArm] = React.useState(null),
+    // Predict mode: pause-before-result guessing with a check/continue loop.
+    [predict, setPredict] = React.useState(false),
+    [predictStep, setPredictStep] = React.useState(null),
+    [predictSel, setPredictSel] = React.useState([]),
+    [predictDone, setPredictDone] = React.useState(null),
+    [predictVerdict, setPredictVerdict] = React.useState(null);
   const toggleLegend = (id) => {
     // Correspondence labels occupy the same small cells as the animation.
     // Selecting a layer must therefore leave the board in its stable state;
@@ -729,6 +741,9 @@ function LoShuApp() {
   startedRef.current = started;
   autoSelectRef.current = autoSelect;
   autoNextRef.current = autoNext;
+  predictRef.current = predict;
+  predictStepRef.current = predictStep;
+  predictDoneRef.current = predictDone;
   // Deep link frozen at selection time: the player effect re-runs under
   // StrictMode and the hash-sync effect below rewrites the hash, so reading
   // it fresh inside the effect would land on step 1 the second time.
@@ -748,6 +763,10 @@ function LoShuApp() {
     setHoverStep(null);
     setFocusCell(null);
     setStickyCell(null);
+    setPredictStep(null);
+    setPredictSel([]);
+    setPredictVerdict(null);
+    setPredictDone(null);
     if (!script) {
       setFrame(null);
       return;
@@ -784,6 +803,20 @@ function LoShuApp() {
         const scrub = root?.querySelector("[data-anim-scrub]");
         if (scrub && document.activeElement !== scrub) {
           scrub.value = String(Math.round(timelineRatio(script, f.stepIndex, f.stepElapsed) * 1000));
+        }
+        // Predict mode: pause before a result-bearing step and ask for its
+        // cells. Refs stay fresh inside this effect-long closure.
+        if (
+          predictRef.current &&
+          f.playing &&
+          predictStepRef.current == null &&
+          f.stepIndex !== predictDoneRef.current &&
+          (f.highlight?.length || 0) > 0
+        ) {
+          p.pause();
+          setPredictStep(f.stepIndex);
+          setPredictSel([]);
+          setPredictVerdict(null);
         }
       },
     });
@@ -895,10 +928,55 @@ function LoShuApp() {
         setFocusCell(null);
         setStickyCell(null);
         setSwapArm(null);
+        // Predicting and swapping fight over the cells; opening one closes
+        // the other.
+        setPredict(false);
+        setPredictStep(null);
+        setPredictSel([]);
+        setPredictVerdict(null);
+        setPredictDone(null);
       } else {
         setSwapArm(null);
       }
       setPlayground(next);
+    },
+    // Predict mode: pause before each result-bearing step and guess its
+    // cells. Enabling restores the Lo Shu so every round starts canonical.
+    predictToggle = () => {
+      const next = !predictRef.current;
+      setPredict(next);
+      setPredictStep(null);
+      setPredictSel([]);
+      setPredictVerdict(null);
+      setPredictDone(null);
+      if (next) {
+        setPlayground(false);
+        setSwapArm(null);
+        setPlayGrid(null);
+      }
+    },
+    // Check the guess against the step's own highlight set.
+    predictCheck = () => {
+      const st = script.steps[predictStepRef.current];
+      if (!st) return;
+      const want = [...new Set(st.matrix.highlight || [])].sort();
+      const got = [...predictSel].sort();
+      const ok =
+        want.length > 0 &&
+        want.length === got.length &&
+        want.every((c, i) => c === got[i]);
+      setPredictVerdict(ok ? "good" : "miss");
+      setPredictDone(predictStepRef.current);
+    },
+    // Reveal the step on the board and resume the show.
+    predictContinue = () => {
+      setPredictStep(null);
+      setPredictSel([]);
+      setPredictVerdict(null);
+      if (playerRef.current) {
+        setStarted(true);
+        playerRef.current.play();
+      }
     },
     // Opt-in autoplay prefs. The loop toggle stays the visible loop choice;
     // pausing never advances the chain, so stop is always one press away.
@@ -969,15 +1047,26 @@ function LoShuApp() {
         frame &&
         !frame.visibleKeys.includes(key)
       );
+  // Predict mode shows the open step with its reveal withheld (see
+  // promptFrameFor): the board, tape, caption and formula sync all read the
+  // shown frame instead of the live one while a guess is open.
+  const showFrame =
+    predictStep != null && script
+      ? promptFrameFor(script, predictStep)
+      : frame;
   const captionFrame =
-    script && (animOn && frame ? frame : frameFor(script, 0, 1));
+    script && (animOn && showFrame ? showFrame : frameFor(script, 0, 1));
   const captionText =
     (captionFrame?.caption || "").trim() ||
     (script ? `Play to watch: ${script.title}.` : "");
+  const promptText =
+    predictStep != null && script
+      ? `Predict step ${predictStep + 1} of ${script.steps.length}: tap the cells, then Check.`
+      : null;
   const drawItems =
-    script && (animOn && frame && !overview ? frame.draw : frameFor(script, script.steps.length - 1, 1).draw);
+    script && (animOn && showFrame && !overview ? showFrame.draw : frameFor(script, script.steps.length - 1, 1).draw);
   const ov = renderOverlay(drawItems || [], {
-    enteringKeys: animOn && frame && !overview ? frame.enteringKeys : [],
+    enteringKeys: animOn && showFrame && !overview ? showFrame.enteringKeys : [],
   });
   // Tape linking: the hovered row previews its step's cells on the board;
   // the probed cell (keyboard focus or sticky click) picks out its rows.
@@ -994,14 +1083,14 @@ function LoShuApp() {
     // The frame can briefly outlive a property switch (the new player mounts
     // in the effect), so clamp its step to the incoming script.
     syncNums =
-      animOn && frame && script
+      animOn && showFrame && script && predictStep == null
         ? syncNumbers(
             ledgerFor(
-              script.steps[Math.min(frame.stepIndex, script.steps.length - 1)],
+              script.steps[Math.min(showFrame.stepIndex, script.steps.length - 1)],
             ),
           )
         : new Set();
-  const moves = animOn && frame?.moves ? frame.moves : [];
+  const moves = animOn && showFrame?.moves ? showFrame.moves : [];
   const moving = new Set(moves.flatMap((m) => [m.from, m.to]));
   const flyers = moves.map((m) =>
     h(
@@ -1012,7 +1101,7 @@ function LoShuApp() {
           left: `calc((1 - var(--anim-p)) * ${CENTERS[m.from].x}px + var(--anim-p) * ${CENTERS[m.to].x}px)`,
           top: `calc((1 - var(--anim-p)) * ${CENTERS[m.from].y}px + var(--anim-p) * ${CENTERS[m.to].y}px)`,
         },
-        children: frame.setValues?.[m.to],
+        children: showFrame.setValues?.[m.to],
       },
       `${m.from}-${m.to}`,
     ),
@@ -1034,7 +1123,7 @@ function LoShuApp() {
       "aria-label": "Eight forms of the square",
       children: script.steps.map((st, i) => {
         const g = Array.from({ length: 9 }, (_, d) => st.matrix.setValues[d]);
-        const pressed = i === (animOn && frame ? frame.stepIndex : 0);
+        const pressed = i === (animOn && showFrame ? showFrame.stepIndex : 0);
         return h(
           "button",
           {
@@ -1202,7 +1291,7 @@ function LoShuApp() {
                           }),
                           h("span", {
                             className: "anim-caption-text",
-                            children: captionText,
+                            children: promptText ?? captionText,
                           }),
                           h("button", {
                             onClick: animPrev,
@@ -1308,7 +1397,7 @@ function LoShuApp() {
                             "aria-label": "Animation steps",
                             children: script.steps.map((st, i) => {
                               const current =
-                                (animOn && frame ? frame.stepIndex : 0) === i;
+                                (animOn && showFrame ? showFrame.stepIndex : 0) === i;
                               return h("button", {
                                 type: "button",
                                 className: `anim-tick${current ? " anim-tick-on" : ""}`,
@@ -1351,10 +1440,61 @@ function LoShuApp() {
                                 onClick: autoNextToggle,
                                 children: "Auto-next",
                               }, "auto-next"),
+                              h("button", {
+                                type: "button",
+                                className: "anim-rail-btn",
+                                "aria-label": "Predict mode",
+                                "aria-pressed": predict ? "true" : "false",
+                                title:
+                                  "Pause before each result and guess its cells",
+                                onClick: predictToggle,
+                                children: "Predict",
+                              }, "predict"),
                             ],
                           }, "auto-row"),
                         ],
                       }, "transport"),
+                    predictStep != null && script && script.steps[predictStep] &&
+                      _("div", {
+                        className: "predict-bar",
+                        role: "group",
+                        "aria-label": "Prediction prompt",
+                        children: [
+                          h("div", {
+                            className: "text-[13px] font-mono",
+                            children: `Step ${predictStep + 1} of ${script.steps.length}: tap the ${(script.steps[predictStep].matrix.highlight || []).length} cells, then Check. (${predictSel.length} tapped)`,
+                          }, "pq"),
+                          h("div", {
+                            className: "predict-actions",
+                            children: [
+                              predictVerdict == null
+                                ? h("button", {
+                                    type: "button",
+                                    className: "anim-rail-btn",
+                                    "aria-label": "Check prediction",
+                                    disabled: predictSel.length === 0,
+                                    onClick: predictCheck,
+                                    children: "Check",
+                                  }, "check")
+                                : h("button", {
+                                    type: "button",
+                                    className: "anim-rail-btn",
+                                    "aria-label": "Continue playback",
+                                    onClick: predictContinue,
+                                    children: "Continue",
+                                  }, "continue"),
+                            ],
+                          }, "pa"),
+                          predictVerdict != null &&
+                            h("p", {
+                              className: "mt-2 text-[13px] leading-[1.6] opacity-75",
+                              style: { fontFamily: "'Newsreader', Georgia, serif" },
+                              children: predictVerdict === "good"
+                                ? "Correct — nice predicting."
+                                : "Not quite — watch the reveal, then continue.",
+                            }, "pv"),
+                        ],
+                      }, "predict-bar"),
                     h("div", {
                       ref: l,
                       className:
@@ -1445,12 +1585,12 @@ function LoShuApp() {
                               // focus-empty steps render untouched.
                               const dimmed =
                                 animOn &&
-                                frame?.highlight?.length > 0 &&
-                                !frame.highlight.includes(a);
+                                showFrame?.highlight?.length > 0 &&
+                                !showFrame.highlight.includes(a);
                               if (dimmed) y.opacity = 0.45;
                               let buildOn = animOn && script?.id === "construction",
                                 valueOn = animOn && frame?.setValues,
-                                cellVal = valueOn ? (frame.setValues[a] ?? "") : playBase[a],
+                                cellVal = valueOn ? (showFrame.setValues[a] ?? "") : playBase[a],
                                 hideNum = moving.has(a),
                                 // Correspondences: independent slots. Selecting one
                                 // resets playback above, so their labels are never
@@ -1469,7 +1609,7 @@ function LoShuApp() {
                                   y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 2px #1a1a1a`;
                                 else k += " corr-parity-even";
                               }
-                              if (buildOn && frame.highlight.includes(a))
+                              if (buildOn && showFrame.highlight.includes(a))
                                 k += " ring-2 ring-[#c96442] ring-offset-2 ring-offset-white";
                               // Tape linking: hovered rows preview their cells
                               // in gold; the probed cell gets an ink inset.
@@ -1479,6 +1619,8 @@ function LoShuApp() {
                                 y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #1a1a1a`;
                               if (playground && swapArm === a)
                                 y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #c96442`;
+                              if (predictStep != null && predictSel.includes(a))
+                                y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #1a1a1a`;
                               return _(
                                 "div",
                                 {
@@ -1492,6 +1634,16 @@ function LoShuApp() {
                                   onFocus: () => setFocusCell(a),
                                   onBlur: () => setFocusCell((c) => (c === a ? null : c)),
                                   onClick: () => {
+                                    // Predict prompt open: taps vote for the
+                                    // step's cells instead of probing.
+                                    if (predictStep != null) {
+                                      setPredictSel((sel) =>
+                                        sel.includes(a)
+                                          ? sel.filter((c) => c !== a)
+                                          : [...sel, a],
+                                      );
+                                      return;
+                                    }
                                     // Playground swap: arm one cell, then tap
                                     // a second to exchange their values.
                                     if (playground) {
@@ -1665,14 +1817,42 @@ function LoShuApp() {
                               "text-[11px] font-mono uppercase tracking-widest opacity-40 mb-1.5",
                             children: "Worked example",
                           }, "tape-title"),
+                          stickyCell != null &&
+                            h("div", {
+                              className: "cell-probe",
+                              role: "group",
+                              "aria-label": "Cell participation",
+                              children: [
+                                h("span", {
+                                  className: "text-[11px] font-mono opacity-60",
+                                  children: `Cell ${playBase[stickyCell]} appears in:`,
+                                }, "cp-label"),
+                                ...CELL_PROPS[stickyCell].map(({ id, n }) => {
+                                  const p = PROPERTIES.find((q) => q.id === id);
+                                  return h("button", {
+                                    type: "button",
+                                    className: "cell-probe-chip",
+                                    "aria-label": `Open ${p ? p.title : id}`,
+                                    title: `${p ? p.title : id} — ${n} step${n === 1 ? "" : "s"} use this cell`,
+                                    onClick: () => s(id),
+                                    children: id,
+                                  }, `cp-${id}`);
+                                }),
+                              ],
+                            }, "probe"),
                           ...script.steps.map((st, i) => {
                             const entries = ledgerFor(st);
                             const isCaption = entries.length === 0;
-                            const lines = isCaption
-                              ? [st.caption]
-                              : entries.flatMap((en) => String(en).split(" · "));
+                            // While a guess is open, the prompt step hides its
+                            // equation so the tape cannot leak the answer.
+                            const hiding = predictStep === i;
+                            const lines = hiding
+                              ? ["Tap the cells, then Check."]
+                              : isCaption
+                                ? [st.caption]
+                                : entries.flatMap((en) => String(en).split(" · "));
                             const isCurrent =
-                              (animOn && frame ? frame.stepIndex : 0) === i;
+                              (animOn && showFrame ? showFrame.stepIndex : 0) === i;
                             const cells = st.matrix.highlight || [];
                             const related =
                               probeCell != null && cells.includes(probeCell);
@@ -1680,7 +1860,9 @@ function LoShuApp() {
                               "button",
                               {
                                 type: "button",
-                                "aria-label": `Tape step ${i + 1}: ${entries[0] || st.caption}`,
+                                "aria-label": hiding
+                                  ? `Tape step ${i + 1}: hidden while predicting`
+                                  : `Tape step ${i + 1}: ${entries[0] || st.caption}`,
                                 "aria-pressed": isCurrent ? "true" : "false",
                                 onClick: () => {
                                   if (!playerRef.current) return;
@@ -1710,7 +1892,7 @@ function LoShuApp() {
                                   _("div", {
                                     className: "flex-1 min-w-0",
                                     children: lines.map((ln, j) => {
-                                      if (isCaption)
+                                      if (isCaption || hiding)
                                         return h("div", {
                                           className:
                                             "text-[13px] leading-[1.4] opacity-75",
@@ -2012,8 +2194,8 @@ function LoShuApp() {
                                       ["Fold", "into Lo Shu"],
                                     ].map(([name, sub], i) => {
                                       const active =
-                                        (animOn && frame
-                                          ? frame.stepIndex
+                                        (animOn && showFrame
+                                          ? showFrame.stepIndex
                                           : 0) === i;
                                       return h(
                                         "button",

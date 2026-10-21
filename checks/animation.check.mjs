@@ -1,7 +1,7 @@
 // Animation checks: the script format and player engine must stay valid.
 // Run: npm run check. No DOM or wall-clock timing: the player takes an
 // injected clock and tick() advances it manually.
-import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio } from '../js/animation.js';
+import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio, promptFrameFor } from '../js/animation.js';
 import { constructionScript, scriptA, scriptFor, variantsFor, demoScripts } from '../js/animation-scripts.js';
 
 const failures = [];
@@ -195,6 +195,28 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   w.tick(lastDur);
   need(ended === 1, 'loop wrap should not fire onEnd');
   w.dispose();
+}
+
+// Predict mode: the prompt frame withholds the step's own reveal.
+{
+  const pf = promptFrameFor(scriptA, 0);
+  need(pf.stepIndex === 0, 'prompt frame should stay on its step');
+  need(pf.highlight.length === 0 && pf.moves === null, 'prompt frame should hide the answer cells');
+  need(
+    pf.setValues === null && pf.draw.length === 0 && pf.visibleKeys.length === 0,
+    'first-step prompt should show a clean board'
+  );
+  const p2 = promptFrameFor(scriptA, 2);
+  need(
+    JSON.stringify(p2.visibleKeys) ===
+      JSON.stringify(['A.pair-0', 'A.ord-0', 'A.eq-0', 'A.chip-0', 'A.pair-1', 'A.ord-1', 'A.eq-1', 'A.chip-1']),
+    `prompt should rewind annotations to the previous step (got ${JSON.stringify(p2.visibleKeys)})`
+  );
+  need(p2.highlight.length === 0 && p2.moves === null, 'later prompt should also hide the answer');
+  need(
+    promptFrameFor(scriptA, 99).stepIndex === scriptA.steps.length - 1,
+    'prompt frame should clamp to the last step'
+  );
 }
 
 // Validation rejects malformed scripts; the player refuses them.

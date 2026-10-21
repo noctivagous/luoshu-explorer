@@ -101,13 +101,14 @@ function enterAttrs(item, entering) {
 
 // Settled strokes use their real dash. Entering strokes draw on via
 // pathLength + dashoffset; a dashed design fades in after the solid draw
-// so dasharray and dashoffset do not fight.
+// so dasharray and dashoffset do not fight. All line-work renders at 3pt
+// for contrast; drop shadows come from the stage stylesheet.
 function strokeNodes(tag, geom, look, entering) {
   const base = {
     ...geom,
     fill: "none",
     stroke: look.color,
-    strokeWidth: look.width,
+    strokeWidth: "3",
   };
   if (!entering) {
     return h(tag, {
@@ -137,6 +138,47 @@ function strokeNodes(tag, geom, look, entering) {
     pathLength: "1",
     markerEnd: look.marker ? `url(#${look.marker})` : undefined,
   });
+}
+
+// Cells strictly between two endpoints on a straight row, column or
+// diagonal run. Anything else (knight hops, curves) reports no midpoint.
+function cellsBetween(from, to) {
+  const a = CENTERS[from];
+  const b = CENTERS[to];
+  const dRow = b.row - a.row;
+  const dCol = b.col - a.col;
+  if (!(dRow === 0 || dCol === 0 || Math.abs(dRow) === Math.abs(dCol))) return [];
+  const out = [];
+  let r = a.row + Math.sign(dRow);
+  let c = a.col + Math.sign(dCol);
+  while (r !== b.row || c !== b.col) {
+    out.push(r * 3 + c);
+    r += Math.sign(dRow);
+    c += Math.sign(dCol);
+  }
+  return out;
+}
+
+// Diamond stud marking an included matrix cell: a 12-unit square rotated
+// 45 degrees, drawn in the line's own color over the line itself.
+function diamondNode(cell, color, entering, at, key) {
+  const p = CENTERS[cell];
+  return h(
+    "rect",
+    {
+      x: -6,
+      y: -6,
+      width: 12,
+      height: 12,
+      fill: "none",
+      stroke: color,
+      strokeWidth: "2",
+      transform: `translate(${p.x},${p.y}) rotate(45)`,
+      className: entering ? "anim-pop" : undefined,
+      style: entering ? { "--anim-at": String(at ?? 0) } : undefined,
+    },
+    key,
+  );
 }
 
 function chipPoint(item) {
@@ -188,9 +230,14 @@ function svgChip(chip, x, y, entering) {
   );
 }
 
-function lineChildren(item, look, from, to, entering) {
+function lineChildren(item, look, from, to, entering, keySuffix = "") {
   const geom = endpoints(from, to, item.extend || 0);
   const nodes = [strokeNodes("line", geom, look, entering)];
+  // Every included cell gets a diamond: endpoints plus any straight-run
+  // cells between them.
+  [from, ...cellsBetween(from, to), to].forEach((cell, dix) => {
+    nodes.push(diamondNode(cell, look.color, entering, item.at, `diamond-${cell}-${keySuffix}${dix}`));
+  });
   if (item.chip) {
     const p = chipPoint({ ...item, from, to });
     nodes.push(svgChip(item.chip, p.x, p.y, entering));
@@ -238,13 +285,14 @@ function renderItem(item, entering) {
         "g",
         {
           ...attrs,
-          children: item.parts.flatMap((part) =>
+          children: item.parts.flatMap((part, pi) =>
             lineChildren(
               { ...item, chip: part.chip || null, extend: part.extend || 0 },
               part,
               part.from,
               part.to,
               entering,
+              `seg${pi}-`,
             ),
           ),
         },
@@ -274,6 +322,13 @@ function renderItem(item, entering) {
       marker: item.marker,
     };
     const children = [strokeNodes("path", { d }, look, entering)];
+    // Diamonds on every included cell: the waypoint cells when given,
+    // otherwise the arc's own endpoints.
+    const diamondCells =
+      item.cells || (item.from != null && item.to != null ? [item.from, item.to] : []);
+    diamondCells.forEach((cell, ci) => {
+      children.push(diamondNode(cell, look.color, entering, item.at, `diamond-path-${ci}`));
+    });
     if (item.label && item.type === "arc") {
       const a = CENTERS[item.from];
       const b = CENTERS[item.to];
@@ -309,7 +364,7 @@ function renderItem(item, entering) {
             d: "M -6 -4 L 6 0 L -6 4",
             fill: "none",
             stroke: item.color || "#c96442",
-            strokeWidth: item.width || "1.6",
+            strokeWidth: "3",
           }),
         },
         item.key,

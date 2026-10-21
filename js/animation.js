@@ -218,6 +218,26 @@ export function stepDuration(step) {
   return (step && step.durationMs) || DEFAULT_STEP_MS;
 }
 
+// Predict mode: the frame shown while the visitor guesses a step. The step
+// stays current (caption, index, elapsed progress) but its own reveal is
+// withheld: no highlight, no glides, previous values, and only earlier
+// steps' annotations. Progress-0 gating alone would still leak at=0 items,
+// so the draw list is rewound to the previous step outright.
+export function promptFrameFor(script, stepIndex) {
+  const i = Math.max(0, Math.min(stepIndex, script.steps.length - 1));
+  const base = frameFor(script, i, 0);
+  const prev = i > 0 ? frameFor(script, i - 1, 1) : null;
+  return {
+    ...base,
+    highlight: [],
+    moves: null,
+    setValues: prev ? prev.setValues : null,
+    draw: prev ? prev.draw : [],
+    visibleKeys: prev ? prev.visibleKeys : [],
+    enteringKeys: [],
+  };
+}
+
 // 0–1 position across the whole script, for the rail scrubber.
 export function timelineRatio(script, stepIndex, elapsedMs) {
   const durations = script.steps.map(stepDuration);

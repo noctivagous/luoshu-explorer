@@ -51,8 +51,8 @@ need(
 // (play/prev/next/loop/overview) + 1 close = 27, plus 6
 // correspondences-legend chips = 33, plus 3 construction step cards = 36,
 // plus 3 worked-example tape rows (intro shows construction) = 39,
-// plus 3 step ticks + 2 autoplay toggles = 44, plus 1 playground toggle = 45.
-need(document.querySelectorAll('#root button').length === 45, 'expected 45 buttons');
+// plus 3 step ticks + 3 transport toggles = 45, plus 1 playground toggle = 46.
+need(document.querySelectorAll('#root button').length === 46, 'expected 46 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -150,6 +150,39 @@ need(boardCells()[0].textContent.trim() === '9', 'swapped cell should show its n
 root.querySelector('button[aria-label="Restore Lo Shu"]').click();
 await until(() => (checklist().textContent.includes('✗') ? 'broken' : 'holds'), 'holds', 4000);
 need(boardCells()[0].textContent.trim() === '4', 'restore should bring back the Lo Shu');
+
+// Predict mode: pause before the swap beat, guess its cells, continue.
+const predictToggle = root.querySelector('button[aria-label="Predict mode"]');
+need(predictToggle !== null && predictToggle.getAttribute('aria-pressed') === 'false', 'predict should start off');
+predictToggle.click();
+await until(() => (predictToggle.getAttribute('aria-pressed') === 'true' ? 'on' : 'off'), 'on', 4000);
+document.querySelector('.anim-caption-play').click();
+await until(() => (root.querySelector('[aria-label="Prediction prompt"]') !== null ? 'prompt' : 'idle'), 'prompt', 8000);
+const promptBar = () => root.querySelector('[aria-label="Prediction prompt"]');
+need(promptBar() !== null, 'playing with predict on should pause for a guess');
+need(promptBar().textContent.includes('Step 2'), 'first guess should open on the swap beat');
+const tapeRows2 = () => [...root.querySelectorAll('[aria-label="Worked-example tape"] button')];
+need(tapeRows2()[1].textContent.includes('Tap the cells'), 'prompt step should hide its ledger line');
+need(boardCells().every((c) => c.style.opacity === ''), 'prompt board should show no focus dimming');
+[0, 2, 6, 8].forEach((i) => boardCells()[i].click());
+await until(() => (promptBar().textContent.includes('4 tapped') ? 'ready' : 'wait'), 'ready', 4000);
+root.querySelector('button[aria-label="Check prediction"]').click();
+await until(() => (promptBar().textContent.includes('Correct') ? 'good' : 'wait'), 'good', 4000);
+root.querySelector('button[aria-label="Continue playback"]').click();
+await until(() => (root.querySelector('[aria-label="Prediction prompt"]') === null ? 'gone' : 'open'), 'gone', 4000);
+await until(() => (tapeRows2()[1].textContent.includes('Tap the cells') ? 'hidden' : 'shown'), 'shown', 4000);
+document.querySelector('.anim-caption-play').click();
+await until(() => (document.querySelector('.anim-caption-play')?.textContent || ''), '▶', 4000);
+
+// Cell probe: stickying a cell lists its cross-property index.
+boardCells()[4].click();
+await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'probe', 4000);
+const probeChips = () => [...document.querySelectorAll('[aria-label="Cell participation"] button')];
+need(probeChips().length === 11, `center cell should list 11 properties (got ${probeChips().length})`);
+need(probeChips().some((b) => b.textContent === 'N'), 'probe should list N for the fixed center');
+need(!probeChips().some((b) => b.textContent === 'C'), 'probe should spare the center from the border clock');
+boardCells()[4].click();
+await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'none', 4000);
 
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
