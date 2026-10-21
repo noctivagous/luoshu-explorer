@@ -190,6 +190,10 @@ function gutterTick(key, pos) {
   };
 }
 
+// Property B: one hero line per step with the total as a margin tick, then
+// the full eight-line overview. Ticks sit outside the board (rowGutter /
+// colGutter / cornerGutter) so they never cover a numeral. Each diagonal
+// gets its own beat — they never draw together.
 export const scriptB = {
   id: "B",
   title: "Lines sum to 15",
@@ -209,15 +213,20 @@ export const scriptB = {
       matrix: { highlight: [0, 3, 6], setValues: null },
     }),
     animStep("B-3", {
-      caption: "Diagonals too — 8 lines, one constant.",
+      caption: "4 + 5 + 6 = 15 — the main diagonal, corner to corner.",
+      durationMs: 1800,
+      overlay: { show: ["B.diag-0", "B.tick-2"] },
+      draw: [heroLine("B.diag-0", 0, 8), gutterTick("B.tick-2", cornerGutter())],
+      matrix: { highlight: [0, 4, 8], setValues: null },
+    }),
+    animStep("B-4", {
+      caption: "2 + 5 + 8 = 15 — and the other diagonal. Eight lines, one constant.",
       durationMs: 1800,
       overlay: {
-        show: ["B.diag-0", "B.diag-1", "B.tick-2", "B.ctx-0", "B.ctx-1", "B.ctx-2", "B.ctx-3"],
+        show: ["B.diag-1", "B.ctx-0", "B.ctx-1", "B.ctx-2", "B.ctx-3"],
       },
       draw: [
-        heroLine("B.diag-0", 0, 8),
         heroLine("B.diag-1", 2, 6),
-        gutterTick("B.tick-2", cornerGutter()),
         faintLine("B.ctx-0", 3, 5),
         faintLine("B.ctx-1", 6, 8),
         faintLine("B.ctx-2", 1, 7),

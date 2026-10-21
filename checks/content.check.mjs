@@ -66,8 +66,13 @@ for (const [id, script] of Object.entries(demoScripts)) {
 // Property B: one hero line per step, margin ticks, restrained end state.
 {
   const b = demoScripts.B;
-  need(b.steps.length === 3, 'script B should stay at 3 steps');
-  const idleB = markup(frameFor(b, 2, 1));
+  need(b.steps.length === 4, 'script B should show one hero line per step');
+  need(
+    JSON.stringify(frameFor(b, 2, 1).visibleKeys.filter((k) => k.startsWith('B.diag-'))) ===
+      JSON.stringify(['B.diag-0']),
+    'B step 3 should draw only the main diagonal'
+  );
+  const idleB = markup(frameFor(b, 3, 1));
   const ticks = idleB.match(/= 15/g) || [];
   need(ticks.length === 3, `idle B should carry three gutter ticks (got ${ticks.length})`);
   need(b.steps[0].draw[0].dash === undefined, 'B hero lines should be solid, not dashed');
@@ -77,7 +82,7 @@ for (const [id, script] of Object.entries(demoScripts)) {
     'B tick should wait for its beat inside the step'
   );
   need(
-    frameFor(b, 2, 1).highlight.length === 9,
+    frameFor(b, 3, 1).highlight.length === 9,
     'B overview should highlight the whole square'
   );
 }
