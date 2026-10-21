@@ -4,7 +4,7 @@
 //
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
-import { Z, hopLook, rowGutter, colGutter, cornerGutter } from "./overlay.js";
+import { Z, CENTERS, rowGutter, colGutter, cornerGutter } from "./overlay.js";
 
 const ALL = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const LOSHU = [4, 9, 2, 3, 5, 7, 8, 1, 6];
@@ -71,42 +71,83 @@ const A_PAIRS = [
   { key: "A.pair-3", chip: "A.chip-3", cells: [7, 1], color: "#b89a5a", caption: "1 + 9 = 10 — edges balance." },
 ];
 
+// Property A: each beat focuses the operands, assembles the equation at the
+// chord midpoint, and resolves to 10. An ordinal cell tag duplicates the
+// color cue, and the closing beat locks the persistent opposites = 2 × 5.
 export const scriptA = {
   id: "A",
   title: "Opposites balance",
-  steps: A_PAIRS.map((p, i) =>
-    animStep(`A-${i + 1}`, {
-      caption: p.caption,
-      durationMs: 1400,
-      overlay: { show: [p.key, p.chip] },
+  steps: [
+    ...A_PAIRS.map((p, i) => {
+      const v0 = LOSHU[p.cells[0]];
+      const v1 = LOSHU[p.cells[1]];
+      return animStep(`A-${i + 1}`, {
+        caption: `Pair ${i + 1} of 4: ${p.caption}`,
+        durationMs: 1900,
+        overlay: { show: [p.key, `A.ord-${i}`, `A.eq-${i}`, p.chip] },
+        draw: [
+          {
+            key: p.key,
+            type: "line",
+            from: p.cells[0],
+            to: p.cells[1],
+            color: p.color,
+            width: "2.2",
+            dash: "6 6",
+          },
+          { key: `A.ord-${i}`, type: "cellTag", cells: [p.cells[0]], texts: [String(i + 1)] },
+          {
+            key: `A.eq-${i}`,
+            type: "chip",
+            at: 0.3,
+            from: p.cells[0],
+            to: p.cells[1],
+            t: 0.25,
+            text: `${v0}+${v1}`,
+            fill: "white",
+            stroke: p.color,
+            color: p.color,
+            w: 46,
+            h: 20,
+            fontSize: 12,
+          },
+          {
+            key: p.chip,
+            type: "chip",
+            at: 0.55,
+            from: p.cells[0],
+            to: p.cells[1],
+            text: "10",
+            fill: p.color,
+            stroke: p.color,
+            color: "white",
+            w: 30,
+            h: 22,
+            fontSize: 14,
+            weight: "700",
+          },
+        ],
+        matrix: { highlight: p.cells, setValues: null },
+      });
+    }),
+    animStep("A-5", {
+      caption: "Every opposite pair sums to 10 — twice the center 5.",
+      durationMs: 2000,
+      overlay: { show: ["A.lock"] },
       draw: [
         {
-          key: p.key,
-          type: "line",
-          from: p.cells[0],
-          to: p.cells[1],
-          color: p.color,
-          width: "2.2",
-          dash: "6 6",
-        },
-        {
-          key: p.chip,
-          type: "chip",
-          at: 0.55,
-          from: p.cells[0],
-          to: p.cells[1],
-          text: "10",
-          fill: "white",
-          stroke: p.color,
-          color: p.color,
-          w: 28,
-          h: 20,
-          fontSize: 11,
+          key: "A.lock",
+          type: "badge",
+          at: 0.4,
+          text: "opposites = 2 × 5",
+          className:
+            "absolute text-[13px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full shadow pointer-events-none whitespace-nowrap",
+          style: { left: "50%", top: -18, transform: "translateX(-50%)" },
         },
       ],
-      matrix: { highlight: p.cells, setValues: null },
+      matrix: { highlight: ALL, setValues: null },
     }),
-  ),
+  ],
 };
 
 // Property B: one hero line per step with the total as a margin tick, then
@@ -467,7 +508,23 @@ export const scriptE = {
       overlay: { show: ["E.pair", "E.tot-pair"] },
       draw: [
         { key: "E.pair", type: "line", from: 0, to: 8, color: "#b89a5a", width: "2" },
-        eTotal("E.tot-pair", { x: Z / 2, y: -16 }, "10 = 2×5"),
+        {
+          key: "E.tot-pair",
+          type: "chip",
+          at: 0.55,
+          from: 0,
+          to: 8,
+          dx: -58,
+          dy: -34,
+          text: "10 = 2×5",
+          fill: "#b89a5a",
+          stroke: "#b89a5a",
+          color: "white",
+          w: 84,
+          h: 22,
+          fontSize: 12,
+          weight: "700",
+        },
       ],
       matrix: { highlight: [0, 8], setValues: null },
     }),
@@ -477,7 +534,23 @@ export const scriptE = {
       overlay: { show: ["E.row", "E.tot-row"] },
       draw: [
         { key: "E.row", type: "line", from: 3, to: 5, extend: 12, color: "#1a1a1a", width: "2" },
-        eTotal("E.tot-row", { x: Z / 2, y: -16 }, "15 = 3×5"),
+        {
+          key: "E.tot-row",
+          type: "chip",
+          at: 0.55,
+          from: 3,
+          to: 5,
+          dx: 58,
+          dy: -34,
+          text: "15 = 3×5",
+          fill: "#1a1a1a",
+          stroke: "#1a1a1a",
+          color: "white",
+          w: 84,
+          h: 22,
+          fontSize: 12,
+          weight: "700",
+        },
       ],
       matrix: { highlight: [3, 4, 5], setValues: null },
     }),
@@ -964,7 +1037,7 @@ export const scriptK = {
           type: "badge",
           text: "det = 360 = 3×4×5×6 · computed invariant",
           className:
-            "absolute left-1/2 -translate-x-1/2 text-[10px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full whitespace-nowrap pointer-events-none",
+            "absolute left-1/2 -translate-x-1/2 text-[11px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full whitespace-nowrap pointer-events-none",
           style: { bottom: -36 },
         },
       ],
@@ -973,54 +1046,91 @@ export const scriptK = {
   ],
 };
 
-const POSITIVE_CELLS = [1, 5, 6, 8];
-const NEGATIVE_CELLS = [0, 2, 3, 7];
-
 function lBar(cell) {
   return { key: `L.bar-${cell}`, type: "bar", cell, delta: LOSHU[cell] - 5 };
 }
 
+// Property L: four matched opposite pairs instead of nine isolated bars.
+// Each beat grows one +n/−n pair simultaneously (the bars share the same
+// --anim-p beat) and joins the pair with a link through the center, ending
+// in four clear paired brackets.
+const L_PAIRS = [
+  { cells: [1, 7], caption: "+4 and −4 grow mirrored — the extremes." },
+  { cells: [6, 2], caption: "+3 and −3 grow mirrored." },
+  { cells: [5, 3], caption: "+2 and −2 grow mirrored." },
+  { cells: [8, 0], caption: "+1 and −1 grow mirrored — the center holds 0." },
+];
+
 export const scriptL = {
   id: "L",
   title: "Mirrored distance",
-  steps: [
-    animStep("L-1", {
-      caption: "Above 5: +4, +3, +2, +1.",
-      durationMs: 1400,
-      overlay: { show: POSITIVE_CELLS.map((c) => `L.bar-${c}`) },
-      draw: POSITIVE_CELLS.map(lBar),
-      matrix: { highlight: POSITIVE_CELLS, setValues: null },
+  steps: L_PAIRS.map((pair, k) =>
+    animStep(`L-${k + 1}`, {
+      caption: pair.caption,
+      durationMs: 1800,
+      overlay: { show: [`L.link-${k}`, `L.bar-${pair.cells[0]}`, `L.bar-${pair.cells[1]}`] },
+      draw: [
+        {
+          key: `L.link-${k}`,
+          type: "line",
+          from: pair.cells[0],
+          to: pair.cells[1],
+          color: "#1a1a1a",
+          width: "1.2",
+          opacity: 0.5,
+        },
+        lBar(pair.cells[0]),
+        lBar(pair.cells[1]),
+      ],
+      matrix: { highlight: pair.cells, setValues: null },
     }),
-    animStep("L-2", {
-      caption: "Below 5, mirrored: −1, −2, −3, −4.",
-      durationMs: 1600,
-      overlay: { show: NEGATIVE_CELLS.map((c) => `L.bar-${c}`) },
-      draw: NEGATIVE_CELLS.map(lBar),
-      matrix: { highlight: NEGATIVE_CELLS, setValues: null },
-    }),
-  ],
+  ),
 };
 
 const VALUE_INDEX = { 1: 7, 2: 2, 3: 3, 4: 0, 5: 4, 6: 8, 7: 5, 8: 6, 9: 1 };
 const M_ORDER = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+// Knight hops on the plain grid vs torus-wrap hops. d indexes M_ORDER hops:
+// 0, 1 (1→2→3) and 6, 7 (7→8→9) are true knight moves, drawn solid dark;
+// the rest wrap the torus, drawn dashed purple with an outward bulge that
+// visibly leaves the board and re-enters. No tiny arc labels — one numbered
+// traveler per step carries the values instead.
+const KNIGHT_HOPS = new Set([0, 1, 6, 7]);
+
 function mHop(d) {
   const from = VALUE_INDEX[M_ORDER[d]];
   const to = VALUE_INDEX[M_ORDER[d + 1]];
-  const look = hopLook(from, to);
+  if (KNIGHT_HOPS.has(d)) {
+    return {
+      key: `M.hop-${d}`,
+      type: "arc",
+      from,
+      to,
+      bendX: d % 2 === 0 ? 18 : -18,
+      bendY: d % 3 === 0 ? -18 : 12,
+      color: "#1a1a1a",
+      width: "2",
+      marker: "arrowSmall",
+      opacity: 0.9,
+    };
+  }
+  const a = CENTERS[from];
+  const b = CENTERS[to];
+  const mx = (a.x + b.x) / 2 - Z / 2;
+  const my = (a.y + b.y) / 2 - Z / 2;
+  const len = Math.hypot(mx, my) || 1;
   return {
     key: `M.hop-${d}`,
     type: "arc",
     from,
     to,
-    bendX: d % 2 === 0 ? 18 : -18,
-    bendY: d % 3 === 0 ? -18 : 12,
-    color: look.color,
-    width: look.width,
-    dash: look.dash,
+    bendX: Math.round((mx / len) * 90),
+    bendY: Math.round((my / len) * 90),
+    color: "#7a6a9e",
+    width: "1.4",
+    dash: "5 5",
     marker: "arrowSmall",
     opacity: 0.8,
-    label: `${M_ORDER[d]}→${M_ORDER[d + 1]}`,
   };
 }
 
@@ -1032,9 +1142,9 @@ export const scriptM = {
       key: "M.note",
       type: "badge",
       chrome: true,
-      text: "torus wrap • dashed",
+      text: "solid knight • dashed torus wrap",
       className:
-        "absolute right-2 -top-2 text-[9px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full pointer-events-none",
+        "absolute right-2 -top-2 text-[11px] font-mono bg-[#7a6a9e] text-white px-2 py-1 rounded-full pointer-events-none",
     },
   ],
   steps: [1, 3, 5, 7].map((first, k) =>
@@ -1044,10 +1154,29 @@ export const scriptM = {
           ? "1 → 2 → 3 — knight moves."
           : k === 3
             ? "7 → 8 → 9 — knight moves."
-            : `${first} → ${first + 1} → ${first + 2} — short steps.`,
-      durationMs: 1600,
-      overlay: { show: [`M.hop-${2 * k}`, `M.hop-${2 * k + 1}`] },
-      draw: [mHop(2 * k), mHop(2 * k + 1)],
+            : `${first} → ${first + 1} → ${first + 2} — wraps the torus.`,
+      durationMs: 1800,
+      overlay: { show: [`M.hop-${2 * k}`, `M.hop-${2 * k + 1}`, `M.trav-${k}`] },
+      draw: [
+        mHop(2 * k),
+        mHop(2 * k + 1),
+        {
+          key: `M.trav-${k}`,
+          type: "chip",
+          at: 0.5,
+          from: VALUE_INDEX[first + 1],
+          to: VALUE_INDEX[first + 2],
+          anchor: "end",
+          dy: -34,
+          text: `${first}→${first + 1}→${first + 2}`,
+          fill: "#1a1a1a",
+          color: "white",
+          w: 76,
+          h: 22,
+          fontSize: 13,
+          weight: "700",
+        },
+      ],
       matrix: {
         highlight: [VALUE_INDEX[first], VALUE_INDEX[first + 1], VALUE_INDEX[first + 2]],
         setValues: null,
@@ -1094,6 +1223,11 @@ function movesForPerms(prev, next) {
 
 const D4_PERMS = d4Perms();
 const D4_GRIDS = D4_PERMS.map((perm) => perm.map((src) => LOSHU[src]));
+// Property N: the main board glides through the eight forms, but a glide
+// alone reads as arbitrary rearrangement. Rotation steps get a quarter-turn
+// affordance arc (180°/270° widened to match) and reflection steps get the
+// mirror axis sweeping the board; every transformed pose settles into an
+// on-board label. The D₄ thumbnail strip stays the contact sheet.
 const N_CAPTIONS = [
   "The square itself — rotation 0°.",
   "Turn 90°. One square, turned.",
@@ -1104,6 +1238,21 @@ const N_CAPTIONS = [
   "Reflect, then turn 180°.",
   "Reflect, then turn 270°. Eight faces of one.",
 ];
+const N_POSES = [
+  null,
+  "rotate 90°",
+  "rotate 180°",
+  "rotate 270°",
+  "mirror left–right",
+  "mirror + turn 90°",
+  "mirror + turn 180°",
+  "mirror + turn 270°",
+];
+const N_TURN_ARCS = {
+  1: "M 170 30 A 140 140 0 0 1 310 170",
+  2: "M 40 170 A 130 130 0 0 1 300 170",
+  3: "M 170 30 A 140 140 0 1 1 30 170",
+};
 
 export const scriptN = {
   id: "N",
@@ -1111,10 +1260,52 @@ export const scriptN = {
   steps: D4_PERMS.map((perm, k) => {
     const grid = D4_GRIDS[k];
     const moves = k === 0 ? [] : movesForPerms(D4_PERMS[k - 1], perm);
+    const show = [];
+    const draw = [];
+    if (k >= 1 && k <= 3) {
+      show.push(`N.rot-${k}`);
+      draw.push({
+        key: `N.rot-${k}`,
+        type: "path",
+        at: 0.2,
+        d: N_TURN_ARCS[k],
+        color: "#b89a5a",
+        width: "2",
+        marker: "arrowSmall",
+      });
+    }
+    if (k >= 4) {
+      const vertical = k % 2 === 0;
+      show.push(`N.axis-${k}`);
+      draw.push({
+        key: `N.axis-${k}`,
+        type: "line",
+        at: 0.2,
+        from: vertical ? 1 : 3,
+        to: vertical ? 7 : 5,
+        extend: 24,
+        color: "#4a6741",
+        width: "1.4",
+        dash: "6 4",
+      });
+    }
+    if (k >= 1) {
+      show.push(`N.pose-${k}`);
+      draw.push({
+        key: `N.pose-${k}`,
+        type: "badge",
+        at: 0.5,
+        text: N_POSES[k],
+        className:
+          "absolute text-[11px] font-mono bg-white border px-2 py-1 rounded-full shadow pointer-events-none whitespace-nowrap",
+        style: { left: "50%", top: -18, transform: "translateX(-50%)" },
+      });
+    }
     return animStep(`N-${k + 1}`, {
       caption: N_CAPTIONS[k],
       durationMs: 1500,
-      overlay: { show: [] },
+      overlay: { show },
+      draw,
       matrix: {
         highlight: [],
         setValues: asValues(grid),

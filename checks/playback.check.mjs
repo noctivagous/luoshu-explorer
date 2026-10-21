@@ -35,10 +35,10 @@ dom.window.location.hash = '#/luoshu/C?step=2';
 
 // Let the React 18 concurrent root flush (early exit once mounted).
 const deadline = Date.now() + 8000;
-while (document.querySelectorAll('#root button').length < 32 && Date.now() < deadline) {
+while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 32, 'expected 32 buttons with the loop toggle');
+need(document.querySelectorAll('#root button').length === 33, 'expected 33 buttons with the loop toggle');
 
 const stepText = () => document.querySelector('.anim-caption-step')?.textContent || '';
 const captionText = () => document.querySelector('.anim-caption-text')?.textContent || '';
@@ -93,8 +93,26 @@ need(loopBtn.getAttribute('aria-pressed') === 'false', 'loop should start off');
 loopBtn.click();
 await needSeen(() => loopBtn.getAttribute('aria-pressed'), 'true', 'loop toggle should arm');
 
+// Ghost/focus: cells outside the step's focus set recede during playback.
+// Paused on C step 2 (highlight [5, 2, 1]), so cell 0 dims and cell 5 does not.
+const boardCells = () => [...document.querySelectorAll('#root [data-anim-stage] div.grid > div')];
+need(boardCells().length === 9, 'board should render nine cells');
+need(boardCells()[0].style.opacity === '0.45', `off-focus cells should recede (got ${boardCells()[0].style.opacity})`);
+need(boardCells()[5].style.opacity === '', 'focus cells should not recede');
+
+// Overview: the full diagram on demand while the playback step stays put.
+const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
+need(overviewBtn !== null, 'overview toggle should exist');
+overviewBtn.click();
+await needSeen(() => overviewBtn.getAttribute('aria-pressed'), 'true', 'overview toggle should arm');
+need(document.querySelector('[data-anim-key="C.res-3"]') !== null, 'overview should reveal the full diagram');
+await needSeen(stepText, 'Step 2 of 4', 'overview should keep the playback step');
+overviewBtn.click();
+await needSeen(() => overviewBtn.getAttribute('aria-pressed'), 'false', 'overview toggle should disarm');
+need(document.querySelector('[data-anim-key="C.res-3"]') === null, 'leaving overview should gate future keys again');
+
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
   process.exit(1);
 }
-console.log('PASS playback (deep link, keyboard, loop)');
+console.log('PASS playback (deep link, keyboard, loop, overview)');

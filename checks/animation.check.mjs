@@ -55,15 +55,16 @@ need(swapped.moves.length === 4, 'corner swap moves four cells');
 need(JSON.stringify(gridOf(folded.setValues)) === JSON.stringify([4, 9, 2, 3, 5, 7, 8, 1, 6]), 'construction folds onto the Lo Shu');
 need(folded.moves.length > 0, 'fold step should glide the cells that move');
 
-// Property A: 4 pair steps. The "10" chip waits until mid-step.
-need(scriptA.steps.length === 4, 'script A should have 4 steps');
+// Property A: 4 pair beats plus the invariant lockup. The equation assembles
+// mid-step and the "10" resolves after it.
+need(scriptA.steps.length === 5, 'script A should have 4 pairs plus the lockup');
 need(
-  JSON.stringify(frameFor(scriptA, 0, 0).visibleKeys) === JSON.stringify(['A.pair-0']),
-  'script A step 0 at the start should reveal only the chord'
+  JSON.stringify(frameFor(scriptA, 0, 0).visibleKeys) === JSON.stringify(['A.pair-0', 'A.ord-0']),
+  'script A step 0 at the start should focus before the equation assembles'
 );
 need(
-  JSON.stringify(frameFor(scriptA, 0).visibleKeys) === JSON.stringify(['A.pair-0', 'A.chip-0']),
-  'script A step 0 at the end should pop the 10 chip'
+  JSON.stringify(frameFor(scriptA, 0).visibleKeys) === JSON.stringify(['A.pair-0', 'A.ord-0', 'A.eq-0', 'A.chip-0']),
+  'script A step 0 at the end should resolve the assembled equation to 10'
 );
 need(
   frameFor(scriptA, 2).visibleKeys.filter((k) => k.startsWith('A.pair-')).length === 3,
@@ -80,45 +81,49 @@ need(
 );
 need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells');
 
-// Player: manual tick advances, step/reset/speed behave.
+// Player: manual tick advances, step/reset/speed behave. Durations and the
+// last index come from the script so beat-length edits stay green.
 {
   const p = createPlayer(scriptA, silent);
+  const last = scriptA.steps.length - 1;
+  const firstDur = scriptA.steps[0].durationMs;
+  const lastDur = scriptA.steps[last].durationMs;
   need(p.getState().stepIndex === 0, 'player should start at step 0');
   need(p.getState().playing === false, 'player should start paused');
-  p.tick(1400);
+  p.tick(firstDur);
   need(p.getState().stepIndex === 1, 'tick(duration) should advance one step');
   p.stepPrev();
   need(p.getState().stepIndex === 0, 'stepPrev should go back');
-  p.seek(3);
-  need(p.getState().isLast === true, 'seek(3) should reach the last step');
+  p.seek(last);
+  need(p.getState().isLast === true, 'seek(last) should reach the last step');
   p.seekAt(1, 700);
   need(p.getState().stepIndex === 1 && p.getState().stepElapsed === 700, 'seekAt should pause inside a step');
   p.seekAt(1, 99999);
-  need(p.getState().stepElapsed === 1400, 'seekAt should clamp to the step duration');
+  need(p.getState().stepElapsed === scriptA.steps[1].durationMs, 'seekAt should clamp to the step duration');
   const mid = ratioToTime(scriptA, timelineRatio(scriptA, 1, 700));
   need(mid.stepIndex === 1 && Math.round(mid.elapsedMs) === 700, 'timeline ratio should round-trip');
-  p.seek(3);
-  p.tick(1400);
+  p.seek(last);
+  p.tick(lastDur);
   need(p.getState().playing === false, 'ticking past the last step should stop');
   need(p.getState().loop === false, 'loop should default to off');
   p.setLoop(true);
   need(p.getState().loop === true, 'setLoop(true) should apply');
-  p.seek(3);
-  p.tick(1400);
+  p.seek(last);
+  p.tick(lastDur);
   need(
     p.getState().stepIndex === 0 && p.getState().stepElapsed === 0,
     'looping past the last step should wrap to the first'
   );
-  p.seek(3);
+  p.seek(last);
   p.play();
-  p.tick(1400);
+  p.tick(lastDur);
   need(
     p.getState().stepIndex === 0 && p.getState().playing === true,
     'looping while playing should keep playing from the first step'
   );
   p.setLoop(false);
-  p.seek(3);
-  p.tick(1400);
+  p.seek(last);
+  p.tick(lastDur);
   need(p.getState().playing === false, 'unlooped tick past the last step should stop');
   p.reset();
   const r = p.getState();

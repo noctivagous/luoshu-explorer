@@ -38,10 +38,13 @@ need(
 
 // Sidebar: 6 category headers + 15 items (intro + A–N), two-column grid,
 // square icon tiles with 26px glyphs. Intro is selected on load, so the
-// detail close button is present too. 6 + 15 + 4 caption playback
-// (play/prev/next/loop) + 1 close = 26, plus 6 correspondences-legend
-// chips = 32.
-need(document.querySelectorAll('#root button').length === 32, 'expected 32 buttons');
+// detail close button is present too. 6 + 15 + 5 caption playback
+// (play/prev/next/loop/overview) + 1 close = 27, plus 6
+// correspondences-legend chips = 33.
+need(document.querySelectorAll('#root button').length === 33, 'expected 33 buttons');
+const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
+need(overviewBtn !== null, 'overview toggle should exist');
+need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
 need(text.includes('Correspondences'), 'missing correspondences legend');
 const pressed = [...document.querySelectorAll('#root button')].filter(
   (b) => b.getAttribute('aria-pressed') === 'true',
@@ -59,4 +62,4 @@ if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
   process.exit(1);
 }
-console.log(`PASS render-smoke (${document.querySelectorAll('#root button').length} buttons, loop toggle present)`);
+console.log(`PASS render-smoke (${document.querySelectorAll('#root button').length} buttons, loop + overview toggles present)`);

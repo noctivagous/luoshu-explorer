@@ -144,7 +144,9 @@ function chipPoint(item) {
   if (chip.x != null && chip.y != null) return { x: chip.x, y: chip.y };
   const a = CENTERS[item.from];
   const b = CENTERS[item.to];
-  const t = chip.anchor === "end" ? 1 : chip.anchor === "start" ? 0 : 0.5;
+  // anchor picks an endpoint; t places the chip fractionally along the
+  // segment so beats on one shared chord (A's diameters) still separate.
+  const t = chip.anchor === "end" ? 1 : chip.anchor === "start" ? 0 : (chip.t ?? 0.5);
   return {
     x: a.x + (b.x - a.x) * t + (chip.dx || 0),
     y: a.y + (b.y - a.y) * t + (chip.dy || 0),
@@ -393,7 +395,7 @@ function renderItem(item, entering) {
         "span",
         {
           "data-anim-key": item.key,
-          className: `absolute text-[10px] font-mono opacity-60 pointer-events-none${entering ? " anim-pop" : ""}`,
+          className: `absolute text-[11px] font-mono opacity-60 pointer-events-none${entering ? " anim-pop" : ""}`,
           style: {
             left: m.x,
             top: m.y + gn / 2 - 16,

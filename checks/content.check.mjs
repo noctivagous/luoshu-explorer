@@ -5,7 +5,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { demoScripts } from '../js/animation-scripts.js';
 import { frameFor } from '../js/animation.js';
-import { renderOverlay } from '../js/overlay.js';
+import { renderOverlay, CENTERS, Z } from '../js/overlay.js';
 import { verifyAll, determinant } from '../js/verify.js';
 import propertiesData from '../data/properties.json' with { type: 'json' };
 
@@ -188,6 +188,116 @@ for (const [id, script] of Object.entries(demoScripts)) {
   const idleJ = markup(frameFor(j, 2, 1));
   need(idleJ.includes('492') && idleJ.includes('438'), 'idle J should hold row and column ribbons');
   need(idleJ.includes('1665 = 15 × 111'), 'idle J should land the large reduction');
+}
+
+// Property A: midpoint equations with ordinal tags, closed by the lockup.
+{
+  const a = demoScripts.A;
+  need(a.steps.length === 5, 'script A should close with the invariant lockup');
+  need(
+    JSON.stringify(frameFor(a, 0, 0).visibleKeys) === JSON.stringify(['A.pair-0', 'A.ord-0']),
+    'A step 0 should focus before the equation assembles'
+  );
+  const eq0 = a.steps[0].draw.find((d) => d.key === 'A.eq-0');
+  need(eq0 && eq0.text === '4+6', `A equation should name the operands (got ${eq0 && eq0.text})`);
+  const res0 = a.steps[0].draw.find((d) => d.key === 'A.chip-0');
+  need(res0 && res0.fontSize >= 14, 'A landed 10 should be large (14+)');
+  need(
+    a.steps[4].draw.some((d) => d.key === 'A.lock' && String(d.text).includes('2 × 5')),
+    'A should close with the opposites = 2 × 5 lockup'
+  );
+}
+
+// Property L: four mirrored pair-beats ending in four paired brackets.
+{
+  const l = demoScripts.L;
+  need(l.steps.length === 4, 'script L should pair all four magnitudes');
+  need(
+    l.steps.every(
+      (st) => st.draw.filter((d) => d.type === 'bar').length === 2 && st.draw.some((d) => d.type === 'line')
+    ),
+    'L beats should grow each pair simultaneously with a through-center link'
+  );
+  const idleL = markup(frameFor(l, 3, 1));
+  const links = idleL.match(/L\.link-/g) || [];
+  need(links.length === 4, `idle L should hold four paired brackets (got ${links.length})`);
+}
+
+// Property M: solid knight hops vs dashed torus wraps, one traveler a step.
+{
+  const m = demoScripts.M;
+  need(m.steps.length === 4, 'script M should stay at 4 steps');
+  need(
+    m.steps.every((st) => st.draw.some((d) => d.key.startsWith('M.trav-'))),
+    'M beats should carry the numbered traveler'
+  );
+  need(
+    m.steps.every((st) => st.draw.every((d) => d.type !== 'arc' || !d.label)),
+    'M arcs should not carry tiny labels'
+  );
+  const hops = m.steps.flatMap((st) => st.draw.filter((d) => d.type === 'arc'));
+  need(hops.length === 8, `M should draw 8 hops (got ${hops.length})`);
+  need(hops.filter((h) => !h.dash).length === 4, 'M should draw four solid knight hops');
+  need(hops.filter((h) => h.dash).length === 4, 'M should draw four dashed wrap hops');
+}
+
+// Property N: turn arcs, mirror axes, labeled poses on the board.
+{
+  const n = demoScripts.N;
+  need(n.steps.length === 8, 'script N should walk all eight D₄ forms');
+  need(
+    n.steps[1].draw.some((d) => d.key === 'N.rot-1' && d.type === 'path' && d.marker),
+    'N rotation should show an arrowed turn arc'
+  );
+  need(
+    n.steps[4].draw.some((d) => d.key === 'N.axis-4' && d.type === 'line'),
+    'N reflection should show a mirror axis'
+  );
+  need(
+    n.steps.slice(1).every((st, i) => st.draw.some((d) => d.key === `N.pose-${i + 1}`)),
+    'N poses should be labeled on the board'
+  );
+}
+
+// Annotation collisions: svg chips/gutters/marks that share a board center
+// must be the same restacked fact or a same-beat temporal replacement (later
+// `at` covers earlier) — never two annotations competing in one beat.
+{
+  const spotOf = (item) => {
+    if (item.type === 'gutter') return [item.x, item.y];
+    if (item.type === 'mark') return [Z / 2, Z / 2];
+    if (item.type !== 'chip') return null;
+    const a = CENTERS[item.from];
+    const b = CENTERS[item.to];
+    const t = item.anchor === 'end' ? 1 : item.anchor === 'start' ? 0 : 0.5;
+    return [a.x + (b.x - a.x) * t + (item.dx || 0), a.y + (b.y - a.y) * t + (item.dy || 0)];
+  };
+  const labelOf = (item) => String(item.text ?? item.key);
+  for (const [id, script] of Object.entries(demoScripts)) {
+    if (id === 'intro') continue;
+    const seen = new Map();
+    for (const st of script.steps) {
+      for (const item of st.draw || []) {
+        const p = spotOf(item);
+        if (!p) continue;
+        const spot = `${Math.round(p[0] / 4)}:${Math.round(p[1] / 4)}`;
+        const at = item.at ?? 0;
+        if (!seen.has(spot)) seen.set(spot, []);
+        seen.get(spot).push({ step: st.id, at, label: labelOf(item) });
+      }
+    }
+    for (const [spot, items] of seen) {
+      const labels = new Set(items.map((i) => i.label));
+      if (labels.size <= 1) continue;
+      let ok = true;
+      for (let x = 0; x < items.length && ok; x++) {
+        for (let y = x + 1; y < items.length && ok; y++) {
+          if (items[x].step === items[y].step && items[x].at === items[y].at) ok = false;
+        }
+      }
+      need(ok, `script ${id} collides at ${spot}: ${items.map((i) => `${i.label}@${i.step}`).join(', ')}`);
+    }
+  }
 }
 
 // Property K is framed as a computed fact, not a visual proof.

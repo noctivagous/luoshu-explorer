@@ -232,8 +232,9 @@ supporting work.
 
 - [ ] Build: three-part title card (`write` / `swap opposite corners` /
   `fold`), ghosted pre/post locations, clean before/after hold
-- [ ] A: midpoint equation beat (`4 + 6` assembles to `10`), through-5
-  marker, persistent `opposites = 2 × 5` lockup, ordinal pair markers
+- [x] A: midpoint equation beat (`4 + 6` assembles at `t: 0.25`, resolves
+  to a 14px `10`), ordinal cell tags, persistent `opposites = 2 × 5`
+  lockup step (landed 2026-10-21)
 - [x] B: reserved gutters + accumulation treatment — one hero line per
   step, running total in the caption, tidy `= 15` margin ticks, faint
   eight-line overview (`rowGutter`/`colGutter`/`cornerGutter` in
@@ -252,14 +253,17 @@ supporting work.
 - [x] E/G/J: group-collection treatment — E three groupings + margin
   fact stack, G middle-row cancel + `Σ 0` ticks, J number ribbons +
   `1665 = 15 × 111` payoff (landed 2026-10-21)
-- [ ] L: center-baseline mirror with simultaneous paired growth
-- [ ] M: torus treatment (ghost edge cells, single numbered traveler,
-  solid-vs-wrapped legend)
-- [ ] N: rotation/reflection affordances (pivot arc, mirror sweep), labeled
-  poses, contact sheet only after the main-board story
-- [ ] Overview-diagram toggle where the accumulated final state is useful;
-  autoplay stays one-relationship-at-a-time
-- [ ] Supporting: reserved annotation/gutter coordinates; per-beat
-  focus→operate→result→hold phases; board ghost/focus state; ≥11–12 px
-  post-scale annotation floor; label-collision + end-state DOM checks
-  (B, C, F, I, J, M, N minimum)
+- [x] L: four matched pair-beats with simultaneous bar growth and a
+  through-center link each; four paired brackets in the end state
+  (landed 2026-10-21)
+- [x] M: solid knight vs dashed torus-wrap recolor with outward-bulging
+  wrap arcs, one numbered traveler per step, no tiny labels
+  (landed 2026-10-21)
+- [x] N: turn arcs for rotations, mirror axes for reflections, labeled
+  poses on the board; D₄ strip stays the contact sheet (landed 2026-10-21)
+- [x] Overview-diagram toggle in the playback rail; autoplay stays
+  one-relationship-at-a-time (landed 2026-10-21)
+- [x] Supporting: gutter coordinates reused everywhere; per-beat
+  focus→operate→result→hold phases via `at`-staging + beat-order checks;
+  ghost/focus dim during playback; 11px annotation floor; same-spot
+  collision gate + end-state DOM checks for every property (landed 2026-10-21)

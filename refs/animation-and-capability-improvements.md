@@ -562,11 +562,12 @@ priority roadmap.
   (`det = 360 = 3×4×5×6 · computed invariant` badge; full cofactor
   storyboard deferred)
 - [x] Group collection for E, G, J (landed 2026-10-21)
-- [ ] Paired motion for A, L; torus and transform cues for M, N;
-  overview-diagram toggle per property
+- [x] Paired motion for A, L; torus cues for M; transform affordances
+  for N; overview-diagram toggle (landed 2026-10-21)
+- [x] Collision handling (same-spot gate in `checks/content.check.mjs`)
+  and ghost/focus board state (off-focus dim during playback)
 - [ ] Worked-example tape, bidirectional tape↔cell linking, formula tokens,
-  collision handling, equation hierarchy (18–24 px results, 13–15 px
-  totals), ghost/focus board state
+  full equation hierarchy (18–24 px results; current results land at 14–15 px)
 
 ### Open — capabilities (§6)
 

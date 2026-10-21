@@ -622,6 +622,10 @@ function LoShuApp() {
     // Loop wraps the last step back to the first instead of stopping.
     // loopRef mirrors the state for the player effect and key handler.
     [animLoop, setAnimLoop] = React.useState(false),
+    // Overview shows the accumulated full-script diagram while playback
+    // stays on its step: autoplay keeps one relationship at a time, and
+    // the toggle reveals the whole diagram on demand.
+    [overview, setOverview] = React.useState(false),
     loopRef = React.useRef(false),
     startedRef = React.useRef(false),
     animLoopToggle = () => {
@@ -816,9 +820,9 @@ function LoShuApp() {
     (captionFrame?.caption || "").trim() ||
     (script ? `Play to watch: ${script.title}.` : "");
   const drawItems =
-    script && (animOn && frame ? frame.draw : frameFor(script, script.steps.length - 1, 1).draw);
+    script && (animOn && frame && !overview ? frame.draw : frameFor(script, script.steps.length - 1, 1).draw);
   const ov = renderOverlay(drawItems || [], {
-    enteringKeys: animOn && frame ? frame.enteringKeys : [],
+    enteringKeys: animOn && frame && !overview ? frame.enteringKeys : [],
   });
   const moves = animOn && frame?.moves ? frame.moves : [];
   const moving = new Set(moves.flatMap((m) => [m.from, m.to]));
@@ -1053,6 +1057,14 @@ function LoShuApp() {
                             title: "Loop (restart at the last step)",
                             children: "⟳",
                           }),
+                          h("button", {
+                            onClick: () => setOverview((v) => !v),
+                            className: "anim-rail-btn anim-caption-overview",
+                            "aria-label": "Overview diagram",
+                            "aria-pressed": overview ? "true" : "false",
+                            title: "Overview (full diagram)",
+                            children: "▦",
+                          }),
                           formLine &&
                             h("span", { className: "anim-caption-note", children: formLine }),
                         ],
@@ -1141,6 +1153,15 @@ function LoShuApp() {
                                   k +=
                                     " ring-2 ring-[#b89a5a] ring-offset-2 ring-offset-white";
                               }
+                              // Ghost/focus board state: while a script step names
+                              // a focus set, the other cells recede so the
+                              // participating values carry the beat. Idle and
+                              // focus-empty steps render untouched.
+                              const dimmed =
+                                animOn &&
+                                frame?.highlight?.length > 0 &&
+                                !frame.highlight.includes(a);
+                              if (dimmed) y.opacity = 0.45;
                               let buildOn = animOn && script?.id === "construction",
                                 valueOn = animOn && frame?.setValues,
                                 cellVal = valueOn ? (frame.setValues[a] ?? "") : i,
