@@ -36,15 +36,42 @@ export const constructionScript = {
   title: "Build the square",
   steps: [
     animStep("build-1", {
-      caption: "Write 1 through 9 in reading order.",
+      caption: "1 · Write — 1 through 9 in reading order.",
       durationMs: 1600,
       overlay: { show: [] },
       matrix: { highlight: [], setValues: asValues(ORDINAL), moves: [] },
     }),
     animStep("build-2", {
-      caption: "Swap each corner with its opposite — 1↔9 and 3↔7.",
+      caption: "2 · Swap opposite corners — 1↔9 and 3↔7.",
       durationMs: 1800,
       overlay: { show: [] },
+      // Transient ghost connectors: visible only during the swap beat so the
+      // fold lands on a clean board. Cell ghosts come from the player-driven
+      // dim + flyer treatment in js/app.js.
+      draw: [
+        {
+          key: "construction.swap-0",
+          type: "line",
+          from: 0,
+          to: 8,
+          color: "#c96442",
+          width: "2",
+          dash: "6 6",
+          at: 0.1,
+          transient: true,
+        },
+        {
+          key: "construction.swap-1",
+          type: "line",
+          from: 2,
+          to: 6,
+          color: "#c96442",
+          width: "2",
+          dash: "6 6",
+          at: 0.25,
+          transient: true,
+        },
+      ],
       matrix: {
         highlight: [0, 2, 6, 8],
         setValues: asValues(SWAPPED),
@@ -52,8 +79,8 @@ export const constructionScript = {
       },
     }),
     animStep("build-3", {
-      caption: "Fold into the square. The cross slides into the Lo Shu.",
-      durationMs: 2000,
+      caption: "3 · Fold — the cross slides into the Lo Shu.",
+      durationMs: 2400,
       overlay: { show: [] },
       matrix: {
         highlight: movedCells(foldMoves),

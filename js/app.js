@@ -1549,15 +1549,19 @@ function LoShuApp() {
                                   className: "mt-5",
                                   children: _("div", {
                                     className:
-                                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#fdf8f0] border border-[#1a1a1a]/10",
+                                      "inline-flex flex-wrap min-w-0 max-w-full items-center gap-2 px-3 py-1.5 rounded-full bg-[#fdf8f0] border border-[#1a1a1a]/10",
                                     children: [
                                       h("span", {
                                         className:
-                                          "w-1.5 h-1.5 rounded-full bg-[#c96442]",
+                                          "w-1.5 h-1.5 rounded-full bg-[#c96442] shrink-0",
                                       }),
                                       h("code", {
                                         className:
                                           "text-[12px] font-mono tracking-tight",
+                                        style: {
+                                          overflowWrap: "anywhere",
+                                          maxWidth: "100%",
+                                        },
                                         children: o.formula,
                                       }),
                                     ],
@@ -1568,9 +1572,68 @@ function LoShuApp() {
                                     "mt-4 text-[14px] leading-[1.7] opacity-75",
                                   style: {
                                     fontFamily: "'Newsreader', Georgia, serif",
+                                    overflowWrap: "anywhere",
                                   },
                                   children: o.longDesc,
                                 }),
+                                o.id === "intro" &&
+                                  script?.id === "construction" &&
+                                  _("div", {
+                                    className: "mt-4 grid grid-cols-3 gap-2",
+                                    role: "group",
+                                    "aria-label": "Construction steps",
+                                    children: [
+                                      ["Write", "1…9 in order"],
+                                      ["Swap", "1↔9 · 3↔7"],
+                                      ["Fold", "into Lo Shu"],
+                                    ].map(([name, sub], i) => {
+                                      const active =
+                                        (animOn && frame
+                                          ? frame.stepIndex
+                                          : 0) === i;
+                                      return h(
+                                        "button",
+                                        {
+                                          type: "button",
+                                          "aria-pressed": active
+                                            ? "true"
+                                            : "false",
+                                          "aria-label": `Construction step ${i + 1}: ${name}`,
+                                          onClick: () => {
+                                            if (!playerRef.current) return;
+                                            setStarted(true);
+                                            const st = script.steps[i];
+                                            playerRef.current.seekAt(
+                                              i,
+                                              st.durationMs ||
+                                                DEFAULT_STEP_MS,
+                                            );
+                                          },
+                                          className: active
+                                            ? "rounded-[10px] border border-[#1a1a1a] bg-[#1a1a1a] text-[#fdf8f0] p-2 text-left"
+                                            : "rounded-[10px] bg-[#1a1a1a]/[0.03] border border-[#1a1a1a]/[0.06] p-2 text-left hover:bg-[#1a1a1a]/[0.06]",
+                                          children: [
+                                            h("div", {
+                                              className:
+                                                "text-[9px] font-mono opacity-40",
+                                              children: `STEP ${i + 1}`,
+                                            }, "step"),
+                                            h("div", {
+                                              className:
+                                                "text-[11px] font-mono mt-1",
+                                              children: name,
+                                            }, "name"),
+                                            h("div", {
+                                              className:
+                                                "text-[10px] font-mono opacity-60 mt-1",
+                                              children: sub,
+                                            }, "sub"),
+                                          ],
+                                        },
+                                        `construction-card-${i}`,
+                                      );
+                                    }),
+                                  }),
                               ],
                             }),
                           }),

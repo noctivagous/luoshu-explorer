@@ -40,17 +40,23 @@ need(
 // square icon tiles with 26px glyphs. Intro is selected on load, so the
 // detail close button is present too. 6 + 15 + 5 caption playback
 // (play/prev/next/loop/overview) + 1 close = 27, plus 6
-// correspondences-legend chips = 33.
-need(document.querySelectorAll('#root button').length === 33, 'expected 33 buttons');
+// correspondences-legend chips = 33, plus 3 construction step cards = 36.
+need(document.querySelectorAll('#root button').length === 36, 'expected 36 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
 need(document.querySelector('select[aria-label="Animation"]') === null, 'animation select should stay hidden');
 need(text.includes('Correspondences'), 'missing correspondences legend');
-const pressed = [...document.querySelectorAll('#root button')].filter(
+const legendGroup = document.querySelector('[aria-label="Correspondences legend"]');
+need(legendGroup !== null, 'correspondences legend group missing');
+const pressed = [...legendGroup.querySelectorAll('button')].filter(
   (b) => b.getAttribute('aria-pressed') === 'true',
 );
 need(pressed.length === 1 && pressed[0].textContent === 'Off', 'legend should start on Off');
+const constructionCards = [...root.querySelectorAll('button')].filter((b) =>
+  (b.getAttribute('aria-label') || '').startsWith('Construction step'),
+);
+need(constructionCards.length === 3, 'expected 3 construction step cards');
 need(root.querySelectorAll('.lg\\:grid-cols-2').length === 6, 'sidebar catalog grid missing');
 need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 15, 'square icon tiles missing');
 need(root.querySelectorAll('svg[width="26"]').length === 15, 'icon glyphs missing');
