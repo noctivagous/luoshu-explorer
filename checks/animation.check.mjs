@@ -143,10 +143,11 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
     'S turns 90° clockwise'
   );
   // Property T: the sheet story closes at T-4, then the nesting layer opens
-  // in the board: one palace at T-5, all nine at T-6. Predict withholds it.
+  // in the board: one palace at T-5, all nine at T-6, the 3-7 address at T-7,
+  // and two center-path zooms at T-8/T-9. Predict withholds values and nests.
   const scriptT = scriptFor('T');
   need(validateScript(scriptT).length === 0, 'script T invalid');
-  need(scriptT.steps.length === 6, 'T should add two in-board nesting beats');
+  need(scriptT.steps.length === 9, 'T should close with the two center-path zooms');
   need(frameFor(scriptT, 3).nest == null, 'T overview beat shows plain cells');
   need(
     JSON.stringify(frameFor(scriptT, 4).nest) === JSON.stringify({ mode: 'palace', palace: 4 }),
@@ -156,13 +157,59 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
     JSON.stringify(frameFor(scriptT, 5).nest) === JSON.stringify({ mode: 'all' }),
     'T-6 nests all nine palaces in the board'
   );
+  need(
+    JSON.stringify(frameFor(scriptT, 6).nest) ===
+      JSON.stringify({ mode: 'palace', palace: 3, mark: 7 }),
+    'T-7 marks the 3-7 seat inside palace 3'
+  );
+  need(
+    JSON.stringify(frameFor(scriptT, 6).highlight) === JSON.stringify([3]),
+    'T-7 focuses the cell holding outer 3'
+  );
+  need(
+    JSON.stringify(gridOf(frameFor(scriptT, 7).setValues)) ===
+      JSON.stringify([40, 45, 38, 39, 41, 43, 44, 37, 42]),
+    'T-8 re-bases the board on palace 5'
+  );
+  need(
+    JSON.stringify(frameFor(scriptT, 7).nest) === JSON.stringify({ mode: 'all' }),
+    'T-8 nests every re-based cell'
+  );
+  need(
+    JSON.stringify(gridOf(frameFor(scriptT, 8).setValues)) ===
+      JSON.stringify([364, 369, 362, 363, 365, 367, 368, 361, 366]),
+    'T-9 re-bases the board on the 365 center'
+  );
+  need(
+    JSON.stringify(frameFor(scriptT, 8).sheet) ===
+      JSON.stringify({ kind: 'compound', scope: 'all', palace: null, mark: null, inner: 'base' }),
+    'T-9 keeps the zoom sheet on the base inner square'
+  );
   need(promptFrameFor(scriptT, 5).nest == null, 'predict withholds the nesting');
+  need(
+    promptFrameFor(scriptT, 7).setValues === null && promptFrameFor(scriptT, 7).nest == null,
+    'predict withholds the zoom re-basing'
+  );
   need(
     validateScript({
       id: 'bad-nest',
       steps: [animStep('s1', { matrix: { highlight: [], setValues: null, nest: { mode: 'bogus' } } })],
     }).length > 0,
     'matrix.nest should reject unknown modes'
+  );
+  need(
+    validateScript({
+      id: 'bad-mark',
+      steps: [animStep('s1', { matrix: { highlight: [], setValues: null, nest: { mode: 'all', mark: 7 } } })],
+    }).length > 0,
+    'matrix.nest should reject a mark outside palace mode'
+  );
+  need(
+    validateScript({
+      id: 'bad-inner',
+      steps: [animStep('s1', { sheet: { kind: 'compound', scope: 'all', inner: 'middle' } })],
+    }).length > 0,
+    'sheet.inner should reject unknown squares'
   );
   need(frameFor(scriptS, 3).moves.length > 0, 'S turn glides the cells');
   need(promptFrameFor(scriptS, 3).setValues === null, 'predict hides the turn');

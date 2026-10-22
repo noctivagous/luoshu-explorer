@@ -236,6 +236,8 @@ html,body{height:100%;overflow:hidden}
    needs no special case. Numbers stay tabular at a fixed size. */
 .board-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;width:100%;padding:12px;pointer-events:none}
 .board-mini-cell{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;line-height:1.4;text-align:center;font-variant-numeric:tabular-nums}
+.board-mini-cell-marked{box-shadow:inset 0 0 0 2px #b89a5a;border-radius:4px}
+.board-mini-dense .board-mini-cell{font-size:10px}
 /* Playback continuity: transport row under the caption. The stage fades in
    on Play and on property switches via --stage-in, which the app drives on
    its own wall clock (the diagram itself stays player-driven). */

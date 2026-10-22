@@ -983,8 +983,12 @@ function compoundCell(value, key, marked) {
   );
 }
 
-function renderCompoundSheet(payload, grid) {
+function renderCompoundSheet(payload, grid, baseGrid) {
   if (!Array.isArray(grid) || grid.length !== 9) return null;
+  // Zoom beats re-base the board with setValues; the inner square stays the
+  // un-zoomed base grid so the figures remain the true middle thirds.
+  const inner =
+    payload.inner === "base" && Array.isArray(baseGrid) && baseGrid.length === 9 ? baseGrid : grid;
   if (payload.scope === "palace") {
     const P = payload.palace;
     const cells = palaceCells(grid, P);
@@ -1022,7 +1026,7 @@ function renderCompoundSheet(payload, grid) {
       ...notes.map((text, i) => h("p", { className: "sheet-note", children: text }, `note-${i}`)),
     ]);
   }
-  const big = nestBlocks(grid, grid);
+  const big = nestBlocks(grid, inner);
   const palaces = [];
   for (let bi = 0; bi < 3; bi++) {
     for (let bj = 0; bj < 3; bj++) {
@@ -1044,8 +1048,8 @@ function renderCompoundSheet(payload, grid) {
   lines.push(lineSum([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => i * 9 + (8 - i))));
   const agree = lines.every((s) => s === lines[0]);
   const center = big[40];
-  const deep = nestBlocks(big, grid);
-  const again = nestBlocks(deep, grid);
+  const deep = nestBlocks(big, inner);
+  const again = nestBlocks(deep, inner);
   const rowSum = (g) => {
     const n = Math.sqrt(g.length);
     let s = 0;
@@ -1071,11 +1075,11 @@ function renderCompoundSheet(payload, grid) {
   ]);
 }
 
-function renderSheet(payload, grid) {
+function renderSheet(payload, grid, baseGrid) {
   if (!payload) return null;
   if (payload.kind === "pairs") return renderPairSheet(payload, grid);
   if (payload.kind === "companion") return renderCompanionSheet(payload, grid);
-  if (payload.kind === "compound") return renderCompoundSheet(payload, grid);
+  if (payload.kind === "compound") return renderCompoundSheet(payload, grid, baseGrid);
   return null;
 }
 
@@ -1872,14 +1876,23 @@ function LoShuApp() {
                                 valueOn = animOn && frame?.setValues,
                                 cellVal = valueOn ? (showFrame.setValues[a] ?? "") : playBase[a],
                                 hideNum = moving.has(a),
-                                // Nested palace: this cell opens into its 3×3.
+                                // Nested palace: this cell opens into its 3×3. The
+                                // mini always uses the un-zoomed base grid as the
+                                // inner square; zoom beats re-base the board with
+                                // setValues, so outer values may exceed 81.
                                 outerVal = sheetGrid[a],
                                 nestOpen =
                                   nestMode &&
                                   Number.isInteger(outerVal) &&
                                   (nestMode.mode === "all" ||
                                     sheetGrid.indexOf(nestMode.palace) === a),
-                                miniVals = nestOpen ? palaceCells(sheetGrid, outerVal) : null,
+                                miniVals = nestOpen ? palaceCells(playBase, outerVal) : null,
+                                miniMark =
+                                  nestOpen &&
+                                  nestMode.mode === "palace" &&
+                                  Number.isInteger(nestMode.mark)
+                                    ? playBase.indexOf(nestMode.mark)
+                                    : -1,
                                 // Correspondences: independent slots. Selecting one
                                 // resets playback above, so their labels are never
                                 // silently hidden behind an active animation.
@@ -1918,9 +1931,11 @@ function LoShuApp() {
                                   role: "button",
                                   "aria-label": playground
                                     ? `Swap cell ${cellVal}`
-                                    : nestOpen
-                                      ? `Palace ${outerVal}, lines ${27 * (outerVal - 1) + 15}`
-                                      : `Probe cell ${cellVal}`,
+                                    : nestOpen && miniMark >= 0
+                                      ? `Palace ${outerVal}, address ${outerVal}-${nestMode.mark} is ${9 * (outerVal - 1) + nestMode.mark}`
+                                      : nestOpen
+                                        ? `Palace ${outerVal}, lines ${27 * (outerVal - 1) + 15}`
+                                        : `Probe cell ${cellVal}`,
                                   onFocus: () => setFocusCell(a),
                                   onBlur: () => setFocusCell((c) => (c === a ? null : c)),
                                   onClick: () => {
@@ -1954,13 +1969,13 @@ function LoShuApp() {
                                   children: [
                                     nestOpen
                                       ? h("div", {
-                                          className: "board-mini",
+                                          className: `board-mini${miniVals.some((v) => v >= 1000) ? " board-mini-dense" : ""}`,
                                           "aria-hidden": "true",
                                           children: miniVals.map((v, d) =>
                                             h(
                                               "span",
                                               {
-                                                className: "board-mini-cell",
+                                                className: `board-mini-cell${d === miniMark ? " board-mini-cell-marked" : ""}`,
                                                 children: v,
                                               },
                                               d,
@@ -2110,7 +2125,7 @@ function LoShuApp() {
                           }),
                       ],
                     }),
-                    sheetPayload && renderSheet(sheetPayload, sheetGrid),
+                    sheetPayload && renderSheet(sheetPayload, sheetGrid, playBase),
                     script &&
                       script.steps &&
                       _("section", {

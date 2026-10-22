@@ -458,7 +458,7 @@ need(!byId.S.formula.includes('59'), 'S formula should accept either pair');
 need(byId.T.formula === '9·(outer − 1) + inner', 'T formula should be the palace product');
 need(byId.T.category === 'Geometry & Universality', 'T stays under Geometry & Universality');
 need(byId.T.slug === 'nested-palaces', 'T slug should be nested-palaces');
-for (const n of ['31', '96', '177', '369', '82', '25', '41', '9855', '365', '265761', '3281'])
+for (const n of ['31', '96', '177', '369', '82', '25', '41', '9855', '365', '265761', '3281', '3285', '29529'])
   need(byId.T.longDesc.includes(n), `T text should record ${n}`);
 for (const [id, sc] of Object.entries(demoScripts)) {
   const hasSheet = sc.steps.some((st) => st.sheet);
@@ -475,6 +475,34 @@ const broken = [...SQUARE];
   need(verifyAll(turnedGrid).T === true, 'T should hold after a quarter turn');
   need(nestBlocks(turnedGrid, turnedGrid)[0] !== 31, 'a quarter turn moves the northwest palace off 31');
   need(verifyAll(broken).T === false, 'a swapped cell should break T');
+}
+// Center-path zooms: the re-based boards show the true middle thirds.
+{
+  const pal5 = palaceCells(SQUARE, 5);
+  need(
+    JSON.stringify(pal5) === JSON.stringify([40, 45, 38, 39, 41, 43, 44, 37, 42]),
+    'palace 5 re-centers the board on 41'
+  );
+  const mid27 = nestBlocks(pal5, SQUARE);
+  const midRows = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((r) =>
+    [0, 1, 2, 3, 4, 5, 6, 7, 8].reduce((s, c) => s + mid27[r * 9 + c], 0)
+  );
+  need(midRows.every((s) => s === 3285), 'the 27×27 middle third rows sum to 3285');
+  need(mid27[40] === 365, 'the 27×27 middle third centers on 365');
+  need(mid27[0] === 355 && mid27[2] === 353, 'the zoomed minis start 355 360 353');
+  const pal41 = palaceCells(SQUARE, 41);
+  need(
+    JSON.stringify(pal41) === JSON.stringify([364, 369, 362, 363, 365, 367, 368, 361, 366]),
+    'the 365 center re-centers the board'
+  );
+  const midOf81 = nestBlocks(pal41, SQUARE);
+  const midOf81Rows = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((r) =>
+    [0, 1, 2, 3, 4, 5, 6, 7, 8].reduce((s, c) => s + midOf81[r * 9 + c], 0)
+  );
+  need(midOf81Rows.every((s) => s === 29529), 'the 81×81 middle third rows sum to 29529');
+  need(midOf81[40] === 3281, 'the 81×81 middle third centers on 3281');
+  need(midOf81[0] === 3271 && midOf81[2] === 3269, 'the deep zoom minis start 3271 3276 3269');
+  need(midOf81[0] + midOf81[80] === 6562, 'the deep zoom opposites sum to 6562');
 }
 {
   const expected = { rows: 1035369, columns: 1172421, main: 1217781, anti: 1164501 };

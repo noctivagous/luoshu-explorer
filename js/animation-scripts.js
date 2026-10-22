@@ -5,7 +5,7 @@
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
 import { Z, CENTERS, rowGutter, colGutter, cornerGutter } from "./overlay.js";
-import { HOLMES_FAMILIES } from "./verify.js";
+import { HOLMES_FAMILIES, palaceCells } from "./verify.js";
 
 // Worked-example tape: derive one ledger line per step from the text the
 // step already draws, so the tape can never drift from the board.
@@ -1973,6 +1973,43 @@ export const scriptT = {
       ],
       sheet: { kind: "compound", scope: "all", palace: null, mark: null },
       matrix: { highlight: ALL, setValues: null, nest: { mode: "all" } },
+    }),
+    // Address beat: the 3-7 seat opens inside palace 3's board mini, marked
+    // where the inner 7 lands (value 25). Zoom beats re-base the board with
+    // setValues; minis keep the base Lo Shu as the inner square (see js/app.js)
+    // so T-8/T-9 show the true middle thirds (rows 3285 and 88587).
+    animStep("T-7", {
+      caption: "East, then the west seat inside it, is 3-7 = 25 — now open in the board.",
+      tape: "3-7, in the board",
+      durationMs: 2000,
+      overlay: { show: ["T.addr-3"] },
+      draw: [
+        {
+          key: "T.addr-3",
+          type: "path",
+          cells: [3],
+          color: "#c96442",
+          width: "2.4",
+        },
+      ],
+      sheet: { kind: "compound", scope: "palace", palace: 3, mark: 7 },
+      matrix: { highlight: [3], setValues: null, nest: { mode: "palace", palace: 3, mark: 7 } },
+    }),
+    animStep("T-8", {
+      caption: "The board re-centers on palace 5: 40 through 48 with 41 at the heart. Open every cell to see the middle third of the 27×27 — rows of 3285.",
+      tape: "Middle of the 27×27",
+      durationMs: 2200,
+      overlay: { show: ["T.nest-frame"] },
+      sheet: { kind: "compound", scope: "all", palace: null, mark: null, inner: "base" },
+      matrix: { highlight: ALL, setValues: asValues(palaceCells(LOSHU, 5)), nest: { mode: "all" } },
+    }),
+    animStep("T-9", {
+      caption: "The center 365 re-centers the board. Every open cell shows the middle third of the 81×81 — rows of 29,529, with 3281 at the heart.",
+      tape: "Middle of the 81×81",
+      durationMs: 2200,
+      overlay: { show: ["T.nest-frame"] },
+      sheet: { kind: "compound", scope: "all", palace: null, mark: null, inner: "base" },
+      matrix: { highlight: ALL, setValues: asValues(palaceCells(LOSHU, 41)), nest: { mode: "all" } },
     }),
   ],
 };
