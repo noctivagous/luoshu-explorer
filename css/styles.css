@@ -231,6 +231,11 @@ html,body{height:100%;overflow:hidden}
 .formula-tok-lit{opacity:1;font-weight:700;border-bottom:2px solid #c96442}
 /* Probed board cells are keyboard-focusable; keep the focus ring visible. */
 .board-cell:focus-visible{outline:2px solid #1a1a1a;outline-offset:2px}
+/* In-board nesting (property T): an opened cell shows its 3×3 palace. The
+   mini inherits the cell's ink on paper or paper on ink, so the center cell
+   needs no special case. Numbers stay tabular at a fixed size. */
+.board-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;width:100%;padding:12px;pointer-events:none}
+.board-mini-cell{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;line-height:1.4;text-align:center;font-variant-numeric:tabular-nums}
 /* Playback continuity: transport row under the caption. The stage fades in
    on Play and on property switches via --stage-in, which the app drives on
    its own wall clock (the diagram itself stays player-driven). */

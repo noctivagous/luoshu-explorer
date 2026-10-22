@@ -142,6 +142,28 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
     JSON.stringify(gridOf(frameFor(scriptS, 3).setValues)) === JSON.stringify([8, 3, 4, 1, 5, 9, 6, 7, 2]),
     'S turns 90° clockwise'
   );
+  // Property T: the sheet story closes at T-4, then the nesting layer opens
+  // in the board: one palace at T-5, all nine at T-6. Predict withholds it.
+  const scriptT = scriptFor('T');
+  need(validateScript(scriptT).length === 0, 'script T invalid');
+  need(scriptT.steps.length === 6, 'T should add two in-board nesting beats');
+  need(frameFor(scriptT, 3).nest == null, 'T overview beat shows plain cells');
+  need(
+    JSON.stringify(frameFor(scriptT, 4).nest) === JSON.stringify({ mode: 'palace', palace: 4 }),
+    'T-5 nests palace 4 in the board'
+  );
+  need(
+    JSON.stringify(frameFor(scriptT, 5).nest) === JSON.stringify({ mode: 'all' }),
+    'T-6 nests all nine palaces in the board'
+  );
+  need(promptFrameFor(scriptT, 5).nest == null, 'predict withholds the nesting');
+  need(
+    validateScript({
+      id: 'bad-nest',
+      steps: [animStep('s1', { matrix: { highlight: [], setValues: null, nest: { mode: 'bogus' } } })],
+    }).length > 0,
+    'matrix.nest should reject unknown modes'
+  );
   need(frameFor(scriptS, 3).moves.length > 0, 'S turn glides the cells');
   need(promptFrameFor(scriptS, 3).setValues === null, 'predict hides the turn');
   need(promptFrameFor(scriptS, 3).sheet.compareTurn !== true, 'predict hides the turned-pair note');

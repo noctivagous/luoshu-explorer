@@ -1935,6 +1935,45 @@ export const scriptT = {
       sheet: { kind: "compound", scope: "all", palace: null, mark: null },
       matrix: { highlight: ALL, setValues: null },
     }),
+    // In-board nesting layer: the same palaces open inside the matrix area.
+    // Values stay derived from the 3×3 grid (setValues stays null); the
+    // board expands each opened cell via matrix.nest (see js/app.js).
+    animStep("T-5", {
+      caption: "Palace 4 opens in the board: the Lo Shu plus 27. Each of its lines sums to 96.",
+      tape: "Palace 4, in the board",
+      durationMs: 2000,
+      overlay: { show: ["T.nest-4"] },
+      draw: [
+        {
+          key: "T.nest-4",
+          type: "path",
+          cells: [0],
+          color: "#c96442",
+          width: "2.4",
+        },
+      ],
+      sheet: { kind: "compound", scope: "palace", palace: 4, mark: null },
+      matrix: { highlight: [0], setValues: null, nest: { mode: "palace", palace: 4 } },
+    }),
+    animStep("T-6", {
+      caption: "Every cell opens in the board: 1 through 81 once, every line 369.",
+      tape: "All nine, in the board",
+      durationMs: 2200,
+      overlay: { show: ["T.nest-frame"] },
+      draw: [
+        {
+          key: "T.nest-frame",
+          type: "path",
+          d: `M 14 14 H ${Z - 14} V ${Z - 14} H 14 Z`,
+          cells: [],
+          color: "#b89a5a",
+          width: "1.6",
+          dash: "7 5",
+        },
+      ],
+      sheet: { kind: "compound", scope: "all", palace: null, mark: null },
+      matrix: { highlight: ALL, setValues: null, nest: { mode: "all" } },
+    }),
   ],
 };
 

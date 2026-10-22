@@ -22,6 +22,9 @@
 // - `matrix.setValues` is a sparse {index: value} override; null means "show the
 //   real Lo Shu numbers". Construction scripts use {visibleCount} instead via
 //   setValues built step by step (see animation-scripts.js).
+// - `matrix.nest` (null, {mode:"palace",palace:1-9}, or {mode:"all"}) expands
+//   board cells into their nested 3×3 palaces (see js/app.js). Values stay
+//   derived from the 3×3 grid; setValues stays null on nested beats.
 // - `matrix.visibleCount` (optional) reveals only the first N construction cells.
 // - A `draw` item with `transient: true` is visible only during its own step.
 //   Use it for a focused worked example that should clear before the next
@@ -107,6 +110,18 @@ export function validateScript(script) {
                 errors.push(`${at}.matrix.setValues values must be numbers or null`);
             }
           }
+        }
+        if (s.matrix.nest !== undefined && s.matrix.nest !== null) {
+          const nest = s.matrix.nest;
+          const okNest =
+            nest &&
+            typeof nest === "object" &&
+            !Array.isArray(nest) &&
+            (nest.mode === "palace" || nest.mode === "all") &&
+            (nest.mode !== "palace" ||
+              (Number.isInteger(nest.palace) && nest.palace >= 1 && nest.palace <= 9));
+          if (!okNest)
+            errors.push(`${at}.matrix.nest must be { mode: "palace", palace: 1-9 } or { mode: "all" }`);
         }
         if (s.matrix.moves !== undefined && s.matrix.moves !== null) {
           const ok =
@@ -214,6 +229,7 @@ export function frameFor(script, stepIndex, progress = 1) {
   let highlight = [];
   let setValues = null;
   let visibleCount = null;
+  let nest = null;
   let sheet = null;
 
   for (const item of script.chrome || []) {
@@ -251,6 +267,7 @@ export function frameFor(script, stepIndex, progress = 1) {
       if (st.matrix.highlight !== undefined) highlight = st.matrix.highlight;
       if (st.matrix.setValues !== undefined) setValues = st.matrix.setValues;
       if (st.matrix.visibleCount !== undefined) visibleCount = st.matrix.visibleCount;
+      if (st.matrix.nest !== undefined) nest = st.matrix.nest;
     }
     if (st.sheet) sheet = mergeSheet(sheet, st.sheet);
   }
@@ -277,6 +294,7 @@ export function frameFor(script, stepIndex, progress = 1) {
     highlight,
     setValues,
     visibleCount,
+    nest,
     moves,
     sheet,
     isFirst: clamped === 0,
@@ -301,6 +319,7 @@ export function promptFrameFor(script, stepIndex) {
     ...base,
     highlight: [],
     moves: null,
+    nest: null,
     setValues: prev ? prev.setValues : null,
     draw: prev ? prev.draw : [],
     visibleKeys: prev ? prev.visibleKeys : [],

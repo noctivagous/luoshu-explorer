@@ -1553,6 +1553,9 @@ function LoShuApp() {
         : new Set();
   const moves = animOn && showFrame?.moves ? showFrame.moves : [];
   const moving = new Set(moves.flatMap((m) => [m.from, m.to]));
+  // In-board nesting (property T): expand opened cells into their palaces.
+  // Values stay derived from the 3×3 sheetGrid; minis are computed at render.
+  const nestMode = animOn && showFrame?.nest ? showFrame.nest : null;
   const flyers = moves.map((m) =>
     h(
       "span",
@@ -1869,6 +1872,14 @@ function LoShuApp() {
                                 valueOn = animOn && frame?.setValues,
                                 cellVal = valueOn ? (showFrame.setValues[a] ?? "") : playBase[a],
                                 hideNum = moving.has(a),
+                                // Nested palace: this cell opens into its 3×3.
+                                outerVal = sheetGrid[a],
+                                nestOpen =
+                                  nestMode &&
+                                  Number.isInteger(outerVal) &&
+                                  (nestMode.mode === "all" ||
+                                    sheetGrid.indexOf(nestMode.palace) === a),
+                                miniVals = nestOpen ? palaceCells(sheetGrid, outerVal) : null,
                                 // Correspondences: independent slots. Selecting one
                                 // resets playback above, so their labels are never
                                 // silently hidden behind an active animation.
@@ -1907,7 +1918,9 @@ function LoShuApp() {
                                   role: "button",
                                   "aria-label": playground
                                     ? `Swap cell ${cellVal}`
-                                    : `Probe cell ${cellVal}`,
+                                    : nestOpen
+                                      ? `Palace ${outerVal}, lines ${27 * (outerVal - 1) + 15}`
+                                      : `Probe cell ${cellVal}`,
                                   onFocus: () => setFocusCell(a),
                                   onBlur: () => setFocusCell((c) => (c === a ? null : c)),
                                   onClick: () => {
@@ -1939,16 +1952,31 @@ function LoShuApp() {
                                     setStickyCell((c) => (c === a ? null : a));
                                   },
                                   children: [
-                                    h("span", {
-                                      className:
-                                        "text-[42px] leading-none tracking-[-0.02em]",
-                                      style: {
-                                        fontFamily: "'Instrument Serif', serif",
-                                        fontWeight: 500,
-                                        opacity: hideNum ? 0 : 1,
-                                      },
-                                      children: cellVal,
-                                    }),
+                                    nestOpen
+                                      ? h("div", {
+                                          className: "board-mini",
+                                          "aria-hidden": "true",
+                                          children: miniVals.map((v, d) =>
+                                            h(
+                                              "span",
+                                              {
+                                                className: "board-mini-cell",
+                                                children: v,
+                                              },
+                                              d,
+                                            ),
+                                          ),
+                                        }, "mini")
+                                      : h("span", {
+                                          className:
+                                            "text-[42px] leading-none tracking-[-0.02em]",
+                                          style: {
+                                            fontFamily: "'Instrument Serif', serif",
+                                            fontWeight: 500,
+                                            opacity: hideNum ? 0 : 1,
+                                          },
+                                          children: cellVal,
+                                        }),
                                     showLayer("trigrams") &&
                                       h("span", {
                                         className: "corr-trigram",

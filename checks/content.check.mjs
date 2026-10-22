@@ -418,13 +418,15 @@ need(
 );
 
 // No step may be a pure no-op: it must reveal an overlay key, change the
-// highlight, override values, or advance the construction count.
+// highlight, override values, expand nested palaces in the board, or advance
+// the construction count.
 for (const [id, script] of allScripts) {
   script.steps.forEach((st, k) => {
     const live =
       (st.overlay?.show?.length || 0) > 0 ||
       (st.matrix?.highlight?.length || 0) > 0 ||
       (st.matrix?.setValues && Object.keys(st.matrix.setValues).length > 0) ||
+      st.matrix?.nest != null ||
       st.matrix?.visibleCount !== undefined;
     need(live, `script ${id} step ${k} (${st.id}) is a no-op`);
   });
