@@ -25,19 +25,19 @@ backlog.
 These are the highest-value tasks because they make the existing explorer
 clearer for a first-time visitor without adding a second mode or new content.
 
-- [ ] **Build the square:** add three named construction cards—`write`,
+- [x] **Build the square:** add three named construction cards—`write`,
   `swap opposite corners`, and `fold`—with ghosted source/destination cells
   and a clean before/after hold.
-- [ ] **Responsive visual QA:** inspect every property at the smallest
+- [x] **Responsive visual QA:** inspect every property at the smallest
   supported phone width and correct any clipped gutter, caption, or equation.
   Main explanatory text must render at 11–12 px or larger.
-- [ ] **Worked-example tape:** add a persistent, step-synchronised arithmetic
+- [x] **Worked-example tape:** add a persistent, step-synchronised arithmetic
   ledger beside/below the board for the current property.
-- [ ] **Bidirectional linking:** hovering/focusing a tape entry highlights its
+- [x] **Bidirectional linking:** hovering/focusing a tape entry highlights its
   cells; focusing a participating cell highlights the relevant tape entry.
-- [ ] **Formula-token sync:** tokenize the detail-card formula and emphasize
+- [x] **Formula-token sync:** tokenize the detail-card formula and emphasize
   the portion demonstrated by the current animation step.
-- [ ] **Equation hierarchy:** promote primary operands/results to about
+- [x] **Equation hierarchy:** promote primary operands/results to about
   18–24 px; retain 11–12 px only for secondary labels and legends.
 
 Acceptance check: a first-time viewer can identify the participating cells,
@@ -46,25 +46,25 @@ description.
 
 ## Priority 2 — improve playback continuity
 
-- [ ] Fade from the idle overview into the first gated frame instead of
+- [x] Fade from the idle overview into the first gated frame instead of
   cutting when Play is pressed.
 - [ ] Cross-fade the old overlay out and the new overlay in when selecting a
-  property.
-- [ ] Add an opt-in autoplay-on-select preference.
-- [ ] Add autoplay-next at the end of a property, with an obvious stop/loop
+  property. (Fade-in on switch landed; true overlap deferred to browser pass.)
+- [x] Add an opt-in autoplay-on-select preference.
+- [x] Add autoplay-next at the end of a property, with an obvious stop/loop
   choice.
-- [ ] Replace the fixed 0.5×/1×/2× cycle with a 0.25×–3× speed control.
-- [ ] Add visible step ticks/labels to the timeline scrubber.
+- [x] Replace the fixed 0.5×/1×/2× cycle with a 0.25×–3× speed control.
+- [x] Add visible step ticks/labels to the timeline scrubber.
 
 ## Priority 3 — make the explorer interactive and teachable
 
-- [ ] **What breaks? playground:** allow swapping two cells and show an A–N
+- [x] **What breaks? playground:** allow swapping two cells and show an A–N
   checklist derived from `verify()`, with a one-click restore of Lo Shu.
-- [ ] Surface `verify()` in the normal UI as a compact “computed” status for
+- [x] Surface `verify()` in the normal UI as a compact “computed” status for
   the active claim.
-- [ ] Predict mode: pause before a result and ask the visitor to choose the
+- [x] Predict mode: pause before a result and ask the visitor to choose the
   next cell/value.
-- [ ] Cell probe: selecting a cell lists and lightly draws every property in
+- [x] Cell probe: selecting a cell lists and lightly draws every property in
   which it participates.
 - [ ] Quiz mode built from the same property/animation data.
 

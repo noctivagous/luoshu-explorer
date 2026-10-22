@@ -13,7 +13,7 @@ const need = (cond, msg) => { if (!cond) failures.push(msg); };
 // Viewport lock + region rules live in the stylesheet, not the bundle.
 for (const rule of [
   'html,body{height:100%;overflow:hidden}',
-  '#root>div{display:flex;flex-direction:column;min-height:0;height:100vh;height:100dvh;padding-top:16px}',
+  '#root>div{display:flex;flex-direction:column;min-height:0;height:100vh;height:100dvh;padding-top:0}',
   '#root>div>div:has(>aside){flex:1;min-height:0;overflow-y:auto}',
   '#root aside{min-height:0;overflow-y:auto}',
   '#root main{min-height:0;overflow-y:auto}',
@@ -34,6 +34,13 @@ for (const hook of ['"aside"', '"main"', 'overflow-auto', 'getElementById("root"
 for (const leak of ['100dvh', '#root>div']) {
   need(!js.includes(leak), `shell selector leaked into bundle: ${leak}`);
 }
+
+for (const rule of [
+  '--luoshu-type:calc(1 / max(var(--luoshu-fit), .5))',
+  '@media(max-width:1366px)',
+  '@media(max-width:1023px) and (orientation:landscape)',
+  '.anim-chip{transform-box:fill-box;transform-origin:center;scale:var(--luoshu-type, 1)}',
+]) need(css.includes(rule), `missing responsive rule: ${rule}`);
 
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);

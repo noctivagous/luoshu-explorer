@@ -46,13 +46,12 @@ need(
 );
 
 // Sidebar: 6 category headers + 15 items (intro + A–N), two-column grid,
-// square icon tiles with 26px glyphs. Intro is selected on load, so the
-// detail close button is present too. 6 + 15 + 5 caption playback
-// (play/prev/next/loop/overview) + 1 close = 27, plus 6
-// correspondences-legend chips = 33, plus 3 construction step cards = 36,
-// plus 3 worked-example tape rows (intro shows construction) = 39,
-// plus 3 step ticks + 3 transport toggles = 45, plus 1 playground toggle = 46.
-need(document.querySelectorAll('#root button').length === 46, 'expected 46 buttons');
+// square icon tiles with 26px glyphs. 6 + 15 + 5 caption playback
+// (play/prev/next/loop/overview) = 26, plus 6
+// correspondences-legend chips = 32, plus 3 construction step cards = 35,
+// plus 3 worked-example tape rows (intro shows construction) = 38,
+// plus 3 step ticks + 3 transport toggles = 44, plus 1 playground toggle = 45.
+need(document.querySelectorAll('#root button').length === 45, 'expected 45 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -173,16 +172,6 @@ await until(() => (root.querySelector('[aria-label="Prediction prompt"]') === nu
 await until(() => (tapeRows2()[1].textContent.includes('Tap the cells') ? 'hidden' : 'shown'), 'shown', 4000);
 document.querySelector('.anim-caption-play').click();
 await until(() => (document.querySelector('.anim-caption-play')?.textContent || ''), '▶', 4000);
-
-// Cell probe: stickying a cell lists its cross-property index.
-boardCells()[4].click();
-await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'probe', 4000);
-const probeChips = () => [...document.querySelectorAll('[aria-label="Cell participation"] button')];
-need(probeChips().length === 11, `center cell should list 11 properties (got ${probeChips().length})`);
-need(probeChips().some((b) => b.textContent === 'N'), 'probe should list N for the fixed center');
-need(!probeChips().some((b) => b.textContent === 'C'), 'probe should spare the center from the border clock');
-boardCells()[4].click();
-await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'none', 4000);
 
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);

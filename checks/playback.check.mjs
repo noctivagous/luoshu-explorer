@@ -40,7 +40,7 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 45, 'expected 45 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
+need(document.querySelectorAll('#root button').length === 44, 'expected 44 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
 need(
   document.querySelector('button[aria-label="Predict mode"]') !== null &&
   document.querySelector('button[aria-label="Predict mode"]').getAttribute('aria-pressed') === 'false',

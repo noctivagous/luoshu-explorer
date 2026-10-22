@@ -4,15 +4,16 @@
    unsupported, these rules (except the body lock) degrade to the old
    scrolling layout instead of breaking. */
 html,body{height:100%;overflow:hidden}
-#root>div{display:flex;flex-direction:column;min-height:0;height:100vh;height:100dvh;padding-top:16px}
+#root>div{display:flex;flex-direction:column;min-height:0;height:100vh;height:100dvh;padding-top:0}
 #root>div>div:has(>aside){flex:1;min-height:0;overflow-y:auto}
 #root aside{min-height:0;overflow-y:auto}
 #root main{min-height:0;overflow-y:auto}
+#root,#root>div,#root>div>div:has(>aside),#root aside,#root main{min-width:0;max-width:100%}
 #root aside>div[class*=overflow-auto]{overflow-y:auto}
 @media(min-width:1024px){
 #root>div>div:has(>aside){overflow:visible}
-#root aside{overflow-y:visible;width:clamp(380px,36vw,560px)}
-#root main{padding-top:8px}
+#root aside{overflow-y:visible;flex:0 1 auto;width:clamp(260px,28vw,380px);min-width:240px}
+#root main{padding-top:8px;flex:1 1 auto;min-width:0}
 }
 /* Zebra striping: even unselected rows get a wash so items don't blend. */
 #root aside div[class*=space-y-]>button[class*=bg-transparent]:nth-child(even){background:rgba(26,26,26,.05)}
@@ -31,22 +32,29 @@ html,body{height:100%;overflow:hidden}
 #root aside::-webkit-scrollbar-thumb:hover,#root aside div[class*=overflow-auto]::-webkit-scrollbar-thumb:hover{background:rgba(26,26,26,.5);border:4px solid transparent;background-clip:content-box}
 /* Unselected catalog tiles share the gray wash (replaces zebra). */
 #root aside div[class*="lg:grid-cols-2"]>button[class*=bg-transparent]{background:rgba(26,26,26,.05)}
-/* 1 col on phones; 2–3 cols as the sidebar grows. */
-@media(min-width:1024px){
-#root aside div[class*="lg:grid-cols-2"]{grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}
-}
+/* Equal-width tiles. Two columns when each can stay readable;
+   a narrower rail uses one column of that same tile width. */
+#root aside div[class*="lg:grid-cols-2"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));width:100%;min-width:0}
+#root aside .catalog-tile{min-width:0;width:100%}
 /* Icon wells hug the 26px glyphs instead of sitting in a 40px frame. */
 #root aside span.w-10{width:32px;height:32px}
-/* Stage matches the description column. The square grows; the rail stays 92px. */
-#root main>div>.relative{width:100%;max-width:560px;display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
-#root main>div>.relative:has(.anim-rail){grid-template-columns:minmax(0,1fr) 92px;column-gap:12px}
+/* Stage matches the description column. Caption and transport sit beside
+   the property card on compact widths so the Lo Shu keeps the remaining height. */
+#root main>div>.relative{width:100%;max-width:560px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"panel" "predict" "board" "tape" "legend";align-items:start;column-gap:12px;row-gap:10px}
+#root main>div>.relative>*{min-width:0;max-width:100%}
 #root main .rounded-\[22px\]{width:auto;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-#root main>div>.relative>.property-panel{grid-column:1/-1;width:100%;max-width:none;order:-1;margin:0 0 16px}
-#root main>div>.relative>.anim-caption,#root main>div>.relative>.legend-toggles{grid-column:1/-1;width:100%;max-width:none}
+#root main>div>.relative>.property-panel{grid-area:panel;width:100%;max-width:none;margin:0}
+#root main>div>.relative>.anim-caption{grid-area:caption;width:100%;max-width:none}
+#root main>div>.relative>.anim-transport{grid-area:transport;margin:0}
+#root main>div>.relative>.predict-bar{grid-area:predict}
+#root main>div>.relative>.rounded-\[22px\]{grid-area:board}
+#root main>div>.relative>.tape{grid-area:tape}
+#root main>div>.relative>.legend-toggles{grid-area:legend;width:100%;max-width:none}
 /* Utilities for the enlarged layout (absent from the frozen Tailwind output). */
 .text-\[42px\]{font-size:42px}
 .text-\[16px\]{font-size:16px}
 .text-\[12\.5px\]{font-size:12.5px}
+.flex-wrap{flex-wrap:wrap}
 .h-10{height:2.5rem}
 .pt-4{padding-top:1rem}
 .pb-3{padding-bottom:.75rem}
@@ -66,15 +74,20 @@ html,body{height:100%;overflow:hidden}
    The square scales to the content width so overlays keep their positions.
    Short landscape viewports sit the catalog beside it. */
 @media(max-width:1023px){
-#root>div{padding-top:max(12px,env(safe-area-inset-top));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
+#root>div{padding-top:0;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom)}
 #root>div>div:has(>aside){display:flex;flex-direction:column;overflow:hidden;min-width:0;width:100%;max-width:none;margin-left:0;margin-right:0;align-self:stretch}
-#root main{order:-1;flex:0 0 auto;max-height:min(62dvh,640px);min-width:0;overflow-x:hidden;overflow-y:auto;padding:8px 12px 10px;width:100%;align-items:stretch;-webkit-overflow-scrolling:touch}
+#root main{order:-1;flex:0 0 auto;max-height:min(70dvh,720px);min-width:0;overflow-x:hidden;overflow-y:auto;padding:8px 12px 10px;width:100%;align-items:stretch;-webkit-overflow-scrolling:touch}
 #root aside{flex:1 1 auto;min-width:0;min-height:0;width:100%;overflow:hidden;margin-bottom:0;border-right:0;border-bottom-left-radius:0;border-top:1px solid rgba(26,26,26,.12);box-shadow:none}
 #root main>div{container-type:inline-size;width:100%;max-width:100%;min-width:0}
-#root main .rounded-\[22px\]{padding:12px;max-width:100%}
-#root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 80px) / 340px));transform:scale(var(--luoshu-fit));transform-origin:top left;margin-right:calc(340px * (var(--luoshu-fit) - 1));margin-bottom:calc(340px * (var(--luoshu-fit) - 1))}
-.d4-strip{margin:0 8px 0 0}
-#root main>div>.relative,#root main>div>.relative:has(.anim-rail){display:block;max-width:100%}
+#root main .rounded-\[22px\]{padding:16px;max-width:100%;overflow:visible;align-items:center}
+#root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 72px) / 340px));--luoshu-type:calc(1 / max(var(--luoshu-fit), .5));transform:scale(var(--luoshu-fit));transform-origin:top left;margin-left:calc((100% - 340px * var(--luoshu-fit)) / 2);margin-right:calc(340px * (var(--luoshu-fit) - 1));margin-bottom:calc(340px * (var(--luoshu-fit) - 1));align-self:center}
+.d4-row{flex-direction:column;align-items:center;width:100%}
+.d4-strip{flex-direction:row;flex-wrap:wrap;justify-content:center;width:100%;height:auto;margin:0 0 8px;gap:4px}
+.d4-thumb{width:36px;height:36px}
+#root main>div>.relative,#root main>div>.relative:has(.anim-rail){display:grid;max-width:100%;align-items:start;grid-template-columns:minmax(0,1fr);grid-template-areas:"panel" "predict" "board" "tape" "legend"}
+#root main>div>.relative>.anim-caption,#root main>div>.relative>.anim-transport{align-self:start;height:auto}
+#root main .property-panel{max-height:min(42dvh,280px);min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#root main .property-panel .px-6{padding:12px}
 .anim-rail{margin-top:12px;width:100%;max-width:100%;padding:10px 12px;display:block}
 .anim-rail-row{flex-direction:row;flex-wrap:wrap;align-items:center}
 .anim-rail-speed{margin-left:auto}
@@ -85,24 +98,75 @@ html,body{height:100%;overflow:hidden}
 #root main .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 #root main .h-\[64px\]{height:auto;min-height:64px}
 #root main .whitespace-nowrap{white-space:normal;text-align:center;max-width:min(280px,100%)}
+[data-anim-stage] .text-\[11px\]{font-size:calc(11px * var(--luoshu-type, 1))}
+.corr-trigram,.corr-stack,.corr-dir{font-size:calc(9px * var(--luoshu-type, 1))}
+.anim-chip{transform-box:fill-box;transform-origin:center;scale:var(--luoshu-type, 1)}
+.ledger-eq{font-size:16px}
+.ledger-res{font-size:18px}
+.anim-tick{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
-@media(max-width:1023px) and (max-height:500px){
+@media(max-width:1023px) and (orientation:landscape){
 #root>div>div:has(>aside){flex-direction:row}
-#root main{order:0;max-height:none;flex:1 1 58%;max-width:58%;align-self:stretch}
-#root aside{flex:1 1 42%;width:auto;min-height:0;border-top:0;border-left:1px solid rgba(26,26,26,.12)}
+#root main{order:0;max-height:none;flex:1 1 auto;max-width:none;align-self:stretch}
+#root aside{flex:0 1 220px;width:min(240px,34vw);max-width:34%;min-width:168px;min-height:0;border-top:0;border-left:1px solid rgba(26,26,26,.12)}
+#root aside div[class*="lg:grid-cols-2"]{grid-template-columns:minmax(0,1fr)}
+#root aside .catalog-tile{height:auto!important;min-height:64px;padding:8px 10px}
 }
 @media(pointer:coarse){
 .anim-rail-btn{min-width:44px;height:44px}
 #root main button.w-7{width:44px;height:44px}
 }
+/* Tablets: run the main column edge to edge. */
+@media(min-width:600px) and (max-width:1366px){
+#root>div{padding-left:0;padding-right:0}
+#root>div>div:has(>aside){margin-left:0;margin-right:0;max-width:none}
+#root main{padding-left:0;padding-right:0}
+@media(min-width:1024px){
+#root main{padding-left:10px}
+}
+#root main>div,#root main>div>.relative,#root main .property-panel,#root main .max-w-\[560px\]{max-width:none;width:100%}
+#root main>div>.relative{align-items:start;grid-template-columns:minmax(0,1fr);grid-template-areas:"panel" "predict" "board" "tape" "legend"}
+}
+/* Desktop uses the same width as a 12.9" tablet in landscape. */
+@media(min-width:1367px){
+#root>div>div:has(>aside){width:100%;max-width:1366px;margin-left:auto;margin-right:auto}
+#root main{padding-left:10px;padding-right:0}
+}
 /* Step caption strip: horizontal, above the square card and playback rail. */
-.anim-caption{margin:0 0 12px;width:100%;max-width:none;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto auto;align-items:center;column-gap:8px;row-gap:4px;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:6px 12px;font-size:12px;line-height:1.4}
-.anim-caption-play,.anim-caption-prev,.anim-caption-next,.anim-caption-loop{flex-shrink:0}
+.anim-caption{margin:0 0 12px;width:100%;max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"step text";align-items:center;column-gap:8px;row-gap:4px;background:#fdf8f0;border:1px solid rgba(26,26,26,.1);border-radius:12px;padding:6px 12px;font-size:12px;line-height:1.4}
+.anim-caption-step{grid-area:step}
+.anim-caption-text{grid-area:text}
+.panel-body{display:flex;flex-direction:column;align-items:stretch;gap:14px}
+.panel-row{display:flex;align-items:flex-start;gap:14px}
+.panel-body>.anim-caption{margin:0}
+.panel-playback{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto}
+.panel-playback .anim-rail-btn{min-width:36px;width:36px;height:36px;padding:0}
+.panel-playback .anim-caption-play{min-width:40px;width:40px;height:40px}
+.panel-copy{min-width:0;flex:1 1 auto}
 .anim-rail-btn[aria-pressed="true"]{background:#1a1a1a;color:#fdf8f0}
 .anim-rail-btn:focus-visible,.d4-thumb:focus-visible{outline:2px solid #1a1a1a;outline-offset:2px}
 .anim-caption-step{font-family:monospace;font-size:11px;letter-spacing:.06em;opacity:.55;white-space:nowrap}
-.anim-caption-text{min-width:0;overflow-wrap:anywhere}
+.anim-caption-text{min-width:0;overflow-wrap:break-word}
 .anim-caption-note{grid-column:1/-1;font-family:monospace;font-size:11px;opacity:.7}
+@media(max-width:1366px){
+.anim-caption{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"step text";column-gap:6px}
+.anim-caption-step{justify-self:start}
+.anim-caption-text{font-size:12px;line-height:1.4}
+}
+@media(max-width:1023px) and (orientation:landscape){
+#root main{padding:4px 8px 8px}
+#root main>div>.relative{max-width:100%}
+.anim-caption{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"step text";column-gap:4px;padding:4px 6px;margin-bottom:6px}
+.anim-caption-step{grid-area:step;justify-self:start}
+.anim-caption-text{grid-area:text;font-size:11px;line-height:1.25}
+.panel-playback .anim-rail-btn{min-width:32px;width:32px;height:32px}
+.panel-playback .anim-caption-play{min-width:36px;width:36px;height:36px}
+.anim-transport{margin-bottom:6px}
+.anim-auto-row{display:none}
+.anim-ticks{margin-top:3px}
+#root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 72px) / 340px),calc((100dvh - 140px) / 340px));--luoshu-type:calc(1 / max(var(--luoshu-fit), .5))}
+#root main .rounded-\[22px\]{padding:8px}
+}
 .anim-scrub{width:100%;margin:8px 0 0;accent-color:#1a1a1a;height:16px}
 .anim-flyer{position:absolute;z-index:2;pointer-events:none;font-family:'Instrument Serif',serif;font-size:42px;font-weight:500;line-height:1;letter-spacing:-0.02em;transform:translate(-50%,-50%);color:#1a1a1a}
 .board-meta{width:100%;margin-top:14px;padding-top:12px;border-top:1px solid rgba(26,26,26,.06);display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left}
@@ -185,7 +249,34 @@ html,body{height:100%;overflow:hidden}
    lines, chips, badges and ticks read against the board. Line-work itself
    renders at 3pt in js/overlay.js. */
 [data-anim-stage] [data-anim-key]{filter:drop-shadow(0 1px 1px rgba(26,26,26,.5))}
-/* Cell probe: the sticky cell's cross-property index rides above the tape. */
-.cell-probe{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
-.cell-probe-chip{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1;padding:5px 10px;border-radius:9999px;border:1px solid rgba(26,26,26,.2);background:transparent;color:#1a1a1a}
-.cell-probe-chip:hover{background:#1a1a1a;color:#fdf8f0}
+@media(min-width:1024px){
+#root aside div[class*="lg:grid-cols-2"]{min-width:0;width:100%;grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:1023px){
+.legend-toggles,.legend-toggles>div{min-width:0;max-width:100%;width:100%}
+.legend-toggles>div{overflow:hidden}
+}
+@media(max-width:1023px) and (orientation:landscape){
+.anim-auto-row{display:none!important}
+#root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 72px) / 340px),calc((100dvh - 160px) / 340px));--luoshu-type:calc(1 / max(var(--luoshu-fit), .5))}
+}
+[aria-label="What breaks playground"]{display:none}
+.tape,.legend-toggles{border:1px solid rgba(26,26,26,.16);border-radius:18px;background:#fff;padding:14px 16px 16px}
+/* Desktop and tablet landscape: the square sits beside the property card,
+   and the player plus slider run in one horizontal band underneath both.
+   The catalog is a single column. */
+@media(min-width:1024px),(orientation:landscape) and (min-width:900px) and (min-height:600px){
+#root main>div>.relative,#root main .property-panel,#root main .max-w-\[560px\]{max-width:none;width:100%}
+#root main>div>.relative{grid-template-columns:minmax(0,1fr) max-content;grid-template-areas:"panel board" "predict predict" "tape tape" "legend legend";align-items:start}
+#root main .property-panel{max-height:none;overflow:visible}
+#root main>div>.relative>.rounded-\[22px\]{width:auto;min-width:auto;max-width:none;justify-self:start;align-self:start}
+#root main .board-meta{width:340px;max-width:340px}
+#root main div[style*="width: 340px"]{--luoshu-fit:1;--luoshu-type:1}
+.anim-caption{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"step text"}
+.anim-caption-text{font-size:12px}
+.panel-body>.anim-transport{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0;width:100%;border:1px solid rgba(26,26,26,.16);border-radius:18px;background:#fdf8f0;padding:12px 14px}
+.panel-body>.anim-transport>.anim-transport-row,.panel-body>.anim-transport>.anim-ticks,.panel-body>.anim-transport>.anim-auto-row{flex:0 0 auto;width:100%;margin:0}
+}
+@media(min-width:1024px){
+#root aside div[class*="lg:grid-cols-2"]{grid-template-columns:minmax(0,1fr)}
+}
