@@ -178,5 +178,14 @@
     "shortDesc": "M² has a constant diagonal; each row is 15²",
     "formula": "M² diagonal is constant; each row sums to 15²",
     "longDesc": "Multiply the square by itself. On this orientation the main diagonal of M² is 59 and every other entry is 83, and each row sums to 225, which is 15². All eight rotations and reflections keep a constant main diagonal and one other value. The pair is 59 and 83 when the matrix diagonal is the 4–5–6 line, and 91 and 67 when it is the 2–5–8 line. The row sum stays 225 either way. Property P also ends at 225, by multiplying the entries of each line. Here the matrix is multiplied by itself."
+  },
+  {
+    "id": "T",
+    "slug": "nested-palaces",
+    "category": "Geometry & Universality",
+    "title": "Nested palaces",
+    "shortDesc": "Each cell opens into the same 3×3",
+    "formula": "9·(outer − 1) + inner",
+    "longDesc": "Replace each cell by the Lo Shu shifted by nine times one less than the cell you opened. On this orientation palace 4 opens to 31 36 29 / 30 32 34 / 35 28 33, and each of its lines is 96. Palace 7 opens to 58 63 56 / 57 59 61 / 62 55 60, and each of its lines is 177. The nine blocks use 1 through 81 once; every row, column, and both diagonals sum to 369. Opposite cells through the center sum to 82. The address 3-7 is 25, and the center of the centers is 41, the mean of 1…81. One more depth has 729 cells and sums to 9855, with center 365. The next has 6,561 cells and sums to 265761, with center 3281. Inside palace P the lines are 27·(P−1)+15 and the opposite cells sum to 18·(P−1)+10."
   }
 ]

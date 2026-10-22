@@ -1,4 +1,4 @@
-// Animation scripts for every Lo Shu property (A–S) plus the ordinal
+// Animation scripts for every Lo Shu property (A–T) plus the ordinal
 // construction. Each step lists overlay keys and the draw items those keys
 // render (see js/overlay.js). Captions compress each property's formula.
 //
@@ -1873,6 +1873,71 @@ export const scriptS = {
   ],
 };
 
+// Property T: each palace opens into the same 3×3. The sheet computes the
+// compound square from the grid on screen. Figures stay off the tape.
+function palaceMark(key, cell) {
+  return {
+    key,
+    type: "path",
+    transient: true,
+    cells: [cell],
+    color: "#c96442",
+    width: "2.4",
+  };
+}
+
+export const scriptT = {
+  id: "T",
+  title: "Nested palaces",
+  steps: [
+    animStep("T-1", {
+      caption: "Palace 4 opens by the same square plus 27. 9·(4−1)+4 = 31, and each line sums to 96.",
+      tape: "Palace 4",
+      durationMs: 1800,
+      overlay: { show: ["T.palace-4"] },
+      draw: [palaceMark("T.palace-4", 0)],
+      sheet: { kind: "compound", scope: "palace", palace: 4, mark: null },
+      matrix: { highlight: [0], setValues: null },
+    }),
+    animStep("T-2", {
+      caption: "Palace 7 is the same square plus 54. Each line sums to 177.",
+      tape: "Palace 7",
+      durationMs: 1700,
+      overlay: { show: ["T.palace-7"] },
+      draw: [palaceMark("T.palace-7", 5)],
+      sheet: { kind: "compound", scope: "palace", palace: 7, mark: null },
+      matrix: { highlight: [5], setValues: null },
+    }),
+    animStep("T-3", {
+      caption: "East, then the west seat inside it, is 3-7 = 25. The center of the centers is 5-5 = 41.",
+      tape: "Address 3-7",
+      durationMs: 1800,
+      overlay: { show: ["T.address"] },
+      draw: [palaceMark("T.address", 3)],
+      sheet: { kind: "compound", scope: "palace", palace: 3, mark: 7 },
+      matrix: { highlight: [3], setValues: null },
+    }),
+    animStep("T-4", {
+      caption: "The nine palaces use 1 through 81 once. Every line sums to 369, and opposites through the center sum to 82.",
+      tape: "Sum 369",
+      durationMs: 2000,
+      overlay: { show: ["T.frame"] },
+      draw: [
+        {
+          key: "T.frame",
+          type: "path",
+          d: `M 6 6 H ${Z - 6} V ${Z - 6} H 6 Z`,
+          cells: [],
+          color: "#1a1a1a",
+          width: "1.6",
+        },
+      ],
+      sheet: { kind: "compound", scope: "all", palace: null, mark: null },
+      matrix: { highlight: ALL, setValues: null },
+    }),
+  ],
+};
+
 export const demoScripts = {
   construction: constructionScript,
   intro: constructionScript,
@@ -1895,6 +1960,7 @@ export const demoScripts = {
   Q: scriptQ,
   R: scriptR,
   S: scriptS,
+  T: scriptT,
 };
 
 // Multiple animations per property. Each id keeps its default script in

@@ -1,4 +1,4 @@
-// Executable claims for every Lo Shu property (A–S).
+// Executable claims for every Lo Shu property (A–T).
 // Each predicate takes a flat 3×3 grid (indices 0-8, row-major) and reports
 // whether that property holds for it. The UI text in data/properties.json and
 // the captions in js/animation-scripts.js must agree with these predicates;
@@ -46,6 +46,67 @@ export function transforms(g) {
     cur = rot(cur);
   }
   return out;
+}
+
+// Replace each cell P of `outer` with `inner` shifted by inner.length·(P−1).
+// The Lo Shu nested once is the 9×9; nesting that result with the 3×3 again
+// is the 27×27.
+export function nestBlocks(outer, inner) {
+  const n = Math.sqrt(outer.length);
+  const m = Math.sqrt(inner.length);
+  if (!Number.isInteger(n) || !Number.isInteger(m) || n < 1 || m < 1) return [];
+  const N = n * m;
+  const out = new Array(N * N);
+  const span = inner.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const shift = span * (outer[i * n + j] - 1);
+      for (let a = 0; a < m; a++) {
+        for (let b = 0; b < m; b++) {
+          out[(i * m + a) * N + (j * m + b)] = shift + inner[a * m + b];
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function normalMagic(g, order, magic) {
+  if (g.length !== order * order) return false;
+  const seen = new Set(g);
+  if (seen.size !== g.length) return false;
+  for (let v = 1; v <= g.length; v++) if (!seen.has(v)) return false;
+  let d1 = 0;
+  let d2 = 0;
+  for (let i = 0; i < order; i++) {
+    let row = 0;
+    let col = 0;
+    for (let k = 0; k < order; k++) {
+      row += g[i * order + k];
+      col += g[k * order + i];
+    }
+    if (row !== magic || col !== magic) return false;
+    d1 += g[i * order + i];
+    d2 += g[i * order + (order - 1 - i)];
+  }
+  return d1 === magic && d2 === magic;
+}
+
+const BLOCK_LINES = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6],
+];
+
+// The 3×3 that replaces palace value P: the same grid plus 9·(P−1).
+export function palaceCells(g, P) {
+  const shift = 9 * (P - 1);
+  return g.map((v) => shift + v);
 }
 
 export const verify = {
@@ -186,6 +247,33 @@ export const verify = {
   // S: M² has one diagonal value, one other value everywhere else, and each
   // row sums to 225. Either pair (59/83 or 91/67) is accepted.
   S: (g) => squaredPattern(g).ok,
+  // T: each cell opens into the same square, shifted by 9·(P−1). The 9×9
+  // uses 1…81 once and sums to 369; one more depth is the 27×27.
+  T: (g) => {
+    if (!Array.isArray(g) || g.length !== 9) return false;
+    if (!g.every((n) => Number.isInteger(n))) return false;
+    const seen = new Set(g);
+    if (seen.size !== 9) return false;
+    for (let v = 1; v <= 9; v++) if (!seen.has(v)) return false;
+    if (!LINES.every((line) => sum(g, line) === 15)) return false;
+    const big = nestBlocks(g, g);
+    if (!normalMagic(big, 9, 369) || big[40] !== 41) return false;
+    for (let i = 0; i < 40; i++) if (big[i] + big[80 - i] !== 82) return false;
+    for (let bi = 0; bi < 3; bi++) {
+      for (let bj = 0; bj < 3; bj++) {
+        const P = g[bi * 3 + bj];
+        const expect = 27 * (P - 1) + 15;
+        const cells = [];
+        for (let a = 0; a < 3; a++) {
+          for (let b = 0; b < 3; b++) cells.push(big[(bi * 3 + a) * 9 + (bj * 3 + b)]);
+        }
+        if (!BLOCK_LINES.every((line) => line.reduce((s, i) => s + cells[i], 0) === expect))
+          return false;
+      }
+    }
+    const deep = nestBlocks(big, g);
+    return normalMagic(deep, 27, 9855) && deep[364] === 365;
+  },
 };
 
 // Holmes families, in the reading order used on this orientation.

@@ -289,6 +289,10 @@ html,body{height:100%;overflow:hidden}
 .sheet-cell-empty{background:transparent;color:transparent;border-color:rgba(26,26,26,.08)}
 .sheet-cell-worked{box-shadow:inset 0 0 0 2px #c96442}
 .sheet-rowsum{font-size:14px;font-weight:700;padding-left:4px;white-space:nowrap}
+.sheet-compound-scroll{overflow-x:auto;max-width:100%}
+.sheet-compound{display:grid;grid-template-columns:repeat(3,max-content);gap:10px;width:max-content}
+.sheet-palace{display:grid;grid-template-columns:repeat(3,32px);gap:3px}
+.sheet-palace .sheet-cell{width:32px;height:32px;border-radius:7px;font-size:12px}
 .sheet-note{margin:10px 0 0;font-size:13px;line-height:1.45;font-weight:500}
 .sheet-note-first{margin-top:0;margin-bottom:10px}
 .sheet-miss{color:#c96442}

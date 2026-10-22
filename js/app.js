@@ -16,7 +16,7 @@ import correspondencesData from "../data/correspondences.json" with { type: "jso
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor } from "./animation.js";
 import { scriptFor, variantsFor, ledgerFor, cellProperties } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
-import { determinant, verifyAll, holmesFamily, squaredPattern } from "./verify.js";
+import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells } from "./verify.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -101,6 +101,7 @@ const VISUAL_KEYS = {
   Q: [["#b89a5a", "Outer rows Σ 101", false], ["#4a6741", "Outer columns Σ 89", false]],
   R: [["#1a1a1a", "Straight reading", false], ["#7a6a9e", "Broken wrap", true]],
   S: [["#1a1a1a", "Middle row", false], ["#c96442", "Middle column", false]],
+  T: [["#c96442", "Opened palace", false], ["#1a1a1a", "Same square inside", false]],
 };
 
 const CATEGORIES = [
@@ -109,7 +110,7 @@ const CATEGORIES = [
     { name: "Means & Zero", ids: ["G", "I"] },
     { name: "Lines & Totals", ids: ["J", "K", "S", "P", "R"] },
     { name: "Modular Border", ids: ["C", "D", "H"] },
-    { name: "Geometry & Universality", ids: ["M", "N", "O"] },
+    { name: "Geometry & Universality", ids: ["M", "N", "O", "T"] },
   ],
   SQUARE = [4, 9, 2, 3, 5, 7, 8, 1, 6];
 function iconGlyphs(e) {
@@ -577,6 +578,27 @@ function iconGlyphs(e) {
         fill: "none",
       }),
     ]);
+  if (e === "T")
+    return PropertyIcon([
+      h("rect", {
+        x: "4",
+        y: "4",
+        width: "20",
+        height: "20",
+        rx: "2",
+        fill: "none",
+        stroke: C,
+        strokeWidth: "1.4",
+      }),
+      h("rect", {
+        x: "10",
+        y: "10",
+        width: "8",
+        height: "8",
+        rx: "1.2",
+        fill: T,
+      }),
+    ]);
   if (e === "S")
     return PropertyIcon(
       [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) =>
@@ -950,10 +972,110 @@ function renderCompanionSheet(payload, grid) {
   ]);
 }
 
+function compoundCell(value, key, marked) {
+  return h(
+    "div",
+    {
+      className: `sheet-cell${marked ? " sheet-cell-worked" : ""}`,
+      children: fmtNum(value),
+    },
+    key,
+  );
+}
+
+function renderCompoundSheet(payload, grid) {
+  if (!Array.isArray(grid) || grid.length !== 9) return null;
+  if (payload.scope === "palace") {
+    const P = payload.palace;
+    const cells = palaceCells(grid, P);
+    const rows = [0, 1, 2].map((r) => cells[r * 3] + cells[r * 3 + 1] + cells[r * 3 + 2]);
+    const expect = 27 * (P - 1) + 15;
+    const agree = rows.every((s) => s === expect);
+    const markAt = payload.mark == null ? -1 : grid.indexOf(payload.mark);
+    const body = [];
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const i = r * 3 + c;
+        body.push(compoundCell(cells[i], `c${i}`, i === markAt));
+      }
+      body.push(
+        h(
+          "div",
+          {
+            className: agree ? "sheet-rowsum" : "sheet-rowsum sheet-miss",
+            children: fmtNum(rows[r]),
+          },
+          `sum${r}`,
+        ),
+      );
+    }
+    const notes = [];
+    if (payload.mark != null && markAt >= 0)
+      notes.push(`${P}-${payload.mark} = ${fmtNum(9 * (P - 1) + payload.mark)}`);
+    if (payload.mark != null) {
+      const center = grid[4];
+      notes.push(`${center}-${center} = ${fmtNum(9 * (center - 1) + center)}`);
+    }
+    if (!agree) notes.push(`These lines no longer each sum to ${fmtNum(expect)}.`);
+    return sheetShell(`Palace ${P}`, [
+      h("div", { className: "sheet-companion sheet-companion-sums", children: body }, "grid"),
+      ...notes.map((text, i) => h("p", { className: "sheet-note", children: text }, `note-${i}`)),
+    ]);
+  }
+  const big = nestBlocks(grid, grid);
+  const palaces = [];
+  for (let bi = 0; bi < 3; bi++) {
+    for (let bj = 0; bj < 3; bj++) {
+      const cells = [];
+      for (let a = 0; a < 3; a++) {
+        for (let b = 0; b < 3; b++) {
+          const i = (bi * 3 + a) * 9 + (bj * 3 + b);
+          cells.push(compoundCell(big[i], `c${i}`, false));
+        }
+      }
+      palaces.push(h("div", { className: "sheet-palace", children: cells }, `p${bi}${bj}`));
+    }
+  }
+  const lineSum = (cells) => cells.reduce((s, i) => s + big[i], 0);
+  const lines = [];
+  for (let r = 0; r < 9; r++) lines.push(lineSum([0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => r * 9 + c)));
+  for (let c = 0; c < 9; c++) lines.push(lineSum([0, 1, 2, 3, 4, 5, 6, 7, 8].map((r) => r * 9 + c)));
+  lines.push(lineSum([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => i * 9 + i)));
+  lines.push(lineSum([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => i * 9 + (8 - i))));
+  const agree = lines.every((s) => s === lines[0]);
+  const center = big[40];
+  const deep = nestBlocks(big, grid);
+  const again = nestBlocks(deep, grid);
+  const rowSum = (g) => {
+    const n = Math.sqrt(g.length);
+    let s = 0;
+    for (let c = 0; c < n; c++) s += g[c];
+    return s;
+  };
+  const opp = big[0] + big[80];
+  const notes = [
+    agree
+      ? `Every line sums to ${fmtNum(lines[0])}.`
+      : `The lines no longer agree. The first row sums to ${fmtNum(lines[0])}.`,
+    `Opposite cells through the center sum to ${fmtNum(opp)}.`,
+    `Center path: ${fmtNum(grid[4])}, ${fmtNum(center)}, ${fmtNum(deep[364])}, ${fmtNum(again[3280])}.`,
+    `729 cells, first row ${fmtNum(rowSum(deep))}. 6,561 cells, first row ${fmtNum(rowSum(again))}.`,
+  ];
+  return sheetShell("Nine palaces", [
+    h(
+      "div",
+      { className: "sheet-compound-scroll", children: h("div", { className: "sheet-compound", children: palaces }, "grid") },
+      "scroll",
+    ),
+    ...notes.map((text, i) => h("p", { className: "sheet-note", children: text }, `note-${i}`)),
+  ]);
+}
+
 function renderSheet(payload, grid) {
   if (!payload) return null;
   if (payload.kind === "pairs") return renderPairSheet(payload, grid);
   if (payload.kind === "companion") return renderCompanionSheet(payload, grid);
+  if (payload.kind === "compound") return renderCompoundSheet(payload, grid);
   return null;
 }
 

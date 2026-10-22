@@ -68,8 +68,8 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 need(
   JSON.stringify(Object.keys(demoScripts).sort()) ===
-    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'construction', 'intro']),
-  'demoScripts should export all 19 property scripts plus construction'
+    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'construction', 'intro']),
+  'demoScripts should export all 20 property scripts plus construction'
 );
 
 // Construction: ordinal square, corner swap, then fold onto the Lo Shu.

@@ -130,8 +130,27 @@ export function validateScript(script) {
       if (!sh || typeof sh !== "object" || Array.isArray(sh))
         errors.push(`${at}.sheet must be an object`);
       else {
-        if (sh.kind !== undefined && sh.kind !== "pairs" && sh.kind !== "companion")
-          errors.push(`${at}.sheet.kind must be pairs or companion`);
+        if (
+          sh.kind !== undefined &&
+          sh.kind !== "pairs" &&
+          sh.kind !== "companion" &&
+          sh.kind !== "compound"
+        )
+          errors.push(`${at}.sheet.kind must be pairs, companion, or compound`);
+        if (sh.kind === "compound" && sh.scope !== "palace" && sh.scope !== "all")
+          errors.push(`${at}.sheet.scope must be palace or all`);
+        if (
+          sh.kind === "compound" &&
+          sh.scope === "palace" &&
+          !(Number.isInteger(sh.palace) && sh.palace >= 1 && sh.palace <= 9)
+        )
+          errors.push(`${at}.sheet.palace must be an integer 1–9`);
+        if (
+          sh.mark !== undefined &&
+          sh.mark !== null &&
+          !(Number.isInteger(sh.mark) && sh.mark >= 1 && sh.mark <= 9)
+        )
+          errors.push(`${at}.sheet.mark must be an integer 1–9 or null`);
         if (
           sh.strike !== undefined &&
           sh.strike !== null &&
@@ -152,7 +171,7 @@ export function validateScript(script) {
   return errors;
 }
 
-const SHEET_LATEST = ["strike", "reveal", "worked", "sums", "compareTurn"];
+const SHEET_LATEST = ["strike", "reveal", "worked", "sums", "compareTurn", "scope", "palace", "mark"];
 
 function mergeSheet(prev, patch) {
   if (!patch) return prev;

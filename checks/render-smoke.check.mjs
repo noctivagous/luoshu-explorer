@@ -51,7 +51,7 @@ need(
 // correspondences-legend chips = 32, plus 3 construction step cards = 35,
 // plus 3 worked-example tape rows (intro shows construction) = 38,
 // plus 3 step ticks + 3 transport toggles = 44, plus 1 playground toggle = 45.
-need(document.querySelectorAll('#root button').length === 50, 'expected 50 buttons');
+need(document.querySelectorAll('#root button').length === 51, 'expected 51 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -107,10 +107,10 @@ need(
   'autoplay prefs should start off'
 );
 need(root.querySelectorAll('.lg\\:grid-cols-2').length === 6, 'sidebar catalog grid missing');
-need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 20, 'square icon tiles missing');
-need(root.querySelectorAll('svg[width="26"]').length === 20, 'icon glyphs missing');
+need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 21, 'square icon tiles missing');
+need(root.querySelectorAll('svg[width="26"]').length === 21, 'icon glyphs missing');
 const catalogTiles = [...root.querySelectorAll('button.catalog-tile')];
-need(catalogTiles.length === 20, 'catalog tiles missing');
+need(catalogTiles.length === 21, 'catalog tiles missing');
 need(
   catalogTiles.every((tile) => tile.style.height === '120px'),
   'catalog tiles should keep a uniform 120px height'
@@ -135,7 +135,7 @@ await until(
 const checklist = () => root.querySelector('[aria-label="Property checklist"]');
 need(checklist() !== null, 'playground should open the checklist');
 const chips = () => [...checklist().querySelectorAll('span')];
-need(chips().length === 19, `checklist should cover A–S (got ${chips().length})`);
+need(chips().length === 20, `checklist should cover A–T (got ${chips().length})`);
 need(chips().every((c) => c.textContent.includes('✓')), 'intact Lo Shu should hold every claim');
 const boardCells = () => [...document.querySelectorAll('#root [data-anim-stage] div.grid > div')];
 const pgSection = () => root.querySelector('[aria-label="What breaks playground"]');
@@ -177,7 +177,8 @@ await until(() => (document.querySelector('.anim-caption-play')?.textContent || 
 boardCells()[4].click();
 await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'probe', 4000);
 const probeChips = () => [...document.querySelectorAll('[aria-label="Cell participation"] button')];
-need(probeChips().length === 15, `center cell should list 15 properties (got ${probeChips().length})`);
+need(probeChips().length === 16, `center cell should list 16 properties (got ${probeChips().length})`);
+need(probeChips().some((b) => b.textContent === 'Nested palaces'), 'probe should list T for the center');
 need(probeChips().some((b) => b.textContent === 'All 3×3 are Lo Shu'), 'probe should list N for the fixed center');
 need(probeChips().some((b) => b.textContent === 'Reversed squares'), 'probe should list R for the center');
 need(probeChips().some((b) => b.textContent === 'Squared matrix'), 'probe should list S for the center');

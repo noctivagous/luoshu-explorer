@@ -15,7 +15,7 @@ for (const id of Object.keys(demoScripts)) {
 }
 import { frameFor } from '../js/animation.js';
 import { renderOverlay, CENTERS, Z } from '../js/overlay.js';
-import { verifyAll, determinant, holmesFamily, squaredPattern, HOLMES_FAMILIES } from '../js/verify.js';
+import { verifyAll, determinant, holmesFamily, squaredPattern, HOLMES_FAMILIES, nestBlocks, palaceCells } from '../js/verify.js';
 import propertiesData from '../data/properties.json' with { type: 'json' };
 
 const failures = [];
@@ -396,13 +396,14 @@ need(
   const cp = cellProperties();
   need(cp.length === 9 && cp.every((list) => list.length > 0), 'every cell should participate somewhere');
   need(
-    cp.every((list) => list.every((p) => /^[A-S]$/.test(p.id))),
-    'probe should list only properties A–S'
+    cp.every((list) => list.every((p) => /^[A-T]$/.test(p.id))),
+    'probe should list only properties A–T'
   );
   const center = cp[4].map((p) => p.id);
   need(center.includes('N'), 'probe should list N for the fixed center');
   need(center.includes('O') && center.includes('P'), 'probe should list O and P for the center');
   need(center.includes('R') && center.includes('S'), 'probe should list R and S for the center');
+  need(center.includes('T'), 'probe should list T for the center');
   need(!center.includes('Q'), 'probe should spare the center from Q');
   for (const id of ['C', 'F', 'L'])
     need(!center.includes(id), `probe should spare the center from ${id}`);
@@ -452,8 +453,27 @@ need(byId.R.longDesc.includes('11,969'), 'R text should record the hundreds-drop
 need(byId.S.longDesc.includes('59') && byId.S.longDesc.includes('83'), 'S text should record the 59/83 pair');
 need(byId.S.longDesc.includes('91') && byId.S.longDesc.includes('67'), 'S text should record the 91/67 pair');
 need(!byId.S.formula.includes('59'), 'S formula should accept either pair');
+need(byId.T.formula === '9·(outer − 1) + inner', 'T formula should be the palace product');
+need(byId.T.category === 'Geometry & Universality', 'T stays under Geometry & Universality');
+need(byId.T.slug === 'nested-palaces', 'T slug should be nested-palaces');
+for (const n of ['31', '96', '177', '369', '82', '25', '41', '9855', '365', '265761', '3281'])
+  need(byId.T.longDesc.includes(n), `T text should record ${n}`);
+for (const [id, sc] of Object.entries(demoScripts)) {
+  const hasSheet = sc.steps.some((st) => st.sheet);
+  if (id === 'R' || id === 'S' || id === 'T') need(hasSheet, `${id} should carry a sheet`);
+  else need(!hasSheet, `${id} should not grow a sheet`);
+}
 const broken = [...SQUARE];
 [broken[0], broken[1]] = [broken[1], broken[0]];
+{
+  const big = nestBlocks(SQUARE, SQUARE);
+  need(big[0] === 31 && big[1] === 36 && big[2] === 29, 'upright northwest palace starts 31 36 29');
+  need(JSON.stringify(palaceCells(SQUARE, 7)) === JSON.stringify([58, 63, 56, 57, 59, 61, 62, 55, 60]), 'palace 7 is the square plus 54');
+  const turnedGrid = [8, 3, 4, 1, 5, 9, 6, 7, 2];
+  need(verifyAll(turnedGrid).T === true, 'T should hold after a quarter turn');
+  need(nestBlocks(turnedGrid, turnedGrid)[0] !== 31, 'a quarter turn moves the northwest palace off 31');
+  need(verifyAll(broken).T === false, 'a swapped cell should break T');
+}
 {
   const expected = { rows: 1035369, columns: 1172421, main: 1217781, anti: 1164501 };
   for (const fam of HOLMES_FAMILIES) {
@@ -476,7 +496,7 @@ const broken = [...SQUARE];
   );
   need(verifyAll([8, 3, 4, 1, 5, 9, 6, 7, 2]).S === true, 'S should hold after a quarter turn');
   need(verifyAll(broken).R === false && verifyAll(broken).S === false, 'a swapped cell should break R and S');
-  for (const id of ['R', 'S']) {
+  for (const id of ['R', 'S', 'T']) {
     need(demoScripts[id].steps.every((st) => ledgerFor(st).length === 0), `${id} keeps its figures off the tape`);
     need(
       demoScripts[id].steps.every((st) => typeof st.tape === 'string' && st.tape.length < 24),
