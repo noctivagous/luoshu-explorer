@@ -1,7 +1,7 @@
 # Luoshu Arithmetic Properties — Agent Guide
 
 ## Project Overview
-Interactive React 18.3.1 SPA exploring the 14 arithmetic properties (A–N) of the Lo Shu magic square. Originally a single minified bundle, now split into maintainable source files.
+Interactive React 18.3.1 SPA exploring the 19 arithmetic properties (A–S) of the Lo Shu magic square. Originally a single minified bundle, now split into maintainable source files.
 
 ## Structure
 ```
@@ -9,11 +9,11 @@ Interactive React 18.3.1 SPA exploring the 14 arithmetic properties (A–N) of t
 ├── css/styles.css          # Tailwind build output + SPA shell rules (viewport lock)
 ├── js/app.js               # App source (recovered from minified bundle)
 ├── js/animation.js         # Animation player
-├── js/animation-scripts.js # Animation scripts per property (A–N)
+├── js/animation-scripts.js # Animation scripts per property (A–S)
 ├── js/overlay.js           # Declarative board overlay (lines, chips, badges)
 ├── js/verify.js            # Verification utilities for animation predicates
 ├── public/js/external-links.js  # Classic script: forces external links to new tab
-├── data/properties.json    # Single source of truth for 14 properties
+├── data/properties.json    # Single source of truth for 19 properties
 ├── data/correspondences.json    # Property correspondences data
 ├── checks/
 │   ├── spa-shell.check.mjs     # CSS shell regression (viewport lock)
@@ -40,7 +40,7 @@ npm run preview      # Serve dist/ locally
 - **React key contract**: `h` / `_` helpers wrap `React.createElement(type, props, key)` — 3rd arg is **key**, not children
 - **SPA shell**: Viewport never scrolls (`html,body{overflow:hidden}`); `aside` and `main` scroll internally. Enforced by `checks/spa-shell.check.mjs`.
 - **Animation**: Step-based via `createPlayer` + scripts in `animation-scripts.js`. Motion stays player-driven: the player owns time, overlays may read the `--anim-p` progress var on `[data-anim-stage]`; no independent CSS keyframe animations.
-- **Properties data**: Single source at `data/properties.json` (ids A–N with title/shortDesc/formula/longDesc).
+- **Properties data**: Single source at `data/properties.json` (ids A–S with title/shortDesc/formula/longDesc).
 - **External links**: Handled by `public/js/external-links.js` (copied verbatim to dist).
 
 ## Development Notes

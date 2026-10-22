@@ -9,7 +9,7 @@ const need = (cond, msg) => {
 };
 
 const dom = new JSDOM('<!DOCTYPE html><html><body><div id="root"></div></body></html>', {
-  url: 'http://localhost/#/luoshu/C?step=2',
+  url: 'http://localhost/#/luoshu/math/modular-border/clockwise-addition?step=2',
 });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
@@ -21,34 +21,38 @@ const at = (hash) => {
   dom.window.location.hash = hash;
   return parseDeepLink();
 };
-need(JSON.stringify(at('#/luoshu/C?step=2')) === JSON.stringify({ id: 'C', step: 2, speed: 1, anim: 'standard' }), 'deep link C step 2 should parse');
-need(at('#/luoshu/k').id === 'K', 'deep link id should be case-insensitive');
-need(at('#/luoshu/construction').id === 'intro', 'construction should alias to intro');
-need(JSON.stringify(at('#/luoshu/J?step=1&speed=2')) === JSON.stringify({ id: 'J', step: 1, speed: 2, anim: 'standard' }), 'deep link speed should parse');
-need(JSON.stringify(at('#/luoshu/B?anim=families&step=2')) === JSON.stringify({ id: 'B', step: 2, speed: 1, anim: 'families' }), 'deep link anim should parse');
-need(at('#/luoshu/B?anim=bogus').anim === 'families', 'bad anim should fall back to Family tour');
-need(at('#/luoshu/J?speed=5').speed === 1, 'bad speed should fall back to 1');
+need(JSON.stringify(at('#/luoshu/math/modular-border/clockwise-addition?step=2')) === JSON.stringify({ id: 'C', step: 2, speed: 1, anim: 'standard' }), 'deep link should parse category and property');
+need(at('#/luoshu/math/Modular-Border/Clockwise-Addition').id === 'C', 'category and property should be case-insensitive');
+need(at('#/luoshu/math/introduction/build-the-square').id === 'intro', 'introduction should open the construction');
+need(JSON.stringify(at('#/luoshu/math/lines-totals/111-property?step=1&speed=2')) === JSON.stringify({ id: 'J', step: 1, speed: 2, anim: 'standard' }), 'deep link speed should parse');
+need(JSON.stringify(at('#/luoshu/math/introduction/lines-sum-to-15?anim=families&step=2')) === JSON.stringify({ id: 'B', step: 2, speed: 1, anim: 'families' }), 'deep link anim should parse');
+need(at('#/luoshu/math/introduction/lines-sum-to-15?anim=bogus').anim === 'families', 'bad anim should fall back to Family tour');
+need(at('#/luoshu/math/lines-totals/111-property?speed=5').speed === 1, 'bad speed should fall back to 1');
+need(at('#/luoshu/math/lines-totals/squared-matrix').id === 'S', 'squared matrix should parse under lines and totals');
+need(at('#/luoshu/math/introduction/clockwise-addition') === null, 'a property under the wrong category should not parse');
+need(at('#/luoshu/C') === null, 'a letter link should not parse');
+need(at('#/luoshu/math/not-a-category/build-the-square') === null, 'an unknown category should not parse');
 need(at('#/luoshu/Z') === null, 'unknown id should not parse');
 need(at('#nope') === null, 'non-luoshu hash should not parse');
 need(at('') === null, 'empty hash should not parse');
 
 // Restore the deep link the app mounts from.
-dom.window.location.hash = '#/luoshu/C?step=2';
+dom.window.location.hash = '#/luoshu/math/modular-border/clockwise-addition?step=2';
 
 // Let the React 18 concurrent root flush (early exit once mounted).
 const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 44, 'expected 44 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
+need(document.querySelectorAll('#root button').length === 49, 'expected 49 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
 need(
   document.querySelector('button[aria-label="Predict mode"]') !== null &&
   document.querySelector('button[aria-label="Predict mode"]').getAttribute('aria-pressed') === 'false',
   'predict should start off'
 );
 need(
-  document.body.textContent.includes('✓ computed: holds on this square'),
-  'active claim should surface its computed status'
+  !document.body.textContent.includes('computed:'),
+  'holds status should stay hidden on the intact square'
 );
 need(
   document.querySelector('button[aria-label="Enter playground"]') !== null,
@@ -75,7 +79,7 @@ const needSeen = async (fn, want, msg) => {
 
 await needSeen(stepText, 'Step 2 of 4', 'deep link should land on step 2');
 need(captionText() === '7 + 2 = 9 — running total rides the border.', `deep link caption wrong: ${captionText()}`);
-need(dom.window.location.hash === '#/luoshu/C?step=2', `hash should track the step: ${dom.window.location.hash}`);
+need(dom.window.location.hash === '#/luoshu/math/modular-border/clockwise-addition?step=2', `hash should track the step: ${dom.window.location.hash}`);
 
 const tapeRows = () => [...document.querySelectorAll('[aria-label="Worked-example tape"] button')];
 need(tapeRows().length === 4, `tape should ledger all 4 C steps (got ${tapeRows().length})`);
@@ -89,7 +93,7 @@ const key = (k) => window.dispatchEvent(new window.KeyboardEvent('keydown', { ke
 
 key('ArrowRight');
 await needSeen(stepText, 'Step 3 of 4', 'ArrowRight should advance one step');
-need(dom.window.location.hash === '#/luoshu/C?step=3', 'hash should follow stepping');
+need(dom.window.location.hash === '#/luoshu/math/modular-border/clockwise-addition?step=3', 'hash should follow stepping');
 key('ArrowRight');
 await needSeen(stepText, 'Step 4 of 4', 'ArrowRight should reach the last step');
 key('r');
@@ -153,14 +157,14 @@ document.querySelector('.anim-caption-play').click();
 {
   const stop = Date.now() + 15000;
   for (;;) {
-    if (dom.window.location.hash.startsWith('#/luoshu/D')) break;
+    if (dom.window.location.hash.startsWith('#/luoshu/math/modular-border/counterclockwise-arms')) break;
     if (Date.now() > stop) break;
     await new Promise((r) => setTimeout(r, 100));
   }
 }
 need(
-  dom.window.location.hash.startsWith('#/luoshu/D'),
-  `auto-next should advance to D on a natural end (hash ${dom.window.location.hash})`
+  dom.window.location.hash.startsWith('#/luoshu/math/modular-border/counterclockwise-arms'),
+  `auto-next should advance by category and name (hash ${dom.window.location.hash})`
 );
 await needSeen(playLabel, '❚❚', 'auto-next should keep playing the next property');
 
@@ -175,11 +179,11 @@ need(!!bTile, 'B sidebar tile should exist');
 bTile.click();
 {
   const stop = Date.now() + 4000;
-  while (!dom.window.location.hash.startsWith('#/luoshu/B') && Date.now() < stop) {
+  while (!dom.window.location.hash.startsWith('#/luoshu/math/introduction/lines-sum-to-15') && Date.now() < stop) {
     await new Promise((r) => setTimeout(r, 50));
   }
 }
-need(dom.window.location.hash.startsWith('#/luoshu/B'), `selecting B should address B (hash ${dom.window.location.hash})`);
+need(dom.window.location.hash.startsWith('#/luoshu/math/introduction/lines-sum-to-15'), `selecting Lines sum to 15 should address its category (hash ${dom.window.location.hash})`);
 await needSeen(stepText, 'Step 1 of 4', 'selecting B should show its first step');
 need(document.querySelector('select[aria-label="Animation"]') === null, 'animation select should stay hidden');
 need(document.querySelector('[data-anim-key="BF.rows"]') !== null, 'Family tour should be B’s default animation');

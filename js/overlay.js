@@ -102,8 +102,9 @@ function enterAttrs(item, entering) {
 // Settled strokes use their real dash. Entering strokes draw on via
 // pathLength + dashoffset; a dashed design fades in after the solid draw
 // so dasharray and dashoffset do not fight. All line-work renders at 3pt
-// for contrast; drop shadows come from the stage stylesheet.
-function strokeNodes(tag, geom, look, entering) {
+// for contrast; drop shadows come from the stage stylesheet. Strokes are
+// keyed alongside the diamonds so lists stay key-complete.
+function strokeNodes(tag, geom, look, entering, key) {
   const base = {
     ...geom,
     fill: "none",
@@ -111,33 +112,49 @@ function strokeNodes(tag, geom, look, entering) {
     strokeWidth: "3",
   };
   if (!entering) {
-    return h(tag, {
-      ...base,
-      strokeDasharray: look.dash || undefined,
-      markerEnd: look.marker ? `url(#${look.marker})` : undefined,
-    });
+    return h(
+      tag,
+      {
+        ...base,
+        strokeDasharray: look.dash || undefined,
+        markerEnd: look.marker ? `url(#${look.marker})` : undefined,
+      },
+      key,
+    );
   }
   if (look.dash) {
     return [
-      h(tag, {
-        ...base,
-        className: "anim-stroke-draw anim-stroke-ghost",
-        pathLength: "1",
-      }),
-      h(tag, {
-        ...base,
-        className: "anim-stroke-ink",
-        strokeDasharray: look.dash,
-        markerEnd: look.marker ? `url(#${look.marker})` : undefined,
-      }),
+      h(
+        tag,
+        {
+          ...base,
+          className: "anim-stroke-draw anim-stroke-ghost",
+          pathLength: "1",
+        },
+        `${key}-ghost`,
+      ),
+      h(
+        tag,
+        {
+          ...base,
+          className: "anim-stroke-ink",
+          strokeDasharray: look.dash,
+          markerEnd: look.marker ? `url(#${look.marker})` : undefined,
+        },
+        `${key}-ink`,
+      ),
     ];
   }
-  return h(tag, {
-    ...base,
-    className: "anim-stroke-draw",
-    pathLength: "1",
-    markerEnd: look.marker ? `url(#${look.marker})` : undefined,
-  });
+  return h(
+    tag,
+    {
+      ...base,
+      className: "anim-stroke-draw",
+      pathLength: "1",
+      markerEnd: look.marker ? `url(#${look.marker})` : undefined,
+    },
+    key,
+  );
 }
 
 // Cells strictly between two endpoints on a straight row, column or
@@ -195,7 +212,7 @@ function chipPoint(item) {
   };
 }
 
-function svgChip(chip, x, y, entering) {
+function svgChip(chip, x, y, entering, key) {
   const w = chip.w || 28;
   const ht = chip.h || 20;
   return _(
@@ -217,7 +234,7 @@ function svgChip(chip, x, y, entering) {
               fill: chip.fill || "white",
               stroke: chip.stroke,
               strokeWidth: chip.stroke ? chip.strokeWidth || "1" : undefined,
-            }),
+            }, `${key}-box`),
             h("text", {
               x: 0,
               y: chip.textDy ?? 4,
@@ -227,17 +244,19 @@ function svgChip(chip, x, y, entering) {
               fill: chip.color || chip.stroke || "#1a1a1a",
               fontWeight: chip.weight || "700",
               children: chip.text,
-            }),
+            }, `${key}-label`),
           ],
-        }),
+        }, `${key}-anim`),
       ],
     },
+    key,
   );
 }
 
 function lineChildren(item, look, from, to, entering, keySuffix = "") {
   const geom = endpoints(from, to, item.extend || 0);
-  const nodes = [strokeNodes("line", geom, look, entering)];
+  const base = `${item.key}-${keySuffix}`;
+  const nodes = [strokeNodes("line", geom, look, entering, `${base}line`)];
   // Every included cell gets a diamond: endpoints plus any straight-run
   // cells between them.
   [from, ...cellsBetween(from, to), to].forEach((cell, dix) => {
@@ -245,7 +264,7 @@ function lineChildren(item, look, from, to, entering, keySuffix = "") {
   });
   if (item.chip) {
     const p = chipPoint({ ...item, from, to });
-    nodes.push(svgChip(item.chip, p.x, p.y, entering));
+    nodes.push(svgChip(item.chip, p.x, p.y, entering, `${base}chip`));
   }
   return nodes.flat();
 }
@@ -326,7 +345,7 @@ function renderItem(item, entering) {
       dash: item.dash,
       marker: item.marker,
     };
-    const children = [strokeNodes("path", { d }, look, entering)];
+    const children = [strokeNodes("path", { d }, look, entering, `${item.key}-path`)];
     // Diamonds on every included cell: the waypoint cells when given,
     // otherwise the arc's own endpoints.
     const diamondCells =
@@ -389,6 +408,7 @@ function renderItem(item, entering) {
             { cx: Z / 2, cy: Z / 2, r: item.r },
             { color: item.color, width: item.width || "1", dash: item.dash },
             entering,
+            `${item.key}-ring`,
           ),
         },
         item.key,
@@ -523,7 +543,7 @@ function renderItem(item, entering) {
     return {
       svg: _(
         "g",
-        { ...attrs, children: svgChip({ ...item, at: item.at ?? 0.55 }, item.x, item.y, entering) },
+        { ...attrs, children: svgChip({ ...item, at: item.at ?? 0.55 }, item.x, item.y, entering, `${item.key}-chip`) },
         item.key,
       ),
     };

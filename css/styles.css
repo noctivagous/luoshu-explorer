@@ -49,7 +49,9 @@ html,body{height:100%;overflow:hidden}
 #root main>div>.relative>.predict-bar{grid-area:predict}
 #root main>div>.relative>.rounded-\[22px\]{grid-area:board}
 #root main>div>.relative>.tape{grid-area:tape}
+#root main>div>.relative>.sheet{grid-area:sheet}
 #root main>div>.relative>.legend-toggles{grid-area:legend;width:100%;max-width:none}
+#root main>div>.relative:has(.sheet){grid-template-areas:"panel" "predict" "board" "sheet" "tape" "legend"}
 /* Utilities for the enlarged layout (absent from the frozen Tailwind output). */
 .text-\[42px\]{font-size:42px}
 .text-\[16px\]{font-size:16px}
@@ -85,6 +87,7 @@ html,body{height:100%;overflow:hidden}
 .d4-strip{flex-direction:row;flex-wrap:wrap;justify-content:center;width:100%;height:auto;margin:0 0 8px;gap:4px}
 .d4-thumb{width:36px;height:36px}
 #root main>div>.relative,#root main>div>.relative:has(.anim-rail){display:grid;max-width:100%;align-items:start;grid-template-columns:minmax(0,1fr);grid-template-areas:"panel" "predict" "board" "tape" "legend"}
+#root main>div>.relative:has(.sheet),#root main>div>.relative:has(.anim-rail):has(.sheet){grid-template-areas:"panel" "predict" "board" "sheet" "tape" "legend"}
 #root main>div>.relative>.anim-caption,#root main>div>.relative>.anim-transport{align-self:start;height:auto}
 #root main .property-panel{max-height:min(42dvh,280px);min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #root main .property-panel .px-6{padding:12px}
@@ -126,6 +129,7 @@ html,body{height:100%;overflow:hidden}
 }
 #root main>div,#root main>div>.relative,#root main .property-panel,#root main .max-w-\[560px\]{max-width:none;width:100%}
 #root main>div>.relative{align-items:start;grid-template-columns:minmax(0,1fr);grid-template-areas:"panel" "predict" "board" "tape" "legend"}
+#root main>div>.relative:has(.sheet){grid-template-areas:"panel" "predict" "board" "sheet" "tape" "legend"}
 }
 /* Desktop uses the same width as a 12.9" tablet in landscape. */
 @media(min-width:1367px){
@@ -242,6 +246,10 @@ html,body{height:100%;overflow:hidden}
 .anim-auto-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .anim-auto-row .anim-rail-btn{font-size:11px;min-width:0}
 .anim-rail-btn:disabled{opacity:.4;cursor:default}
+/* Cell probe: the sticky cell's cross-property index rides above the tape. */
+.cell-probe{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
+.cell-probe-chip{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1;padding:5px 10px;border-radius:9999px;border:1px solid rgba(26,26,26,.2);background:transparent;color:#1a1a1a}
+.cell-probe-chip:hover{background:#1a1a1a;color:#fdf8f0}
 /* Predict mode: the guessing prompt sits between transport and board. */
 .predict-bar{margin:0 0 12px;width:100%;max-width:none;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:10px 14px}
 .predict-actions{margin-top:8px;display:flex;gap:6px}
@@ -261,13 +269,36 @@ html,body{height:100%;overflow:hidden}
 #root main div[style*="width: 340px"]{--luoshu-fit:min(1,calc((100cqi - 72px) / 340px),calc((100dvh - 160px) / 340px));--luoshu-type:calc(1 / max(var(--luoshu-fit), .5))}
 }
 [aria-label="What breaks playground"]{display:none}
-.tape,.legend-toggles{border:1px solid rgba(26,26,26,.16);border-radius:18px;background:#fff;padding:14px 16px 16px}
+.tape,.legend-toggles,.sheet{border:1px solid rgba(26,26,26,.16);border-radius:18px;background:#fff;padding:14px 16px 16px}
+.sheet{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-variant-numeric:tabular-nums;color:#1a1a1a}
+.sheet-title{margin:0 0 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.45;font-weight:500}
+.sheet-family{padding-top:10px;margin-top:10px;border-top:1px solid rgba(26,26,26,.08)}
+.sheet-family:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.sheet-family-name{font-size:13px;font-weight:700;margin-bottom:6px}
+.sheet-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+.sheet-col-title{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.45;margin-bottom:4px}
+.sheet-reading{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-size:14px;line-height:1.45}
+.sheet-num{white-space:nowrap}
+.sheet-sq{white-space:nowrap;opacity:.8}
+.sheet-digit-off{text-decoration:line-through;opacity:.4}
+.sheet-total{margin-top:6px;font-size:18px;font-weight:700;line-height:1.3;white-space:nowrap}
+.sheet-total-label{display:block;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;opacity:.45}
+.sheet-companion{display:grid;grid-template-columns:repeat(3,40px);gap:6px;justify-content:start;align-items:center;width:max-content;max-width:100%}
+.sheet-companion-sums{grid-template-columns:repeat(3,40px) auto}
+.sheet-cell{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#fdf8f0;border:1px solid rgba(26,26,26,.12);font-size:16px;font-weight:700}
+.sheet-cell-empty{background:transparent;color:transparent;border-color:rgba(26,26,26,.08)}
+.sheet-cell-worked{box-shadow:inset 0 0 0 2px #c96442}
+.sheet-rowsum{font-size:14px;font-weight:700;padding-left:4px;white-space:nowrap}
+.sheet-note{margin:10px 0 0;font-size:13px;line-height:1.45;font-weight:500}
+.sheet-note-first{margin-top:0;margin-bottom:10px}
+.sheet-miss{color:#c96442}
 /* Desktop and tablet landscape: the square sits beside the property card,
    and the player plus slider run in one horizontal band underneath both.
    The catalog is a single column. */
 @media(min-width:1024px),(orientation:landscape) and (min-width:900px) and (min-height:600px){
 #root main>div>.relative,#root main .property-panel,#root main .max-w-\[560px\]{max-width:none;width:100%}
 #root main>div>.relative{grid-template-columns:minmax(0,1fr) max-content;grid-template-areas:"panel board" "predict predict" "tape tape" "legend legend";align-items:start}
+#root main>div>.relative:has(.sheet){grid-template-areas:"panel board" "sheet sheet" "predict predict" "tape tape" "legend legend"}
 #root main .property-panel{max-height:none;overflow:visible}
 #root main>div>.relative>.rounded-\[22px\]{width:auto;min-width:auto;max-width:none;justify-self:start;align-self:start}
 #root main .board-meta{width:340px;max-width:340px}

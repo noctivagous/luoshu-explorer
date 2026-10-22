@@ -1,4 +1,4 @@
-// Executable claims for every Lo Shu property (A–N).
+// Executable claims for every Lo Shu property (A–S).
 // Each predicate takes a flat 3×3 grid (indices 0-8, row-major) and reports
 // whether that property holds for it. The UI text in data/properties.json and
 // the captions in js/animation-scripts.js must agree with these predicates;
@@ -120,7 +120,140 @@ export const verify = {
       const s = sum(t, LINES[0]);
       return LINES.every((line) => sum(t, line) === s);
     }),
+  // O: the 3-subsets that sum to 15 are exactly the eight lines, so the
+  // center lies on 4, each corner on 3, and each edge on 2.
+  O: (g) => {
+    const found = [];
+    for (let a = 0; a < 9; a++) {
+      for (let b = a + 1; b < 9; b++) {
+        for (let c = b + 1; c < 9; c++) {
+          if (g[a] + g[b] + g[c] === 15) found.push([a, b, c]);
+        }
+      }
+    }
+    const key = (cells) => [...cells].sort((a, b) => a - b).join(",");
+    const got = found.map(key).sort();
+    const lines = LINES.map(key).sort();
+    if (got.length !== 8 || got.join("|") !== lines.join("|")) return false;
+    const on = Array(9).fill(0);
+    for (const line of LINES) for (const i of line) on[i] += 1;
+    return (
+      on[4] === 4 &&
+      [0, 2, 6, 8].every((i) => on[i] === 3) &&
+      [1, 3, 5, 7].every((i) => on[i] === 2)
+    );
+  },
+  // P: row products and column products each total 225; pairwise products
+  // each total 195. Diagonals are outside this claim.
+  P: (g) => {
+    const prod = (cells) => cells.reduce((a, i) => a * g[i], 1);
+    const pairs = (cells) => {
+      const [a, b, c] = cells;
+      return g[a] * g[b] + g[b] * g[c] + g[c] * g[a];
+    };
+    const rows = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+    ];
+    const cols = [
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+    ];
+    return (
+      rows.reduce((a, line) => a + prod(line), 0) === 225 &&
+      cols.reduce((a, line) => a + prod(line), 0) === 225 &&
+      rows.reduce((a, line) => a + pairs(line), 0) === 195 &&
+      cols.reduce((a, line) => a + pairs(line), 0) === 195
+    );
+  },
+  // Q: each outer line and the line opposite it have the same sum of squares.
+  Q: (g) => {
+    const sq = (cells) => cells.reduce((a, i) => a + g[i] * g[i], 0);
+    return (
+      sq([0, 1, 2]) === sq([6, 7, 8]) && sq([0, 3, 6]) === sq([2, 5, 8])
+    );
+  },
+  // R: each parallel family, read as three-digit numbers, has the same sum
+  // of squares as the digit reversals. Dropping any one digit place keeps it.
+  R: (g) =>
+    g.length === 9 &&
+    g.every((n) => Number.isInteger(n) && n >= 0 && n <= 9) &&
+    HOLMES_FAMILIES.every((fam) =>
+      [null, 0, 1, 2].every((place) => holmesFamily(g, fam.lines, place).match),
+    ),
+  // S: M² has one diagonal value, one other value everywhere else, and each
+  // row sums to 225. Either pair (59/83 or 91/67) is accepted.
+  S: (g) => squaredPattern(g).ok,
 };
+
+// Holmes families, in the reading order used on this orientation.
+// The anti-diagonal here is 471, not the published 714 of the other pose.
+export const HOLMES_FAMILIES = [
+  { id: "rows", label: "Rows", lines: [[0, 1, 2], [3, 4, 5], [6, 7, 8]] },
+  { id: "columns", label: "Columns", lines: [[0, 3, 6], [1, 4, 7], [2, 5, 8]] },
+  { id: "main", label: "Main wraps", lines: [[0, 4, 8], [1, 5, 6], [2, 3, 7]] },
+  { id: "anti", label: "Anti wraps", lines: [[2, 4, 6], [0, 5, 7], [1, 3, 8]] },
+];
+
+export function threeDigit(g, cells) {
+  return cells.reduce((n, i) => n * 10 + g[i], 0);
+}
+
+export function reverseThree(n) {
+  const s = String(n).padStart(3, "0");
+  return Number(s[2] + s[1] + s[0]);
+}
+
+// place 0 drops hundreds, 1 tens, 2 units. The same place is dropped from
+// the reading and from its reversal, which is not the reversal of the remainder.
+export function dropPlace(n, place) {
+  const s = String(n).padStart(3, "0").split("");
+  s.splice(place, 1);
+  return Number(s.join(""));
+}
+
+export function holmesFamily(g, lines, place) {
+  const rows = lines.map((cells) => {
+    const n = threeDigit(g, cells);
+    const rev = reverseThree(n);
+    const left = place == null ? n : dropPlace(n, place);
+    const right = place == null ? rev : dropPlace(rev, place);
+    return { n, rev, left, right, leftSq: left * left, rightSq: right * right };
+  });
+  const total = rows.reduce((a, row) => a + row.leftSq, 0);
+  const revTotal = rows.reduce((a, row) => a + row.rightSq, 0);
+  return { rows, total, revTotal, match: total === revTotal };
+}
+
+export function matrixSquare(g) {
+  const m = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      let s = 0;
+      for (let k = 0; k < 3; k++) s += g[r * 3 + k] * g[k * 3 + c];
+      m.push(s);
+    }
+  }
+  return m;
+}
+
+export function squaredPattern(g) {
+  const m = matrixSquare(g);
+  const diag = m[0];
+  const off = m[1];
+  const diagSame = m[0] === m[4] && m[4] === m[8];
+  const offSame = [1, 2, 3, 5, 6, 7].every((i) => m[i] === off);
+  const rowSums = [0, 1, 2].map((r) => m[r * 3] + m[r * 3 + 1] + m[r * 3 + 2]);
+  return {
+    m,
+    diag,
+    off,
+    rowSums,
+    ok: diagSame && offSame && rowSums.every((s) => s === 225) && diag !== off,
+  };
+}
 
 export function verifyAll(g) {
   return Object.fromEntries(Object.entries(verify).map(([id, fn]) => [id, fn(g)]));

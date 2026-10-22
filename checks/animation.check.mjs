@@ -27,8 +27,8 @@ need(
 need(scriptFor('B', 'bogus') === scriptFor('B'), 'unknown variant should fall back to the default script');
 need(variantsFor('C').length === 1, 'single-animation properties should list one variant');
 
-// Every property A-N routes to a valid, well-formed script.
-for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']) {
+// Every property A-S routes to a valid, well-formed script.
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S']) {
   const s = scriptFor(id);
   need(s !== null && s !== undefined, `property ${id} should route to a script`);
   need(validateScript(s).length === 0, `script ${id} invalid`);
@@ -46,7 +46,7 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 
 // Non-default variants meet the same bar as defaults.
-for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']) {
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S']) {
   for (const v of variantsFor(id)) {
     if (v.script === scriptFor(id)) continue;
     need(typeof v.key === 'string' && v.key, `variant of ${id} needs a key`);
@@ -68,8 +68,8 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 need(
   JSON.stringify(Object.keys(demoScripts).sort()) ===
-    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'construction', 'intro']),
-  'demoScripts should export all 14 property scripts plus construction'
+    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'construction', 'intro']),
+  'demoScripts should export all 19 property scripts plus construction'
 );
 
 // Construction: ordinal square, corner swap, then fold onto the Lo Shu.
@@ -110,6 +110,46 @@ need(
   'N starts on the displayed square'
 );
 need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells');
+
+// R and S carry a content sheet. Families accumulate; the latest strike,
+// reveal, and turn note win. Predict rewinds the open step's sheet.
+{
+  const scriptR = scriptFor('R');
+  need(scriptR.steps.length === 7, 'R should have 7 steps');
+  need(frameFor(scriptR, 0).sheet.families.length === 1, 'R opens on one family');
+  need(
+    frameFor(scriptR, 3).sheet.families.map((f) => f.id).join(',') === 'rows,columns,main,anti',
+    'R accumulates four families'
+  );
+  need(frameFor(scriptR, 4).sheet.strike === 'hundreds', 'R then strikes hundreds');
+  need(frameFor(scriptR, 6).sheet.strike === 'units', 'R ends on the units strike');
+  need(promptFrameFor(scriptR, 0).sheet === null, 'predict hides the first sheet');
+  need(promptFrameFor(scriptR, 4).sheet.strike == null, 'predict rewinds the strike');
+  need(promptFrameFor(scriptR, 4).sheet.families.length === 4, 'predict keeps the families already shown');
+  const scriptS = scriptFor('S');
+  need(scriptS.steps.length === 4, 'S should have 4 steps');
+  need(
+    frameFor(scriptS, 0).sheet.reveal === 'center' && frameFor(scriptS, 0).sheet.worked === 4,
+    'S works the center first'
+  );
+  need(
+    frameFor(scriptS, 1).sheet.reveal === 'all' && frameFor(scriptS, 1).sheet.worked === null,
+    'S then fills the companion'
+  );
+  need(frameFor(scriptS, 2).sheet.sums === true, 'S then shows row sums');
+  need(frameFor(scriptS, 3).sheet.compareTurn === true, 'S names the turned pair');
+  need(
+    JSON.stringify(gridOf(frameFor(scriptS, 3).setValues)) === JSON.stringify([8, 3, 4, 1, 5, 9, 6, 7, 2]),
+    'S turns 90° clockwise'
+  );
+  need(frameFor(scriptS, 3).moves.length > 0, 'S turn glides the cells');
+  need(promptFrameFor(scriptS, 3).setValues === null, 'predict hides the turn');
+  need(promptFrameFor(scriptS, 3).sheet.compareTurn !== true, 'predict hides the turned-pair note');
+  need(
+    frameFor(scriptFor('A'), 0).sheet == null && frameFor(scriptFor('J'), 0).sheet == null,
+    'A and J carry no sheet'
+  );
+}
 
 // Player: manual tick advances, step/reset/speed behave. Durations and the
 // last index come from the script so beat-length edits stay green.

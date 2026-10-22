@@ -14,9 +14,9 @@ import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor } from "./animation.js";
-import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
+import { scriptFor, variantsFor, ledgerFor, cellProperties } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
-import { determinant, verifyAll } from "./verify.js";
+import { determinant, verifyAll, holmesFamily, squaredPattern } from "./verify.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -79,7 +79,7 @@ const _ = keyed(React.createElement);
 
 // Per-property legend for the detail card ("Visual key"). Each entry is
 // [swatchColor, label, dashed]. Replaces the old static "Pair / sum" +
-// "Modulo wrap" pair that said the same thing for all 14 properties.
+// "Modulo wrap" pair that said the same thing for every property.
 const VISUAL_KEYS = {
   intro: [["#1a1a1a", "Ordinal 1…9", false], ["#c96442", "Corner swap, then fold", false]],
   A: [["#c96442", "Opposite pair = 10", false], ["#1a1a1a", "Chord through 5", true]],
@@ -96,15 +96,20 @@ const VISUAL_KEYS = {
   L: [["#1a1a1a", "|n − 5| bar", false], ["#4a6741", "Mirrored sign", false]],
   M: [["#1a1a1a", "Short hop", false], ["#7a6a9e", "Torus wrap", true]],
   N: [["#1a1a1a", "Rotation", false], ["#7a6a9e", "Reflection", false]],
+  O: [["#b89a5a", "A 15-triple", false], ["#1a1a1a", "Count ×4 / ×3 / ×2", false]],
+  P: [["#b89a5a", "Row products → 225", false], ["#4a6741", "Column products → 225", false]],
+  Q: [["#b89a5a", "Outer rows Σ 101", false], ["#4a6741", "Outer columns Σ 89", false]],
+  R: [["#1a1a1a", "Straight reading", false], ["#7a6a9e", "Broken wrap", true]],
+  S: [["#1a1a1a", "Middle row", false], ["#c96442", "Middle column", false]],
 };
 
 const CATEGORIES = [
     { name: "Introduction", ids: ["intro", "B"] },
-    { name: "Core Balance", ids: ["A", "E", "F", "L"] },
+    { name: "Core Balance", ids: ["A", "E", "F", "L", "Q"] },
     { name: "Means & Zero", ids: ["G", "I"] },
-    { name: "Lines & Totals", ids: ["J", "K"] },
+    { name: "Lines & Totals", ids: ["J", "K", "S", "P", "R"] },
     { name: "Modular Border", ids: ["C", "D", "H"] },
-    { name: "Geometry & Universality", ids: ["M", "N"] },
+    { name: "Geometry & Universality", ids: ["M", "N", "O"] },
   ],
   SQUARE = [4, 9, 2, 3, 5, 7, 8, 1, 6];
 function iconGlyphs(e) {
@@ -505,6 +510,92 @@ function iconGlyphs(e) {
       h("circle", { cx: "6", cy: "20", r: "1.8", fill: C }),
       h("circle", { cx: "14", cy: "8", r: "1.8", fill: T }),
     ]);
+  if (e === "O")
+    return PropertyIcon([
+      h("path", {
+        d: "M5 14 H23",
+        stroke: D,
+        strokeWidth: "1.6",
+        strokeLinecap: "round",
+      }),
+      h("circle", { cx: "6", cy: "14", r: "2.1", fill: C }),
+      h("circle", { cx: "14", cy: "14", r: "2.1", fill: T }),
+      h("circle", { cx: "22", cy: "14", r: "2.1", fill: C }),
+    ]);
+  if (e === "P")
+    return PropertyIcon([
+      h("path", {
+        d: "M8 8 L20 20 M20 8 L8 20",
+        stroke: T,
+        strokeWidth: "1.8",
+        strokeLinecap: "round",
+      }),
+    ]);
+  if (e === "Q")
+    return PropertyIcon([
+      h("path", {
+        d: "M5 8 H23 M5 20 H23",
+        stroke: G,
+        strokeWidth: "1.8",
+        strokeLinecap: "round",
+      }),
+      h("path", {
+        d: "M8 8 V20 M20 8 V20",
+        stroke: C,
+        strokeWidth: "1.2",
+        strokeDasharray: "2 2",
+      }),
+    ]);
+  if (e === "R")
+    return PropertyIcon([
+      h("path", {
+        d: "M5 9 H18",
+        stroke: C,
+        strokeWidth: "1.7",
+        strokeLinecap: "round",
+      }),
+      h("path", {
+        d: "M14 5 L20 9 L14 13",
+        stroke: C,
+        strokeWidth: "1.7",
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        fill: "none",
+      }),
+      h("path", {
+        d: "M23 19 H10",
+        stroke: T,
+        strokeWidth: "1.7",
+        strokeLinecap: "round",
+      }),
+      h("path", {
+        d: "M14 15 L8 19 L14 23",
+        stroke: T,
+        strokeWidth: "1.7",
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        fill: "none",
+      }),
+    ]);
+  if (e === "S")
+    return PropertyIcon(
+      [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) =>
+        h(
+          "rect",
+          {
+            x: 5 + (i % 3) * 6.5,
+            y: 5 + Math.floor(i / 3) * 6.5,
+            width: "5",
+            height: "5",
+            rx: "1",
+            fill: i === 0 || i === 4 || i === 8 ? T : "none",
+            stroke: C,
+            strokeWidth: "1.1",
+          },
+          i,
+        ),
+      ),
+    );
   if (e === "N")
     return PropertyIcon([
       h("rect", {
@@ -571,20 +662,38 @@ function iconGlyphs(e) {
     }),
   ]);
 }
-// Shareable step address: #/luoshu/<id>?anim=<key>&step=<1-based>&speed=<0.25|0.5|1|1.5|2|3>.
-// <id> is "intro" or a property A–N ("construction" aliases to intro).
-// Unknown ids and out-of-range steps fall back to the start of the intro;
-// unknown anim keys fall back to the property's default animation, and the
-// default animation is omitted from written hashes so old links keep working.
+// Shareable step address:
+// #/luoshu/math/<category>/<property>?anim=<key>&step=<1-based>&speed=<0.25|0.5|1|1.5|2|3>
+// Category and property are names, for example
+// #/luoshu/math/introduction/build-the-square.
+// The category segment must be the property's own category. An unknown path
+// does not parse. An out-of-range step falls back to step 1; unknown anim
+// keys fall back to the property's default animation, and the default
+// animation is omitted from written hashes.
+function categorySlug(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/&/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+function propertyPath(id) {
+  const prop = PROPERTIES.find((p) => p.id === id);
+  if (!prop?.slug) return null;
+  return `#/luoshu/math/${categorySlug(prop.category)}/${prop.slug}`;
+}
 function parseDeepLink() {
   try {
-    const m = (window.location.hash || "").match(/^#\/luoshu\/([A-Za-z]+)(?:\?(.*))?$/);
+    const m = (window.location.hash || "").match(
+      /^#\/luoshu\/math\/([a-z0-9-]+)\/([a-z0-9-]+)(?:\?(.*))?$/i,
+    );
     if (!m) return null;
-    let id = m[1].toLowerCase() === "intro" ? "intro" : m[1].toUpperCase();
-    if (id === "CONSTRUCTION") id = "intro";
-    if (id !== "intro" && !/^[A-N]$/.test(id)) return null;
-    if (!scriptFor(id)) return null;
-    const q = new URLSearchParams(m[2] || "");
+    const prop = PROPERTIES.find(
+      (p) => p.slug === m[2].toLowerCase() && categorySlug(p.category) === m[1].toLowerCase(),
+    );
+    if (!prop || !scriptFor(prop.id)) return null;
+    const id = prop.id;
+    const q = new URLSearchParams(m[3] || "");
     const rawStep = parseInt(q.get("step") || "", 10);
     const rawSpeed = parseFloat(q.get("speed") || "");
     const variantKeys = variantsFor(id).map((v) => v.key);
@@ -634,6 +743,220 @@ function storePref(key, on) {
     window.localStorage.setItem(key, on ? "1" : "0");
   } catch {}
 }
+// Cell probe index: per board cell, the properties whose steps highlight or
+// move it. Computed once from the same scripts the player runs.
+const CELL_PROPS = cellProperties();
+const SHEET_PLACE = { hundreds: 0, tens: 1, units: 2 };
+
+function fmtNum(n) {
+  return Number(n).toLocaleString("en-US");
+}
+
+function rotateCW(g) {
+  return [g[6], g[3], g[0], g[7], g[4], g[1], g[8], g[5], g[2]];
+}
+
+function sheetShell(title, children) {
+  return h(
+    "section",
+    {
+      className: "sheet w-full max-w-none",
+      "aria-label": "Figure sheet",
+      children: [
+        h("h2", { className: "sheet-title", children: title }, "title"),
+        ...children,
+      ],
+    },
+    "sheet",
+  );
+}
+
+function struckDigits(n, strike) {
+  const place = strike ? SHEET_PLACE[strike] : -1;
+  const chars = String(n).padStart(3, "0").split("");
+  return h(
+    "span",
+    {
+      className: "sheet-num",
+      children: chars.map((ch, i) =>
+        h(
+          "span",
+          {
+            className: i === place ? "sheet-digit sheet-digit-off" : "sheet-digit",
+            children: ch,
+          },
+          i,
+        ),
+      ),
+    },
+    "digits",
+  );
+}
+
+function renderPairSheet(payload, grid) {
+  const digits = grid.length === 9 && grid.every((n) => Number.isInteger(n) && n >= 0 && n <= 9);
+  if (!digits) {
+    return sheetShell("Read and reverse", [
+      h(
+        "p",
+        {
+          className: "sheet-note",
+          children: "A cell is no longer a single digit, so these readings break.",
+        },
+        "bad",
+      ),
+    ]);
+  }
+  const place = payload.strike ? SHEET_PLACE[payload.strike] : null;
+  const families = payload.families || [];
+  return sheetShell("Read and reverse", [
+    payload.strike &&
+      h(
+        "p",
+        {
+          className: "sheet-note sheet-note-first",
+          children: `${payload.strike[0].toUpperCase()}${payload.strike.slice(1)} digit removed from every reading.`,
+        },
+        "strike",
+      ),
+    ...families.map((fam) => {
+      const fig = holmesFamily(grid, fam.lines, place);
+      const same = fig.total === fig.revTotal;
+      const column = (title, side) =>
+        h(
+          "div",
+          {
+            className: "sheet-col",
+            children: [
+              h("div", { className: "sheet-col-title", children: title }, "h"),
+              ...fig.rows.map((row, i) =>
+                h(
+                  "div",
+                  {
+                    className: "sheet-reading",
+                    children: [
+                      struckDigits(side === "read" ? row.n : row.rev, payload.strike),
+                      h(
+                        "span",
+                        {
+                          className: "sheet-sq",
+                          children: `² = ${fmtNum(side === "read" ? row.leftSq : row.rightSq)}`,
+                        },
+                        "sq",
+                      ),
+                    ],
+                  },
+                  i,
+                ),
+              ),
+            ],
+          },
+          title,
+        );
+      return h(
+        "div",
+        {
+          className: "sheet-family",
+          children: [
+            h("div", { className: "sheet-family-name", children: fam.label }, "name"),
+            h(
+              "div",
+              { className: "sheet-cols", children: [column("Read", "read"), column("Reverse", "rev")] },
+              "cols",
+            ),
+            h(
+              "div",
+              {
+                className: same ? "sheet-total" : "sheet-total sheet-miss",
+                children: [
+                  h("span", { className: "sheet-total-label", children: "Sum of squares" }, "k"),
+                  same ? fmtNum(fig.total) : `${fmtNum(fig.total)} ≠ ${fmtNum(fig.revTotal)}`,
+                ],
+              },
+              "total",
+            ),
+          ],
+        },
+        fam.id,
+      );
+    }),
+  ]);
+}
+
+function renderCompanionSheet(payload, grid) {
+  const pattern = squaredPattern(grid);
+  const showAll = payload.reveal === "all";
+  const sumsOn = payload.sums === true && showAll;
+  const cells = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const i = r * 3 + c;
+      const on = showAll || (payload.reveal === "center" && i === 4);
+      const worked = on && payload.worked === i;
+      cells.push(
+        h(
+          "div",
+          {
+            className: `sheet-cell${on ? "" : " sheet-cell-empty"}${worked ? " sheet-cell-worked" : ""}`,
+            children: on ? fmtNum(pattern.m[i]) : "",
+          },
+          `c${i}`,
+        ),
+      );
+    }
+    if (sumsOn) {
+      const sum = pattern.rowSums[r];
+      cells.push(
+        h(
+          "div",
+          {
+            className: sum === 225 ? "sheet-rowsum" : "sheet-rowsum sheet-miss",
+            children: fmtNum(sum),
+          },
+          `sum${r}`,
+        ),
+      );
+    }
+  }
+  const notes = [];
+  if (Number.isInteger(payload.worked)) {
+    const idx = payload.worked;
+    const r = Math.floor(idx / 3);
+    const c = idx % 3;
+    const parts = [0, 1, 2].map((k) => `${grid[r * 3 + k]}·${grid[k * 3 + c]}`);
+    const value = [0, 1, 2].reduce((s, k) => s + grid[r * 3 + k] * grid[k * 3 + c], 0);
+    notes.push(`${parts.join(" + ")} = ${fmtNum(value)}`);
+  }
+  if (showAll && !pattern.ok)
+    notes.push("This M² is no longer one diagonal value and one other value with rows of 225.");
+  if (payload.compareTurn) {
+    const turned = squaredPattern(rotateCW(grid));
+    notes.push(
+      pattern.ok && turned.ok
+        ? `This pose is ${fmtNum(pattern.diag)} and ${fmtNum(pattern.off)}. A quarter turn is ${fmtNum(turned.diag)} and ${fmtNum(turned.off)}. Each row still sums to 225.`
+        : "A quarter turn changes the square. The rows of M² are no longer all 225.",
+    );
+  }
+  return sheetShell("Squared matrix", [
+    h(
+      "div",
+      {
+        className: sumsOn ? "sheet-companion sheet-companion-sums" : "sheet-companion",
+        children: cells,
+      },
+      "grid",
+    ),
+    ...notes.map((text, i) => h("p", { className: "sheet-note", children: text }, `note-${i}`)),
+  ]);
+}
+
+function renderSheet(payload, grid) {
+  if (!payload) return null;
+  if (payload.kind === "pairs") return renderPairSheet(payload, grid);
+  if (payload.kind === "companion") return renderCompanionSheet(payload, grid);
+  return null;
+}
+
 function LoShuApp() {
   let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
     // Active animation variant for the selected property. One select in the
@@ -853,7 +1176,8 @@ function LoShuApp() {
       const step = started && frame ? frame.stepIndex + 1 : 1;
       const vDefault = variantsFor(e)[0]?.key;
       const animPart = variant && variant !== vDefault ? `&anim=${variant}` : "";
-      window.history.replaceState(null, "", `#/luoshu/${e}?step=${step}${animPart}`);
+      const path = propertyPath(e);
+      if (path) window.history.replaceState(null, "", `${path}?step=${step}${animPart}`);
     } catch {}
   }, [e, variant, started, frame && frame.stepIndex]);
   // Playback shortcuts. Space toggles (preventDefault also blocks the button
@@ -1072,6 +1396,24 @@ function LoShuApp() {
   // The checklist and the computed claim status both read this grid.
   const playBase = playGrid ?? SQUARE,
     playResults = verifyAll(playBase);
+  // Gated playback reveals the sheet with the step. Idle and Overview keep
+  // the last step's sheet. The numbers follow the board: a turn's setValues
+  // while playback is running, otherwise the playground grid or the Lo Shu.
+  // Idle must not apply the last setValues, or N's resting board would leave
+  // the Lo Shu.
+  const sheetFrame =
+    script &&
+    (animOn && showFrame && !overview
+      ? showFrame
+      : frameFor(script, script.steps.length - 1, 1));
+  const sheetPayload = sheetFrame?.sheet || null;
+  const sheetGrid = (() => {
+    if (animOn && frame?.setValues && showFrame?.setValues) {
+      const g = Array.from({ length: 9 }, (_, i) => showFrame.setValues[i]);
+      if (g.every((n) => typeof n === "number")) return g;
+    }
+    return playBase;
+  })();
   const probeCell = focusCell ?? stickyCell,
     hoverCells =
       hoverStep != null && script && script.steps[hoverStep]
@@ -1618,6 +1960,7 @@ function LoShuApp() {
                           }),
                       ],
                     }),
+                    sheetPayload && renderSheet(sheetPayload, sheetGrid),
                     script &&
                       script.steps &&
                       _("section", {
@@ -1630,17 +1973,44 @@ function LoShuApp() {
                               "text-[11px] font-mono uppercase tracking-widest opacity-40 mb-1.5",
                             children: "Worked example",
                           }, "tape-title"),
+                          stickyCell != null &&
+                            h("div", {
+                              className: "cell-probe",
+                              role: "group",
+                              "aria-label": "Cell participation",
+                              children: [
+                                h("span", {
+                                  className: "text-[11px] font-mono opacity-60",
+                                  children: `Cell ${playBase[stickyCell]} appears in:`,
+                                }, "cp-label"),
+                                ...CELL_PROPS[stickyCell].map(({ id, n }) => {
+                                  const p = PROPERTIES.find((q) => q.id === id);
+                                  return h("button", {
+                                    type: "button",
+                                    className: "cell-probe-chip",
+                                    "aria-label": `Open ${p ? p.title : id}`,
+                                    title: `${p ? p.title : id} — ${n} step${n === 1 ? "" : "s"} use this cell`,
+                                    onClick: () => s(id),
+                                    children: p ? p.title : id,
+                                  }, `cp-${id}`);
+                                }),
+                              ],
+                            }, "probe"),
                           ...script.steps.map((st, i) => {
                             const entries = ledgerFor(st);
-                            const isCaption = entries.length === 0;
+                            const isCaption = !st.tape && entries.length === 0;
                             // While a guess is open, the prompt step hides its
                             // equation so the tape cannot leak the answer.
+                            // A step.tape title keeps the row short. Sheet
+                            // figures are not ledger text and are not split.
                             const hiding = predictStep === i;
                             const lines = hiding
                               ? ["Tap the cells, then Check."]
-                              : isCaption
-                                ? [st.caption]
-                                : entries.flatMap((en) => String(en).split(" · "));
+                              : st.tape
+                                ? [st.tape]
+                                : isCaption
+                                  ? [st.caption]
+                                  : entries.flatMap((en) => String(en).split(" · "));
                             const isCurrent =
                               (animOn && showFrame ? showFrame.stepIndex : 0) === i;
                             const cells = st.matrix.highlight || [];
@@ -1652,7 +2022,7 @@ function LoShuApp() {
                                 type: "button",
                                 "aria-label": hiding
                                   ? `Tape step ${i + 1}: hidden while predicting`
-                                  : `Tape step ${i + 1}: ${entries[0] || st.caption}`,
+                                  : `Tape step ${i + 1}: ${st.tape || entries[0] || st.caption}`,
                                 "aria-pressed": isCurrent ? "true" : "false",
                                 onClick: () => {
                                   if (!playerRef.current) return;
@@ -1682,7 +2052,7 @@ function LoShuApp() {
                                   _("div", {
                                     className: "flex-1 min-w-0",
                                     children: lines.map((ln, j) => {
-                                      if (isCaption || hiding)
+                                      if (isCaption || hiding || st.tape)
                                         return h("div", {
                                           className:
                                             "text-[13px] leading-[1.4] opacity-75",
@@ -1987,7 +2357,7 @@ function LoShuApp() {
                                     ],
                                   }),
                                 }),
-                                o.id !== "intro" &&
+                                o.id !== "intro" && !playResults[o.id] &&
                                   h("div", {
                                     className: "mt-3",
                                     children: _("div", {
@@ -1995,14 +2365,12 @@ function LoShuApp() {
                                         "inline-flex flex-wrap min-w-0 max-w-full items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#1a1a1a]/10",
                                       children: [
                                         h("span", {
-                                          className: `w-1.5 h-1.5 rounded-full shrink-0 ${playResults[o.id] ? "bg-[#4a6741]" : "bg-[#c96442]"}`,
+                                          className: "w-1.5 h-1.5 rounded-full shrink-0 bg-[#c96442]",
                                         }, "dot"),
                                         h("code", {
                                           className:
                                             "text-[12px] font-mono tracking-tight",
-                                          children: playResults[o.id]
-                                            ? "✓ computed: holds on this square"
-                                            : "✗ computed: broken on this square",
+                                          children: "✗ computed: broken on this square",
                                         }, "status"),
                                       ],
                                     }),
@@ -2252,7 +2620,7 @@ function LoShuApp() {
                                   className: "mt-2 text-[13px] leading-[1.6] opacity-60",
                                   style: { fontFamily: "'Newsreader', Georgia, serif" },
                                   children:
-                                    "Swap any two cells and watch the A–N checklist. Playback shows script values; reset it to see your swap.",
+                                    "Swap any two cells and watch the checklist. Playback shows script values; reset it to see your swap.",
                                 }, "pg-desc"),
                               ],
                             }, "pg-head"),
@@ -2303,7 +2671,7 @@ function LoShuApp() {
                                 return h("span", {
                                   className: `rounded-full border px-2 py-0.5 text-[11px] font-mono ${ok ? "border-[#4a6741]/50 text-[#4a6741]" : "border-[#c96442] text-[#c96442] bg-[#c96442]/10"}`,
                                   title: `${p.title} — ${ok ? "holds" : "broken"}`,
-                                  children: `${p.id} ${ok ? "✓" : "✗"}`,
+                                  children: `${p.title} ${ok ? "✓" : "✗"}`,
                                 }, p.id);
                               },
                             ),

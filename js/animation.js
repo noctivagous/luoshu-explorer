@@ -26,6 +26,9 @@
 // - A `draw` item with `transient: true` is visible only during its own step.
 //   Use it for a focused worked example that should clear before the next
 //   example; ordinary draw items continue to accumulate into the overview.
+// - A step may carry `sheet` beside `draw`. Families accumulate; strike,
+//   reveal, worked, sums, and compareTurn take the latest defined value.
+//   The sheet is figures for the content column. It is not overlay text.
 
 export const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3];
 export const DEFAULT_STEP_MS = 1200;
@@ -122,8 +125,53 @@ export function validateScript(script) {
         }
       }
     }
+    if (s.sheet !== undefined) {
+      const sh = s.sheet;
+      if (!sh || typeof sh !== "object" || Array.isArray(sh))
+        errors.push(`${at}.sheet must be an object`);
+      else {
+        if (sh.kind !== undefined && sh.kind !== "pairs" && sh.kind !== "companion")
+          errors.push(`${at}.sheet.kind must be pairs or companion`);
+        if (
+          sh.strike !== undefined &&
+          sh.strike !== null &&
+          !["hundreds", "tens", "units"].includes(sh.strike)
+        )
+          errors.push(`${at}.sheet.strike must be hundreds, tens, units, or null`);
+        if (sh.families !== undefined) {
+          if (!Array.isArray(sh.families)) errors.push(`${at}.sheet.families must be an array`);
+          else
+            sh.families.forEach((fam, j) => {
+              if (!fam || typeof fam.id !== "string" || !Array.isArray(fam.lines))
+                errors.push(`${at}.sheet.families[${j}] needs an id and lines`);
+            });
+        }
+      }
+    }
   });
   return errors;
+}
+
+const SHEET_LATEST = ["strike", "reveal", "worked", "sums", "compareTurn"];
+
+function mergeSheet(prev, patch) {
+  if (!patch) return prev;
+  const out = prev ? { ...prev } : {};
+  if (prev?.families) out.families = [...prev.families];
+  if (patch.kind) out.kind = patch.kind;
+  if (patch.families) {
+    const families = out.families ? [...out.families] : [];
+    for (const fam of patch.families) {
+      const at = families.findIndex((f) => f.id === fam.id);
+      if (at === -1) families.push(fam);
+      else families[at] = fam;
+    }
+    out.families = families;
+  }
+  for (const key of SHEET_LATEST) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) out[key] = patch[key];
+  }
+  return out;
 }
 
 function due(at, gate) {
@@ -147,6 +195,7 @@ export function frameFor(script, stepIndex, progress = 1) {
   let highlight = [];
   let setValues = null;
   let visibleCount = null;
+  let sheet = null;
 
   for (const item of script.chrome || []) {
     if (item && !seenDraw.has(item.key)) {
@@ -184,6 +233,7 @@ export function frameFor(script, stepIndex, progress = 1) {
       if (st.matrix.setValues !== undefined) setValues = st.matrix.setValues;
       if (st.matrix.visibleCount !== undefined) visibleCount = st.matrix.visibleCount;
     }
+    if (st.sheet) sheet = mergeSheet(sheet, st.sheet);
   }
 
   const prior = new Set();
@@ -209,6 +259,7 @@ export function frameFor(script, stepIndex, progress = 1) {
     setValues,
     visibleCount,
     moves,
+    sheet,
     isFirst: clamped === 0,
     isLast: clamped === steps.length - 1,
   };
@@ -235,6 +286,7 @@ export function promptFrameFor(script, stepIndex) {
     draw: prev ? prev.draw : [],
     visibleKeys: prev ? prev.visibleKeys : [],
     enteringKeys: [],
+    sheet: prev ? prev.sheet : null,
   };
 }
 

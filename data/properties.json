@@ -1,6 +1,7 @@
 [
   {
     "id": "intro",
+    "slug": "build-the-square",
     "category": "Introduction",
     "title": "Build the square",
     "shortDesc": "Ordinal square, swap corners, then fold",
@@ -9,6 +10,7 @@
   },
   {
     "id": "A",
+    "slug": "opposites-balance",
     "category": "Core Balance",
     "title": "Opposites balance",
     "shortDesc": "1↔9, 2↔8, 3↔7, 4↔6 sum 10",
@@ -17,6 +19,7 @@
   },
   {
     "id": "E",
+    "slug": "five-rules-everything",
     "category": "Core Balance",
     "title": "Five rules everything",
     "shortDesc": "Total 45=9×5, opposite 10=2×5, magic 15=3×5",
@@ -25,6 +28,7 @@
   },
   {
     "id": "F",
+    "slug": "corners-edges",
     "category": "Core Balance",
     "title": "Corners = Edges",
     "shortDesc": "evens 20, odds 20",
@@ -33,6 +37,7 @@
   },
   {
     "id": "L",
+    "slug": "mirrored-distance",
     "category": "Core Balance",
     "title": "Mirrored distance",
     "shortDesc": "Deviation from 5 is mirrored",
@@ -41,6 +46,7 @@
   },
   {
     "id": "G",
+    "slug": "zero-balanced-form",
     "category": "Means & Zero",
     "title": "Zero-balanced form",
     "shortDesc": "Subtract 5 matrix sums to 0",
@@ -49,6 +55,7 @@
   },
   {
     "id": "I",
+    "slug": "middle-is-mean",
     "category": "Means & Zero",
     "title": "Middle is mean",
     "shortDesc": "Lines through center average to 5",
@@ -57,6 +64,7 @@
   },
   {
     "id": "B",
+    "slug": "lines-sum-to-15",
     "category": "Introduction",
     "title": "Lines sum to 15",
     "shortDesc": "8 lines of 15",
@@ -65,6 +73,7 @@
   },
   {
     "id": "J",
+    "slug": "111-property",
     "category": "Lines & Totals",
     "title": "111 property",
     "shortDesc": "492+357+816 = 438+951+276 = 1665",
@@ -73,6 +82,7 @@
   },
   {
     "id": "K",
+    "slug": "determinant-360",
     "category": "Lines & Totals",
     "title": "Determinant 360",
     "shortDesc": "det = 360 and 9! = 362880",
@@ -81,6 +91,7 @@
   },
   {
     "id": "C",
+    "slug": "clockwise-addition",
     "category": "Modular Border",
     "title": "Clockwise addition mod10",
     "shortDesc": "1+6=7, 7+2=9, 9+4=13→3, 3+8=11→1",
@@ -89,6 +100,7 @@
   },
   {
     "id": "D",
+    "slug": "counterclockwise-arms",
     "category": "Modular Border",
     "title": "Counterclockwise arms",
     "shortDesc": "5+edge=corner mod10",
@@ -97,6 +109,7 @@
   },
   {
     "id": "H",
+    "slug": "subtraction-5",
     "category": "Modular Border",
     "title": "Subtraction =5",
     "shortDesc": "edge-corner=5",
@@ -105,6 +118,7 @@
   },
   {
     "id": "M",
+    "slug": "knights-tour",
     "category": "Geometry & Universality",
     "title": "Knight's tour (torus)",
     "shortDesc": "1→2→3 and 7→8→9 are knight moves",
@@ -113,10 +127,56 @@
   },
   {
     "id": "N",
+    "slug": "all-3x3",
     "category": "Geometry & Universality",
     "title": "All 3×3 are Lo Shu",
     "shortDesc": "8 rotations / reflections",
     "formula": "D₄ group: 4 rotations × 2 reflections = 8 squares",
     "longDesc": "There is essentially one 3×3 normal magic square. All eight variants are just rotations and reflections of Lo Shu — the dihedral group D₄. What looks like many squares is one square seen from eight directions."
+  },
+  {
+    "id": "O",
+    "slug": "eight-triples",
+    "category": "Geometry & Universality",
+    "title": "Eight triples only",
+    "shortDesc": "Only eight 1…9 triples sum to 15",
+    "formula": "8 subsets of {1…9} sum to 15, and they are the 8 lines",
+    "longDesc": "List every three distinct integers from 1 to 9 that add to 15. There are eight: 4+9+2, 3+5+7, 8+1+6, 4+3+8, 9+5+1, 2+7+6, 4+5+6, and 2+5+8. Each one is a row, a column, or a diagonal of the square, and every line of the square is one of them. Count the triples each digit belongs to and the seats fall out: 5 belongs to four, so it is the center; 2, 4, 6, and 8 belong to three, so they are the corners; 1, 3, 7, and 9 belong to two, so they are the edges."
+  },
+  {
+    "id": "P",
+    "slug": "products-agree",
+    "category": "Lines & Totals",
+    "title": "Products agree",
+    "shortDesc": "Row products and column products total 225",
+    "formula": "Σ row products = Σ column products = 225 = 15²",
+    "longDesc": "Multiply along each row: 4×9×2 = 72, 3×5×7 = 105, and 8×1×6 = 48. The three products add to 225. The columns give 4×3×8 = 96, 9×5×1 = 45, and 2×7×6 = 84, and those add to 225 as well. 225 is 15². One step down, the pairwise products inside the rows add to 195, and the pairwise products inside the columns add to 195. The two diagonals multiply to 4×5×6 + 2×5×8 = 200."
+  },
+  {
+    "id": "Q",
+    "slug": "opposite-squares",
+    "category": "Core Balance",
+    "title": "Opposite squares match",
+    "shortDesc": "Outer rows square to 101, columns to 89",
+    "formula": "opposite outer line: Σ(10−n)² = Σ n²",
+    "longDesc": "The bottom row is the top row with each cell sent to its complement 10−n, and the right column is the complement of the left. Squaring keeps the total: 4²+9²+2² = 8²+1²+6² = 101, and 4²+3²+8² = 2²+7²+6² = 89. A line through the center is its own complement. Those four square-sums are 77, 93, 83, and 107."
+  },
+  {
+    "id": "R",
+    "slug": "reversed-squares",
+    "category": "Lines & Totals",
+    "title": "Reversed squares",
+    "shortDesc": "A line and its digit reversal square to the same total",
+    "formula": "Σ (line as n)² = Σ (reverse n)²",
+    "longDesc": "Read each row as a three-digit number, 492, 357, and 816. The sum of their squares equals the sum of the squares of the reversals 294, 753, and 618: both are 1,035,369. The columns 438, 951, and 276 do the same and total 1,172,421. The main-diagonal wraps 456, 978, and 231 total 1,217,781. The anti-diagonal wraps 258, 471, and 936 total 1,164,501; on this orientation the anti-diagonal reads 471. Drop any one digit place — the hundreds, the tens, or the units — and each of the four identities still holds. Dropping those places from the rows leaves 11,969, then 10,529, then 10,187."
+  },
+  {
+    "id": "S",
+    "slug": "squared-matrix",
+    "category": "Lines & Totals",
+    "title": "Squared matrix",
+    "shortDesc": "M² has a constant diagonal; each row is 15²",
+    "formula": "M² diagonal is constant; each row sums to 15²",
+    "longDesc": "Multiply the square by itself. On this orientation the main diagonal of M² is 59 and every other entry is 83, and each row sums to 225, which is 15². All eight rotations and reflections keep a constant main diagonal and one other value. The pair is 59 and 83 when the matrix diagonal is the 4–5–6 line, and 91 and 67 when it is the 2–5–8 line. The row sum stays 225 either way. Property P also ends at 225, by multiplying the entries of each line. Here the matrix is multiplied by itself."
   }
 ]

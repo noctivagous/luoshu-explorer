@@ -1,10 +1,11 @@
-// Animation scripts for every Lo Shu property (A–N) plus the ordinal
+// Animation scripts for every Lo Shu property (A–S) plus the ordinal
 // construction. Each step lists overlay keys and the draw items those keys
 // render (see js/overlay.js). Captions compress each property's formula.
 //
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
 import { Z, CENTERS, rowGutter, colGutter, cornerGutter } from "./overlay.js";
+import { HOLMES_FAMILIES } from "./verify.js";
 
 // Worked-example tape: derive one ledger line per step from the text the
 // step already draws, so the tape can never drift from the board.
@@ -1443,6 +1444,435 @@ export const scriptN = {
   }),
 };
 
+// Property O: the eight 15-triples, then the census that forces each seat.
+// Equation badges are transient so the board keeps the lines, not eight
+// stacked formulas. The last beat tags how many triples meet each cell.
+const O_PILL =
+  "text-[13px] font-mono px-3 py-1 rounded-full bg-white border pointer-events-none whitespace-nowrap";
+const O_TRIPLES = [
+  { cells: [0, 1, 2], eq: "4+9+2 = 15", caption: "4, 9, 2 sums to 15 — the top row, and one of eight triples." },
+  { cells: [3, 4, 5], eq: "3+5+7 = 15", caption: "3, 5, 7 — the middle row." },
+  { cells: [6, 7, 8], eq: "8+1+6 = 15", caption: "8, 1, 6 — the bottom row." },
+  { cells: [0, 3, 6], eq: "4+3+8 = 15", caption: "4, 3, 8 — the left column." },
+  { cells: [1, 4, 7], eq: "9+5+1 = 15", caption: "9, 5, 1 — the middle column." },
+  { cells: [2, 5, 8], eq: "2+7+6 = 15", caption: "2, 7, 6 — the right column." },
+  { cells: [0, 4, 8], eq: "4+5+6 = 15", caption: "4, 5, 6 — the main diagonal." },
+  {
+    cells: [2, 4, 6],
+    eq: "2+5+8 = 15",
+    caption: "2, 5, 8 — the eighth triple. Every other three distinct values from 1 to 9 misses 15.",
+  },
+];
+
+export const scriptO = {
+  id: "O",
+  title: "Eight triples only",
+  steps: [
+    ...O_TRIPLES.map((triple, i) =>
+      animStep(`O-${i + 1}`, {
+        caption: triple.caption,
+        durationMs: 1600,
+        overlay: { show: [`O.line-${i}`, `O.eq-${i}`] },
+        draw: [
+          {
+            key: `O.line-${i}`,
+            type: "line",
+            from: triple.cells[0],
+            to: triple.cells[2],
+            color: i < 3 ? "#b89a5a" : i < 6 ? "#4a6741" : "#c96442",
+            width: "2.2",
+            opacity: 0.9,
+          },
+          {
+            key: `O.eq-${i}`,
+            type: "badge",
+            transient: true,
+            at: 0.45,
+            row: "o-eq",
+            rowStyle: { bottom: -38 },
+            text: triple.eq,
+            className: O_PILL,
+          },
+        ],
+        matrix: { highlight: triple.cells, setValues: null },
+      }),
+    ),
+    animStep("O-9", {
+      caption:
+        "The counts are the seats: 5 is in 4 triples, the corner evens in 3, and 1, 3, 7, 9 in 2.",
+      durationMs: 2000,
+      overlay: { show: ["O.census", "O.tags"] },
+      draw: [
+        {
+          key: "O.tags",
+          type: "cellTag",
+          cells: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+          texts: ["×3", "×2", "×3", "×2", "×4", "×2", "×3", "×2", "×3"],
+        },
+        {
+          key: "O.census",
+          type: "badge",
+          at: 0.4,
+          row: "o-census",
+          rowStyle: { top: -34 },
+          text: "5 → 4; evens → 3; 1,3,7,9 → 2",
+          className:
+            "text-[12px] font-mono px-3 py-1 rounded-full bg-[#1a1a1a] text-white pointer-events-none whitespace-nowrap",
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+  ],
+};
+
+const P_PILL = "text-[12px] font-mono px-3 py-1 rounded-full pointer-events-none whitespace-nowrap";
+
+export const scriptP = {
+  id: "P",
+  title: "Products agree",
+  steps: [
+    animStep("P-1", {
+      caption: "Row products 72, 105, and 48 add to 225.",
+      durationMs: 1800,
+      overlay: { show: ["P.rows", "P.eq-rows"] },
+      draw: [
+        jLines("P.rows", [[0, 2], [3, 5], [6, 8]], "#b89a5a"),
+        {
+          key: "P.eq-rows",
+          type: "badge",
+          transient: true,
+          at: 0.45,
+          row: "p-rows",
+          rowStyle: { bottom: -38 },
+          text: "4×9×2 + 3×5×7 + 8×1×6 = 225",
+          className: `${P_PILL} bg-white border`,
+        },
+      ],
+      matrix: { highlight: [0, 1, 2], setValues: null },
+    }),
+    animStep("P-2", {
+      caption: "Column products 96, 45, and 84 add to 225.",
+      durationMs: 1800,
+      overlay: { show: ["P.cols", "P.eq-cols"] },
+      draw: [
+        jLines("P.cols", [[0, 6], [1, 7], [2, 8]], "#4a6741"),
+        {
+          key: "P.eq-cols",
+          type: "badge",
+          transient: true,
+          at: 0.45,
+          row: "p-cols",
+          rowStyle: { top: -34 },
+          text: "4×3×8 + 9×5×1 + 2×7×6 = 225",
+          className: `${P_PILL} bg-white border`,
+        },
+      ],
+      matrix: { highlight: [0, 3, 6], setValues: null },
+    }),
+    animStep("P-3", {
+      caption: "Both totals are the square of the magic constant.",
+      durationMs: 1600,
+      overlay: { show: ["P.sq"] },
+      draw: [
+        {
+          key: "P.sq",
+          type: "badge",
+          at: 0.4,
+          row: "p-sq",
+          rowStyle: { bottom: -38 },
+          text: "225 = 15²",
+          className: `${P_PILL} bg-[#1a1a1a] text-white`,
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("P-4", {
+      caption: "Pairwise products agree at 195. The diagonals multiply to 200.",
+      durationMs: 1800,
+      overlay: { show: ["P.pairs"] },
+      draw: [
+        {
+          key: "P.pairs",
+          type: "badge",
+          at: 0.4,
+          row: "p-pairs",
+          rowStyle: { top: -34 },
+          text: "rows 195 = columns 195",
+          className: `${P_PILL} bg-white border`,
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+  ],
+};
+
+const Q_PILL = "text-[12px] font-mono px-3 py-1 rounded-full bg-white border pointer-events-none whitespace-nowrap";
+
+function qTotal(key, x, text, fill) {
+  return {
+    key,
+    type: "gutter",
+    at: 0.55,
+    x,
+    y: -16,
+    text,
+    fill,
+    color: "white",
+    w: 72,
+    h: 22,
+    rx: 11,
+    fontSize: 13,
+    weight: "700",
+    textDy: 4,
+  };
+}
+
+export const scriptQ = {
+  id: "Q",
+  title: "Opposite squares match",
+  steps: [
+    animStep("Q-1", {
+      caption: "Top and bottom are complements, and both square-sum to 101.",
+      durationMs: 1800,
+      overlay: { show: ["Q.top", "Q.bot", "Q.ch-0", "Q.ch-1", "Q.ch-2", "Q.tot-rows", "Q.eq-rows"] },
+      draw: [
+        { key: "Q.top", type: "line", from: 0, to: 2, color: "#b89a5a", width: "2.2" },
+        { key: "Q.bot", type: "line", from: 6, to: 8, color: "#b89a5a", width: "2.2" },
+        { key: "Q.ch-0", type: "line", from: 0, to: 8, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
+        { key: "Q.ch-1", type: "line", from: 1, to: 7, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
+        { key: "Q.ch-2", type: "line", from: 2, to: 6, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
+        qTotal("Q.tot-rows", 80, "Σ 101", "#b89a5a"),
+        {
+          key: "Q.eq-rows",
+          type: "badge",
+          transient: true,
+          at: 0.45,
+          row: "q-rows",
+          rowStyle: { bottom: -38 },
+          text: "4²+9²+2² = 8²+1²+6² = 101",
+          className: Q_PILL,
+        },
+      ],
+      matrix: { highlight: [0, 1, 2, 6, 7, 8], setValues: null },
+    }),
+    animStep("Q-2", {
+      caption: "Left and right are complements, and both square-sum to 89.",
+      durationMs: 1800,
+      overlay: { show: ["Q.left", "Q.right", "Q.ch-3", "Q.tot-cols", "Q.eq-cols"] },
+      draw: [
+        { key: "Q.left", type: "line", from: 0, to: 6, color: "#4a6741", width: "2.2" },
+        { key: "Q.right", type: "line", from: 2, to: 8, color: "#4a6741", width: "2.2" },
+        { key: "Q.ch-3", type: "line", from: 3, to: 5, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
+        qTotal("Q.tot-cols", 260, "Σ 89", "#4a6741"),
+        {
+          key: "Q.eq-cols",
+          type: "badge",
+          transient: true,
+          at: 0.45,
+          row: "q-cols",
+          rowStyle: { top: -34 },
+          text: "4²+3²+8² = 2²+7²+6² = 89",
+          className: Q_PILL,
+        },
+      ],
+      matrix: { highlight: [0, 2, 3, 5, 6, 8], setValues: null },
+    }),
+    animStep("Q-3", {
+      caption: "Each center line is its own complement. The square-sums are 77, 93, 83, and 107.",
+      durationMs: 1800,
+      overlay: { show: ["Q.center"] },
+      draw: [
+        {
+          key: "Q.center",
+          type: "badge",
+          at: 0.4,
+          row: "q-center",
+          rowStyle: { bottom: -16 },
+          text: "77, 93, 83, 107",
+          className: "text-[12px] font-mono px-3 py-1 rounded-full bg-[#1a1a1a] text-white pointer-events-none whitespace-nowrap",
+        },
+      ],
+      matrix: { highlight: [0, 1, 2, 3, 5, 6, 7, 8], setValues: null },
+    }),
+  ],
+};
+
+function collinearRun(cells) {
+  if (cells.length < 2) return false;
+  const dr = Math.floor(cells[1] / 3) - Math.floor(cells[0] / 3);
+  const dc = (cells[1] % 3) - (cells[0] % 3);
+  if (dr === 0 && dc === 0) return false;
+  for (let i = 1; i < cells.length; i++) {
+    const r = Math.floor(cells[i] / 3) - Math.floor(cells[i - 1] / 3);
+    const c = (cells[i] % 3) - (cells[i - 1] % 3);
+    if (r !== dr || c !== dc) return false;
+  }
+  return Math.max(Math.abs(dr), Math.abs(dc)) <= 1;
+}
+
+function readingLine(key, from, to, color) {
+  return {
+    key,
+    type: "line",
+    from,
+    to,
+    color,
+    width: "2.4",
+    marker: "arrowSmall",
+  };
+}
+
+// One arrowed line when the cells sit on a straight adjacent run (rows,
+// columns, and the two true diagonals). A broken parallel keeps the short
+// hop solid and bows the long hop away from the center, the same wrap M uses.
+function readingItems(key, cells, color) {
+  if (collinearRun(cells)) return [readingLine(key, cells[0], cells[cells.length - 1], color)];
+  return cells.slice(0, -1).map((from, i) => {
+    const to = cells[i + 1];
+    const dx = Math.abs((from % 3) - (to % 3));
+    const dy = Math.abs(Math.floor(from / 3) - Math.floor(to / 3));
+    const hopKey = `${key}-${i}`;
+    if (Math.max(dx, dy) <= 1) return readingLine(hopKey, from, to, color);
+    const a = CENTERS[from];
+    const b = CENTERS[to];
+    const mx = (a.x + b.x) / 2 - Z / 2;
+    const my = (a.y + b.y) / 2 - Z / 2;
+    const len = Math.hypot(mx, my) || 1;
+    return {
+      key: hopKey,
+      type: "arc",
+      from,
+      to,
+      bendX: Math.round((mx / len) * 78),
+      bendY: Math.round((my / len) * 78),
+      color: "#7a6a9e",
+      width: "1.6",
+      dash: "5 4",
+      marker: "arrowSmall",
+    };
+  });
+}
+
+const R_LOOK = [
+  {
+    color: "#b89a5a",
+    tape: "Rows",
+    caption: "Rows read 492, 357, and 816. Their squares total the same as the reversals.",
+  },
+  {
+    color: "#4a6741",
+    tape: "Columns",
+    caption: "Columns read 438, 951, and 276. The reversals square to the same total.",
+  },
+  {
+    color: "#1a1a1a",
+    tape: "Main wraps",
+    caption: "Main wraps: the true diagonal is solid, and each broken parallel arcs off the board.",
+  },
+  {
+    color: "#c96442",
+    tape: "Anti wraps",
+    caption: "Anti wraps. On this square the diagonal reads 471.",
+  },
+];
+
+const R_STRIKES = [
+  {
+    strike: "hundreds",
+    tape: "Drop hundreds",
+    caption: "Drop every hundreds digit. The totals shrink and still match.",
+  },
+  {
+    strike: "tens",
+    tape: "Drop tens",
+    caption: "Drop every tens digit. The two columns still agree.",
+  },
+  {
+    strike: "units",
+    tape: "Drop units",
+    caption: "Drop every units digit. Each single place can go, and the identity holds.",
+  },
+];
+
+export const scriptR = {
+  id: "R",
+  title: "Reversed squares",
+  steps: [
+    ...HOLMES_FAMILIES.map((fam, i) => {
+      const draw = fam.lines.flatMap((cells, k) => readingItems(`R.${fam.id}-${k}`, cells, R_LOOK[i].color));
+      return animStep(`R-${i + 1}`, {
+        caption: R_LOOK[i].caption,
+        tape: R_LOOK[i].tape,
+        durationMs: 1700,
+        overlay: { show: draw.map((item) => item.key) },
+        draw,
+        sheet: {
+          kind: "pairs",
+          families: [{ id: fam.id, label: fam.label, lines: fam.lines }],
+        },
+        matrix: { highlight: ALL, setValues: null },
+      });
+    }),
+    ...R_STRIKES.map((strike, i) =>
+      animStep(`R-${i + 5}`, {
+        caption: strike.caption,
+        tape: strike.tape,
+        durationMs: 1600,
+        overlay: { show: [] },
+        sheet: { kind: "pairs", strike: strike.strike },
+        matrix: { highlight: ALL, setValues: null },
+      }),
+    ),
+  ],
+};
+
+export const scriptS = {
+  id: "S",
+  title: "Squared matrix",
+  steps: [
+    animStep("S-1", {
+      caption: "The center of M² is the middle row times the middle column.",
+      tape: "Center dot product",
+      durationMs: 1800,
+      overlay: { show: ["S.row", "S.col"] },
+      draw: [
+        readingLine("S.row", 3, 5, "#1a1a1a"),
+        readingLine("S.col", 1, 7, "#c96442"),
+      ],
+      sheet: { kind: "companion", reveal: "center", worked: 4, sums: false, compareTurn: false },
+      matrix: { highlight: [1, 3, 4, 5, 7], setValues: null },
+    }),
+    animStep("S-2", {
+      caption: "The diagonal is one number. Every other entry is the other.",
+      tape: "Fill M²",
+      durationMs: 1700,
+      overlay: { show: [] },
+      sheet: { kind: "companion", reveal: "all", worked: null, sums: false },
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("S-3", {
+      caption: "Each row of M² sums to 225, which is 15².",
+      tape: "Row sums 225",
+      durationMs: 1700,
+      overlay: { show: [] },
+      sheet: { kind: "companion", sums: true },
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("S-4", {
+      caption: "Turning the square swaps the pair. The row sum stays 225.",
+      tape: "Quarter turn",
+      durationMs: 1800,
+      overlay: { show: [] },
+      sheet: { kind: "companion", compareTurn: true },
+      matrix: {
+        highlight: [],
+        setValues: asValues(D4_GRIDS[1]),
+        moves: movesForPerms(D4_PERMS[0], D4_PERMS[1]),
+      },
+    }),
+  ],
+};
+
 export const demoScripts = {
   construction: constructionScript,
   intro: constructionScript,
@@ -1460,6 +1890,11 @@ export const demoScripts = {
   L: scriptL,
   M: scriptM,
   N: scriptN,
+  O: scriptO,
+  P: scriptP,
+  Q: scriptQ,
+  R: scriptR,
+  S: scriptS,
 };
 
 // Multiple animations per property. Each id keeps its default script in
