@@ -187,5 +187,32 @@
     "shortDesc": "Each cell opens into the same 3×3",
     "formula": "9·(outer − 1) + inner",
     "longDesc": "Replace each cell by the Lo Shu shifted by nine times one less than the cell you opened. On this orientation palace 4 opens to 31 36 29 / 30 32 34 / 35 28 33, and each of its lines is 96. Palace 7 opens to 58 63 56 / 57 59 61 / 62 55 60, and each of its lines is 177. The nine blocks use 1 through 81 once; every row, column, and both diagonals sum to 369. Opposite cells through the center sum to 82. The address 3-7 is 25, and the center of the centers is 41, the mean of 1…81. One more depth has 729 cells and sums to 9855, with center 365. The next has 6,561 cells and sums to 265761, with center 3281. Inside palace P the lines are 27·(P−1)+15 and the opposite cells sum to 18·(P−1)+10. The board can zoom down the center path: palace 5 re-centers on 41 and opens the middle third of the 27×27, whose rows sum to 3285; the center 365 re-centers the board and opens the middle third of the 81×81, whose rows sum to 29529."
+  },
+  {
+    "id": "U",
+    "slug": "central-overlap",
+    "category": "Overlapping Luoshu",
+    "title": "Central overlap",
+    "shortDesc": "Four 3×3 Lo Shu in a 5×5, each centred on 5",
+    "formula": "windows (0,0) (0,2) (2,0) (2,2) · each centre = 5",
+    "longDesc": "Tile a 5×5 board by mirroring the Lo Shu back on itself (index fold 0,1,2,1,0 in both directions). The four 3×3 windows in the corners are each a Lo Shu: every row, column and diagonal sums to 15 and each window contains 1 through 9 once. No window is centred on the board's middle cell — instead each window has its own centre, and all four centres are 5. The four windows overlap on the cross through the middle and all four meet at the board's central cell, which is 6 in this orientation. Values repeat across the 5×5; only inside one window are they distinct. This is the static picture behind Jiugong Feixing (Nine Palaces Flying Stars) in Feng Shui, where the same Lo Shu pattern is flown from palace to palace over time, so successive positions overlap the palaces they visited before."
+  },
+  {
+    "id": "V",
+    "slug": "linear-overlap",
+    "category": "Overlapping Luoshu",
+    "title": "Linear overlap",
+    "shortDesc": "3×11 strip: rows & columns stay 15, full magic every 3rd window",
+    "formula": "diagonals cycle 15,15 | 24,12 | 6,18",
+    "longDesc": "Repeat the Lo Shu columns in a cycle to make a 3×11 strip. It holds 9 overlapping 3×3 windows, and window n+1 reuses 2 columns of window n. Every window still has all rows and all columns summing to 15, because each window contains each Lo Shu column exactly once. But the diagonals only agree every third window: they cycle 15 and 15, then 24 and 12, then 6 and 18. So only windows 1, 4 and 7 (offsets 0, 3, 6) are full magic squares; the others are not, and numbers repeat along the strip though never inside a window's columns. Where a window is fully magic its opposite pairs sum to 10 = 2×5; between those windows that associative balance is exactly what is lost."
+  },
+  {
+    "id": "W",
+    "slug": "pandiagonal-overlap",
+    "category": "Overlapping Luoshu",
+    "title": "Pandiagonal overlap",
+    "shortDesc": "Folded 9×9 tiling adds shifted magic windows",
+    "formula": "fold 0,1,2,1,… · magic windows at even offsets",
+    "longDesc": "In Yang Hui's compound 9×9 (property T) only the nine 3×3 blocks aligned to the grid are magic; a window shifted by one cell is not. Change the construction to the mirrored fold of property U extended to 9×9 (index fold 0,1,2,1 repeating in both directions, values 1 through 9 repeating) and shifted windows appear: exactly 16 windows are fully magic, those at offsets where both coordinates are even (0, 2, 4 or 6). Several of those, such as the window at (0,2), sit across the boundaries of the aligned 3×3 blocks, so they are genuinely overlapping Lo Shu rather than blocks. Windows at odd offsets are not magic. This folded board is not the 1-through-81 compound square, and it is not a normal 9×9 magic square; the overlap belongs to the tiling, not to Yang Hui's blocks."
   }
 ]

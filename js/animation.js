@@ -158,9 +158,21 @@ export function validateScript(script) {
           sh.kind !== undefined &&
           sh.kind !== "pairs" &&
           sh.kind !== "companion" &&
-          sh.kind !== "compound"
+          sh.kind !== "compound" &&
+          sh.kind !== "overlap"
         )
-          errors.push(`${at}.sheet.kind must be pairs, companion, or compound`);
+          errors.push(`${at}.sheet.kind must be pairs, companion, compound, or overlap`);
+        if (sh.kind === "overlap") {
+          if (!["central", "strip", "folded", "compound"].includes(sh.board))
+            errors.push(`${at}.sheet.board must be central, strip, folded, or compound`);
+          for (const key of ["wr", "wc"]) {
+            const v = sh[key];
+            if (v !== undefined && v !== null && !(Number.isInteger(v) && v >= 0 && v <= 8))
+              errors.push(`${at}.sheet.${key} must be an integer 0-8 or null`);
+          }
+          if (sh.all !== undefined && typeof sh.all !== "boolean")
+            errors.push(`${at}.sheet.all must be a boolean`);
+        }
         if (sh.kind === "compound" && sh.scope !== "palace" && sh.scope !== "all")
           errors.push(`${at}.sheet.scope must be palace or all`);
         if (
@@ -201,7 +213,7 @@ export function validateScript(script) {
   return errors;
 }
 
-const SHEET_LATEST = ["strike", "reveal", "worked", "sums", "compareTurn", "scope", "palace", "mark", "inner"];
+const SHEET_LATEST = ["strike", "reveal", "worked", "sums", "compareTurn", "scope", "palace", "mark", "inner", "board", "wr", "wc", "all"];
 
 function mergeSheet(prev, patch) {
   if (!patch) return prev;

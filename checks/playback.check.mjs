@@ -29,6 +29,9 @@ need(JSON.stringify(at('#/luoshu/math/introduction/lines-sum-to-15?anim=families
 need(at('#/luoshu/math/introduction/lines-sum-to-15?anim=bogus').anim === 'families', 'bad anim should fall back to Family tour');
 need(at('#/luoshu/math/lines-totals/111-property?speed=5').speed === 1, 'bad speed should fall back to 1');
 need(at('#/luoshu/math/lines-totals/squared-matrix').id === 'S', 'squared matrix should parse under lines and totals');
+need(at('#/luoshu/math/overlapping-luoshu/central-overlap').id === 'U', 'central overlap should parse under overlapping luoshu');
+need(at('#/luoshu/math/overlapping-luoshu/pandiagonal-overlap?step=3').id === 'W', 'pandiagonal overlap should parse under overlapping luoshu');
+need(at('#/luoshu/math/geometry-universality/central-overlap') === null, 'central overlap under the wrong category should not parse');
 need(at('#/luoshu/math/introduction/clockwise-addition') === null, 'a property under the wrong category should not parse');
 need(at('#/luoshu/C') === null, 'a letter link should not parse');
 need(at('#/luoshu/math/not-a-category/build-the-square') === null, 'an unknown category should not parse');
@@ -44,7 +47,7 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 50, 'expected 50 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
+need(document.querySelectorAll('#root button').length === 54, 'expected 54 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
 need(
   document.querySelector('button[aria-label="Predict mode"]') !== null &&
   document.querySelector('button[aria-label="Predict mode"]').getAttribute('aria-pressed') === 'false',

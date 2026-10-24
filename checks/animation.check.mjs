@@ -27,8 +27,8 @@ need(
 need(scriptFor('B', 'bogus') === scriptFor('B'), 'unknown variant should fall back to the default script');
 need(variantsFor('C').length === 1, 'single-animation properties should list one variant');
 
-// Every property A-S routes to a valid, well-formed script.
-for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S']) {
+// Every property A-W routes to a valid, well-formed script.
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']) {
   const s = scriptFor(id);
   need(s !== null && s !== undefined, `property ${id} should route to a script`);
   need(validateScript(s).length === 0, `script ${id} invalid`);
@@ -46,7 +46,7 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 
 // Non-default variants meet the same bar as defaults.
-for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S']) {
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']) {
   for (const v of variantsFor(id)) {
     if (v.script === scriptFor(id)) continue;
     need(typeof v.key === 'string' && v.key, `variant of ${id} needs a key`);
@@ -68,8 +68,8 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 need(
   JSON.stringify(Object.keys(demoScripts).sort()) ===
-    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'construction', 'intro']),
-  'demoScripts should export all 20 property scripts plus construction'
+    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'construction', 'intro']),
+  'demoScripts should export all 23 property scripts plus construction'
 );
 
 // Construction: ordinal square, corner swap, then fold onto the Lo Shu.
@@ -217,6 +217,39 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   need(
     frameFor(scriptFor('A'), 0).sheet == null && frameFor(scriptFor('J'), 0).sheet == null,
     'A and J carry no sheet'
+  );
+}
+
+// Overlapping Luoshu (U–W): the sheet tracks the active window on the
+// larger board; the main board shows that window's values.
+{
+  const scriptU = scriptFor('U');
+  need(scriptU.steps.length === 6, 'U should have 4 window beats, an overview, and the flying-stars beat');
+  need(
+    JSON.stringify(frameFor(scriptU, 0).sheet) ===
+      JSON.stringify({ kind: 'overlap', board: 'central', wr: 0, wc: 0, all: false }),
+    'U opens on the top-left window of the 5×5'
+  );
+  need(
+    JSON.stringify(gridOf(frameFor(scriptU, 1).setValues)) === JSON.stringify([2, 9, 4, 7, 5, 3, 6, 1, 8]),
+    'U second window should show the top-right Lo Shu on the main board'
+  );
+  need(frameFor(scriptU, 4).sheet.all === true, 'U overview should mark every magic window');
+  need(promptFrameFor(scriptU, 4).sheet.all === false, 'predict should withhold the U overview');
+  const scriptV = scriptFor('V');
+  need(scriptV.steps.length === 5, 'V should slide through the cycle and close on the overview');
+  need(frameFor(scriptV, 1).sheet.wc === 1 && frameFor(scriptV, 3).sheet.wc === 3, 'V window should slide one column per beat');
+  const scriptW = scriptFor('W');
+  need(scriptW.steps.length === 6, 'W should contrast the compound board with the folded board');
+  need(frameFor(scriptW, 0).sheet.board === 'compound', 'W opens on the Yang Hui compound board');
+  need(frameFor(scriptW, 2).sheet.board === 'folded', 'W then switches to the folded board');
+  need(frameFor(scriptW, 5).sheet.all === true, 'W closes on all 16 magic windows');
+  need(
+    validateScript({
+      id: 'bad-overlap',
+      steps: [animStep('s1', { sheet: { kind: 'overlap', board: 'bogus' } })],
+    }).length > 0,
+    'sheet.board should reject unknown overlap boards'
   );
 }
 

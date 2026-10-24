@@ -51,7 +51,7 @@ need(
 // correspondences-legend chips = 32, plus 3 construction step cards = 35,
 // plus 3 worked-example tape rows (intro shows construction) = 38,
 // plus 3 step ticks + 3 transport toggles = 44, plus 1 playground toggle = 45.
-need(document.querySelectorAll('#root button').length === 51, 'expected 51 buttons');
+need(document.querySelectorAll('#root button').length === 55, 'expected 55 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -106,18 +106,19 @@ need(
     autoNextBtn.getAttribute('aria-pressed') === 'false',
   'autoplay prefs should start off'
 );
-need(root.querySelectorAll('.lg\\:grid-cols-2').length === 6, 'sidebar catalog grid missing');
-need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 21, 'square icon tiles missing');
-need(root.querySelectorAll('svg[width="26"]').length === 21, 'icon glyphs missing');
+need(root.querySelectorAll('.lg\\:grid-cols-2').length === 7, 'sidebar catalog grid missing');
+need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 24, 'square icon tiles missing');
+need(root.querySelectorAll('svg[width="26"]').length === 24, 'icon glyphs missing');
 const catalogTiles = [...root.querySelectorAll('button.catalog-tile')];
-need(catalogTiles.length === 21, 'catalog tiles missing');
+need(catalogTiles.length === 24, 'catalog tiles missing');
 need(
   catalogTiles.every((tile) => tile.style.height === '120px'),
   'catalog tiles should keep a uniform 120px height'
 );
-for (const title of ['Build the square', 'Opposites balance', 'Zero-balanced form', 'Lines sum to 15', "Knight's tour"]) {
+for (const title of ['Build the square', 'Opposites balance', 'Zero-balanced form', 'Lines sum to 15', "Knight's tour", 'Central overlap', 'Linear overlap', 'Pandiagonal overlap']) {
   need(text.includes(title), `missing property: ${title}`);
 }
+need(text.includes('Overlapping Luoshu'), 'missing Overlapping Luoshu category');
 need(root.querySelector('style') !== null, 'font/style element missing');
 need(!text.includes('computed:'), 'intro should carry no computed claim status');
 
@@ -177,7 +178,10 @@ await until(() => (document.querySelector('.anim-caption-play')?.textContent || 
 boardCells()[4].click();
 await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'probe', 4000);
 const probeChips = () => [...document.querySelectorAll('[aria-label="Cell participation"] button')];
-need(probeChips().length === 16, `center cell should list 16 properties (got ${probeChips().length})`);
+need(probeChips().length === 19, `center cell should list 19 properties (got ${probeChips().length})`);
+need(probeChips().some((b) => b.textContent === 'Central overlap'), 'probe should list U for the center');
+need(probeChips().some((b) => b.textContent === 'Linear overlap'), 'probe should list V for the center');
+need(probeChips().some((b) => b.textContent === 'Pandiagonal overlap'), 'probe should list W for the center');
 need(probeChips().some((b) => b.textContent === 'Nested palaces'), 'probe should list T for the center');
 need(probeChips().some((b) => b.textContent === 'All 3×3 are Lo Shu'), 'probe should list N for the fixed center');
 need(probeChips().some((b) => b.textContent === 'Reversed squares'), 'probe should list R for the center');

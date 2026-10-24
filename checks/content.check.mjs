@@ -15,7 +15,7 @@ for (const id of Object.keys(demoScripts)) {
 }
 import { frameFor } from '../js/animation.js';
 import { renderOverlay, CENTERS, Z } from '../js/overlay.js';
-import { verifyAll, determinant, holmesFamily, squaredPattern, HOLMES_FAMILIES, nestBlocks, palaceCells } from '../js/verify.js';
+import { verifyAll, determinant, holmesFamily, squaredPattern, HOLMES_FAMILIES, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowReport, magicOffsets, centralOverlapHolds, linearOverlapHolds, foldedOverlapHolds, compoundAlignedOnlyHolds, CENTRAL_OFFSETS } from '../js/verify.js';
 import propertiesData from '../data/properties.json' with { type: 'json' };
 
 const failures = [];
@@ -396,8 +396,8 @@ need(
   const cp = cellProperties();
   need(cp.length === 9 && cp.every((list) => list.length > 0), 'every cell should participate somewhere');
   need(
-    cp.every((list) => list.every((p) => /^[A-T]$/.test(p.id))),
-    'probe should list only properties A–T'
+    cp.every((list) => list.every((p) => /^[A-W]$/.test(p.id))),
+    'probe should list only properties A–W'
   );
   const center = cp[4].map((p) => p.id);
   need(center.includes('N'), 'probe should list N for the fixed center');
@@ -462,7 +462,8 @@ for (const n of ['31', '96', '177', '369', '82', '25', '41', '9855', '365', '265
   need(byId.T.longDesc.includes(n), `T text should record ${n}`);
 for (const [id, sc] of Object.entries(demoScripts)) {
   const hasSheet = sc.steps.some((st) => st.sheet);
-  if (id === 'R' || id === 'S' || id === 'T') need(hasSheet, `${id} should carry a sheet`);
+  if (id === 'R' || id === 'S' || id === 'T' || id === 'U' || id === 'V' || id === 'W')
+    need(hasSheet, `${id} should carry a sheet`);
   else need(!hasSheet, `${id} should not grow a sheet`);
 }
 const broken = [...SQUARE];
@@ -536,6 +537,63 @@ const broken = [...SQUARE];
       for (const item of st.draw || [])
         need(item.text == null, `${id} ${st.id} should not draw tape text`);
   }
+}
+
+// Overlapping Luoshu (U–W): larger-board claims, honestly narrowed.
+{
+  const central = centralBoard();
+  need(centralOverlapHolds(central), 'U: the 5×5 should hold four corner Lo Shu windows');
+  need(central[12] === 6, 'U: all four windows meet at the centre cell, which is 6');
+  need(
+    CENTRAL_OFFSETS.every(([r, c]) => windowReport(central, 5, r, c).cells[4] === 5),
+    'U: every corner window should be centred on 5'
+  );
+  const centralBroken = [...central];
+  [centralBroken[0], centralBroken[1]] = [centralBroken[1], centralBroken[0]];
+  need(!centralOverlapHolds(centralBroken), 'U: a swapped cell should break the central overlap');
+
+  const strip = stripBoard();
+  need(linearOverlapHolds(strip), 'V: every strip window should keep rows and columns of 15');
+  const diagCycle = Array.from({ length: 9 }, (_, c) => windowReport(strip, 11, 0, c).diags.join('/'));
+  need(
+    JSON.stringify(diagCycle) ===
+      JSON.stringify(['15/15', '24/12', '6/18', '15/15', '24/12', '6/18', '15/15', '24/12', '6/18']),
+    `V: diagonals should cycle 15, 24, 6 (got ${diagCycle.join(' ')})`
+  );
+  const stripBroken = [...strip];
+  [stripBroken[0], stripBroken[1]] = [stripBroken[1], stripBroken[0]];
+  need(!linearOverlapHolds(stripBroken), 'V: a swapped cell should break the linear overlap');
+
+  need(compoundAlignedOnlyHolds(SQUARE), 'W: the compound 9×9 should be magic only at aligned blocks');
+  const folded = foldedBoard();
+  need(foldedOverlapHolds(folded), 'W: the folded 9×9 should have magic windows at even offsets');
+  need(magicOffsets(folded, 9).length === 16, 'W: the folded board should have exactly 16 magic windows');
+  need(windowReport(folded, 9, 0, 2).magic, 'W: the shifted window (0,2) should be magic in the folded board');
+  need(!windowReport(folded, 9, 0, 1).magic, 'W: the odd-offset window (0,1) should not be magic');
+  const foldedBroken = [...folded];
+  [foldedBroken[0], foldedBroken[1]] = [foldedBroken[1], foldedBroken[0]];
+  need(!foldedOverlapHolds(foldedBroken), 'W: a swapped cell should break the folded overlap');
+
+  for (const id of ['U', 'V', 'W']) need(byId[id].category === 'Overlapping Luoshu', `${id} should sit under Overlapping Luoshu`);
+  need(byId.U.slug === 'central-overlap' && byId.V.slug === 'linear-overlap' && byId.W.slug === 'pandiagonal-overlap', 'U–W slugs should match their titles');
+  need(byId.U.longDesc.includes('Jiugong Feixing'), 'U text should carry the flying-stars context');
+  need(byId.U.longDesc.includes('all four centres are 5'), 'U text should state each window centre is 5');
+  need(!byId.V.longDesc.includes('every window is a full magic'), 'V text should not claim every window is fully magic');
+  need(byId.V.formula.includes('24,12'), 'V formula should record the diagonal cycle');
+  need(byId.W.longDesc.includes('exactly 16 windows'), 'W text should record the 16 magic windows');
+  need(byId.W.longDesc.includes('only the nine 3×3 blocks aligned'), 'W text should narrow the Yang Hui claim');
+  need(
+    JSON.stringify(ledgerFor(demoScripts.U.steps[0])) === JSON.stringify(['window (0,0) = magic 15']),
+    `U should ledger its first window (got ${JSON.stringify(ledgerFor(demoScripts.U.steps[0]))})`
+  );
+  need(
+    JSON.stringify(ledgerFor(demoScripts.V.steps[1])) === JSON.stringify(['rows = 15 · diagonals = 24, 12']),
+    `V should ledger the diagonal failure (got ${JSON.stringify(ledgerFor(demoScripts.V.steps[1]))})`
+  );
+  need(
+    JSON.stringify(ledgerFor(demoScripts.W.steps[5])) === JSON.stringify(['16 windows = magic 15']),
+    `W should ledger its lockup (got ${JSON.stringify(ledgerFor(demoScripts.W.steps[5]))})`
+  );
 }
 
 // A broken grid must fail at least one claim (predicates are not vacuous).

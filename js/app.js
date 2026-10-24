@@ -16,7 +16,7 @@ import correspondencesData from "../data/correspondences.json" with { type: "jso
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor } from "./animation.js";
 import { scriptFor, variantsFor, ledgerFor, cellProperties } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
-import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells } from "./verify.js";
+import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -102,6 +102,9 @@ const VISUAL_KEYS = {
   R: [["#1a1a1a", "Straight reading", false], ["#7a6a9e", "Broken wrap", true]],
   S: [["#1a1a1a", "Middle row", false], ["#c96442", "Middle column", false]],
   T: [["#c96442", "Opened palace", false], ["#1a1a1a", "Same square inside", false]],
+  U: [["#c96442", "Active 3×3 window", false], ["#1a1a1a", "Window centre = 5", false]],
+  V: [["#c96442", "Sliding window", false], ["#4a6741", "Fully magic window", false]],
+  W: [["#c96442", "Shifted magic window", false], ["#b89a5a", "Aligned block", false]],
 };
 
 const CATEGORIES = [
@@ -111,6 +114,7 @@ const CATEGORIES = [
     { name: "Lines & Totals", ids: ["J", "K", "S", "P", "R"] },
     { name: "Modular Border", ids: ["C", "D", "H"] },
     { name: "Geometry & Universality", ids: ["M", "N", "O", "T"] },
+    { name: "Overlapping Luoshu", ids: ["U", "V", "W"] },
   ],
   SQUARE = [4, 9, 2, 3, 5, 7, 8, 1, 6];
 function iconGlyphs(e) {
@@ -599,6 +603,27 @@ function iconGlyphs(e) {
         fill: T,
       }),
     ]);
+  if (e === "U")
+    return PropertyIcon([
+      h("rect", { x: "4", y: "4", width: "13", height: "13", rx: "1.5", fill: "none", stroke: T, strokeWidth: "1.5" }),
+      h("rect", { x: "11", y: "4", width: "13", height: "13", rx: "1.5", fill: "none", stroke: G, strokeWidth: "1.5" }),
+      h("rect", { x: "4", y: "11", width: "13", height: "13", rx: "1.5", fill: "none", stroke: D, strokeWidth: "1.5" }),
+      h("rect", { x: "11", y: "11", width: "13", height: "13", rx: "1.5", fill: "none", stroke: P, strokeWidth: "1.5" }),
+      h("circle", { cx: "14", cy: "14", r: "2.2", fill: C }),
+    ]);
+  if (e === "V")
+    return PropertyIcon([
+      h("rect", { x: "3", y: "9", width: "22", height: "10", rx: "2", fill: "none", stroke: C, strokeWidth: "1.3", opacity: "0.7" }),
+      h("rect", { x: "8", y: "7", width: "10", height: "14", rx: "1.5", fill: "none", stroke: T, strokeWidth: "1.8" }),
+      h("path", { d: "M19 14 H24 M22 11 L24 14 L22 17", stroke: G, strokeWidth: "1.6", fill: "none", strokeLinecap: "round", strokeLinejoin: "round" }),
+    ]);
+  if (e === "W")
+    return PropertyIcon([
+      h("rect", { x: "4", y: "4", width: "20", height: "20", rx: "2", fill: "none", stroke: C, strokeWidth: "1.3", opacity: "0.7" }),
+      h("path", { d: "M10.7 4 V24 M17.3 4 V24 M4 10.7 H24 M4 17.3 H24", stroke: C, strokeWidth: "0.9", opacity: "0.4" }),
+      h("rect", { x: "4", y: "4", width: "10", height: "10", rx: "1", fill: "none", stroke: D, strokeWidth: "1.6" }),
+      h("rect", { x: "11", y: "11", width: "10", height: "10", rx: "1", fill: "none", stroke: T, strokeWidth: "1.8" }),
+    ]);
   if (e === "S")
     return PropertyIcon(
       [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) =>
@@ -1075,11 +1100,88 @@ function renderCompoundSheet(payload, grid, baseGrid) {
   ]);
 }
 
+const OVERLAP_BOARDS = {
+  central: { title: "Five by five — four overlapping Lo Shu", cols: 5, make: () => centralBoard() },
+  strip: { title: "Magic strip — sliding window", cols: 11, make: () => stripBoard() },
+  folded: { title: "Nine by nine — folded tiling", cols: 9, make: () => foldedBoard() },
+  compound: { title: "Yang Hui compound 9×9", cols: 9, make: (base) => nestBlocks(base, base) },
+};
+
+function renderOverlapSheet(payload, baseGrid) {
+  const spec = OVERLAP_BOARDS[payload.board] || OVERLAP_BOARDS.central;
+  const board = spec.make(baseGrid && baseGrid.length === 9 ? baseGrid : SQUARE);
+  const cols = spec.cols;
+  const size = cols >= 11 ? 22 : cols >= 9 ? 24 : 32;
+  const hasWindow = Number.isInteger(payload.wr) && Number.isInteger(payload.wc);
+  const inWindow = new Set();
+  if (hasWindow)
+    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) inWindow.add((payload.wr + a) * cols + payload.wc + b);
+  const magic = payload.all ? magicOffsets(board, cols) : [];
+  const inMagic = new Set();
+  for (const [r, c] of magic)
+    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) inMagic.add((r + a) * cols + (c + b));
+  const centreIdx = payload.board === "central" ? 12 : -1;
+  const cells = board.map((v, i) => {
+    let cls = "sheet-overlap-cell";
+    if (inMagic.has(i)) cls += " sheet-overlap-magic";
+    if (inWindow.has(i)) cls += " sheet-overlap-active";
+    if (i === centreIdx) cls += " sheet-overlap-centre";
+    return h("div", { className: cls, style: { width: size, height: size, fontSize: size <= 24 ? 11 : 13 }, children: fmtNum(v) }, `c${i}`);
+  });
+  const notes = [];
+  if (payload.all) {
+    notes.push(
+      payload.board === "strip"
+        ? "Every window: rows and columns sum to 15. Fully magic at offsets 0, 3, 6."
+        : `${magic.length} fully magic windows at even offsets.`,
+    );
+  } else if (hasWindow) {
+    // Compound windows sum to their own constant, not 15: judge them by
+    // whether all eight lines agree.
+    if (payload.board === "compound") {
+      const w = windowAt(board, cols, payload.wr, payload.wc);
+      const lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6],
+      ].map((line) => line.reduce((s, i) => s + w[i], 0));
+      const agree = lines.every((s) => s === lines[0]);
+      notes.push(
+        agree
+          ? `Window (${payload.wr},${payload.wc}): all eight lines sum to ${fmtNum(lines[0])} — magic.`
+          : `Window (${payload.wr},${payload.wc}): lines disagree (${lines.map(fmtNum).join(", ")}) — not magic.`,
+      );
+    } else {
+      const rep = windowReport(board, cols, payload.wr, payload.wc);
+      notes.push(
+        `Window (${payload.wr},${payload.wc}): rows ${rep.rows.join(", ")} · columns ${rep.cols.join(", ")} · diagonals ${rep.diags.join(", ")}.`,
+      );
+      notes.push(rep.magic ? "Fully magic — every line sums to 15." : rep.rowsCols ? "Rows and columns hold at 15; the diagonals do not." : "Not magic.");
+    }
+  }
+  if (payload.board === "central" && !payload.all)
+    notes.push("Each corner window is centred on 5; all four meet at the centre cell.");
+  return sheetShell(spec.title, [
+    h(
+      "div",
+      {
+        className: "sheet-compound-scroll",
+        children: h(
+          "div",
+          { className: "sheet-overlap", style: { gridTemplateColumns: `repeat(${cols}, ${size}px)` }, children: cells },
+          "grid",
+        ),
+      },
+      "scroll",
+    ),
+    ...notes.map((text, i) => h("p", { className: "sheet-note", children: text }, `note-${i}`)),
+  ]);
+}
+
 function renderSheet(payload, grid, baseGrid) {
   if (!payload) return null;
   if (payload.kind === "pairs") return renderPairSheet(payload, grid);
   if (payload.kind === "companion") return renderCompanionSheet(payload, grid);
   if (payload.kind === "compound") return renderCompoundSheet(payload, grid, baseGrid);
+  if (payload.kind === "overlap") return renderOverlapSheet(payload, baseGrid);
   return null;
 }
 
@@ -2522,7 +2624,7 @@ function LoShuApp() {
                                     ],
                                   }),
                                 }),
-                                o.id !== "intro" && !playResults[o.id] &&
+                                o.id !== "intro" && playResults[o.id] === false &&
                                   h("div", {
                                     className: "mt-3",
                                     children: _("div", {
@@ -2830,7 +2932,7 @@ function LoShuApp() {
                             role: "group",
                             "aria-label": "Property checklist",
                             "aria-live": "polite",
-                            children: PROPERTIES.filter((p) => p.id !== "intro").map(
+                            children: PROPERTIES.filter((p) => p.id !== "intro" && p.id in playResults).map(
                               (p) => {
                                 const ok = !!playResults[p.id];
                                 return h("span", {

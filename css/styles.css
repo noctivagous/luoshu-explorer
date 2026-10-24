@@ -300,6 +300,11 @@ html,body{height:100%;overflow:hidden}
 .sheet-compound{display:grid;grid-template-columns:repeat(3,max-content);gap:10px;width:max-content}
 .sheet-palace{display:grid;grid-template-columns:repeat(3,32px);gap:3px}
 .sheet-palace .sheet-cell{width:32px;height:32px;border-radius:7px;font-size:12px}
+.sheet-overlap{display:grid;gap:3px;width:max-content;max-width:100%}
+.sheet-overlap-cell{display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fdf8f0;border:1px solid rgba(26,26,26,.12);font-weight:700}
+.sheet-overlap-magic{background:#eef2ea}
+.sheet-overlap-active{box-shadow:inset 0 0 0 2px #c96442;background:#fff}
+.sheet-overlap-centre{box-shadow:inset 0 0 0 2px #1a1a1a}
 .sheet-note{margin:10px 0 0;font-size:13px;line-height:1.45;font-weight:500}
 .sheet-note-first{margin-top:0;margin-bottom:10px}
 .sheet-miss{color:#c96442}

@@ -346,3 +346,123 @@ export function squaredPattern(g) {
 export function verifyAll(g) {
   return Object.fromEntries(Object.entries(verify).map(([id, fn]) => [id, fn(g)]));
 }
+
+// --- Overlapping Luoshu (U–W): larger boards, verified separately ---
+// These boards are not 3×3 grids, so their predicates do not join `verify`
+// (which the playground evaluates on a single 3×3 square).
+
+const LOSHU_GRID = [4, 9, 2, 3, 5, 7, 8, 1, 6];
+
+// The 3×3 window of a row-major board with `cols` columns, at offset (r, c).
+export function windowAt(board, cols, r, c) {
+  const out = [];
+  for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) out.push(board[(r + a) * cols + (c + b)]);
+  return out;
+}
+
+export function windowReport(board, cols, r, c) {
+  const w = windowAt(board, cols, r, c);
+  const rows = [0, 1, 2].map((a) => w[a * 3] + w[a * 3 + 1] + w[a * 3 + 2]);
+  const colsums = [0, 1, 2].map((b) => w[b] + w[3 + b] + w[6 + b]);
+  const diags = [w[0] + w[4] + w[8], w[2] + w[4] + w[6]];
+  const rowsCols = rows.every((s) => s === 15) && colsums.every((s) => s === 15);
+  return {
+    cells: w,
+    rows,
+    cols: colsums,
+    diags,
+    rowsCols,
+    magic: rowsCols && diags.every((s) => s === 15),
+  };
+}
+
+// Every offset whose 3×3 window is fully magic (rows, columns, diagonals).
+export function magicOffsets(board, cols) {
+  const rowCount = board.length / cols;
+  const out = [];
+  for (let r = 0; r + 2 < rowCount; r++)
+    for (let c = 0; c + 2 < cols; c++) if (windowReport(board, cols, r, c).magic) out.push([r, c]);
+  return out;
+}
+
+// U: four Lo Shu windows at the corners of a 5×5 board. Each window is
+// centred on a 5, and all four windows meet at (share) the board's centre
+// cell. Mirrored tiling: board(r,c) = LoShu[fold(r)][fold(c)], fold 0,1,2,1,0.
+export function centralBoard() {
+  const fold = [0, 1, 2, 1, 0];
+  const out = [];
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) out.push(LOSHU_GRID[fold[r] * 3 + fold[c]]);
+  return out;
+}
+
+export const CENTRAL_OFFSETS = [
+  [0, 0],
+  [0, 2],
+  [2, 0],
+  [2, 2],
+];
+
+export function centralOverlapHolds(board) {
+  if (!Array.isArray(board) || board.length !== 25) return false;
+  return CENTRAL_OFFSETS.every(([r, c]) => {
+    const rep = windowReport(board, 5, r, c);
+    return rep.magic && new Set(rep.cells).size === 9 && rep.cells[4] === 5;
+  });
+}
+
+// V: a 3×11 strip cycling the Lo Shu columns. Every sliding window keeps
+// row and column sums of 15; only windows at offsets 0, 3, 6 are fully magic.
+export function stripBoard() {
+  const out = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 11; c++) out.push(LOSHU_GRID[r * 3 + (c % 3)]);
+  return out;
+}
+
+export function linearOverlapHolds(board) {
+  if (!Array.isArray(board) || board.length !== 33) return false;
+  for (let c = 0; c < 9; c++) {
+    const rep = windowReport(board, 11, 0, c);
+    if (!rep.rowsCols) return false;
+    if (rep.magic !== (c % 3 === 0)) return false;
+  }
+  return true;
+}
+
+// W: the same mirrored fold extended to 9×9 (fold period 0,1,2,1). Magic
+// windows sit at even offsets; the Yang Hui compound 9×9 (nestBlocks) has
+// magic windows only at its aligned block offsets.
+export function foldedBoard() {
+  const fold = [0, 1, 2, 1, 0, 1, 2, 1, 0];
+  const out = [];
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) out.push(LOSHU_GRID[fold[r] * 3 + fold[c]]);
+  return out;
+}
+
+export function foldedOverlapHolds(board) {
+  if (!Array.isArray(board) || board.length !== 81) return false;
+  const got = magicOffsets(board, 9).map(([r, c]) => `${r},${c}`);
+  const want = [];
+  for (const r of [0, 2, 4, 6]) for (const c of [0, 2, 4, 6]) want.push(`${r},${c}`);
+  return JSON.stringify(got) === JSON.stringify(want);
+}
+
+export function compoundAlignedOnlyHolds(g) {
+  const big = nestBlocks(g, g);
+  // Compound windows carry shifted values, so their constant is not 15:
+  // a window is compound-magic when all eight of its lines share one sum.
+  const out = [];
+  for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < 7; c++) {
+      const w = windowAt(big, 9, r, c);
+      const lines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+      ].map((line) => line.reduce((s, i) => s + w[i], 0));
+      if (lines.every((s) => s === lines[0])) out.push(`${r},${c}`);
+    }
+  }
+  const aligned = [];
+  for (const r of [0, 3, 6]) for (const c of [0, 3, 6]) aligned.push(`${r},${c}`);
+  return JSON.stringify(out) === JSON.stringify(aligned);
+}

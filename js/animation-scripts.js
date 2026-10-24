@@ -5,7 +5,7 @@
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
 import { Z, CENTERS, rowGutter, colGutter, cornerGutter } from "./overlay.js";
-import { HOLMES_FAMILIES, palaceCells } from "./verify.js";
+import { HOLMES_FAMILIES, palaceCells, nestBlocks, centralBoard, stripBoard, foldedBoard, windowAt } from "./verify.js";
 
 // Worked-example tape: derive one ledger line per step from the text the
 // step already draws, so the tape can never drift from the board.
@@ -2014,6 +2014,213 @@ export const scriptT = {
   ],
 };
 
+// Properties U–W: overlapping Luoshu. The main board shows the active
+// 3×3 window (setValues below); the overlap sheet in js/app.js shows the
+// larger board and where that window sits in it.
+function overlapBadge(key, text, transient = true) {
+  return {
+    key,
+    type: "badge",
+    at: 0.4,
+    transient,
+    text,
+    className:
+      "absolute text-[12px] font-mono bg-[#1a1a1a] text-white px-3 py-1 rounded-full shadow pointer-events-none whitespace-nowrap",
+    style: { left: "50%", top: -18, transform: "translateX(-50%)" },
+  };
+}
+
+function overlapStep(id, { caption, tape, board, cols, wr, wc, all = false, badge, highlight = ALL, sheetBoard }) {
+  const grid = board ? windowAt(board, cols, wr || 0, wc || 0) : LOSHU;
+  return animStep(id, {
+    caption,
+    tape,
+    durationMs: 1900,
+    overlay: { show: [badge.key] },
+    draw: [badge],
+    sheet: { kind: "overlap", board: sheetBoard, wr: all ? null : wr, wc: all ? null : wc, all },
+    matrix: { highlight, setValues: asValues(grid) },
+  });
+}
+
+const CENTRAL = centralBoard();
+const STRIP = stripBoard();
+const FOLDED = foldedBoard();
+const COMPOUND = nestBlocks(LOSHU, LOSHU);
+
+export const scriptU = {
+  id: "U",
+  title: "Central overlap",
+  steps: [
+    ...[
+      [0, 0, "Top-left window: a full Lo Shu, centred on 5."],
+      [0, 2, "Top-right window: another Lo Shu, also centred on 5. It reuses the first window's right column."],
+      [2, 0, "Bottom-left window: a third Lo Shu, centred on 5, reusing the top-left window's bottom row."],
+      [2, 2, "Bottom-right window: the fourth Lo Shu. All four meet at the board's centre cell."],
+    ].map(([wr, wc, caption], i) =>
+      overlapStep(`U-${i + 1}`, {
+        caption,
+        tape: `Window (${wr},${wc})`,
+        board: CENTRAL,
+        cols: 5,
+        wr,
+        wc,
+        sheetBoard: "central",
+        badge: overlapBadge(`U.win-${i}`, `window (${wr},${wc}) = magic 15`),
+      }),
+    ),
+    overlapStep("U-5", {
+      caption: "Four overlapping Lo Shu in one 5×5. Every window is centred on 5, and all four meet at the centre cell.",
+      tape: "Four windows, one cross",
+      board: CENTRAL,
+      cols: 5,
+      wr: 0,
+      wc: 0,
+      all: true,
+      sheetBoard: "central",
+      badge: overlapBadge("U.lock", "4 windows · each centre = 5", false),
+    }),
+    overlapStep("U-6", {
+      caption: "Jiugong Feixing flies this same pattern from palace to palace over time — each new position overlaps the last. (Cultural context, not a sum.)",
+      tape: "Flying stars context",
+      board: CENTRAL,
+      cols: 5,
+      wr: 2,
+      wc: 2,
+      all: true,
+      sheetBoard: "central",
+      highlight: [4],
+      badge: overlapBadge("U.fly", "Jiugong Feixing · pattern flies palace to palace"),
+    }),
+  ],
+};
+
+export const scriptV = {
+  id: "V",
+  title: "Linear overlap",
+  steps: [
+    overlapStep("V-1", {
+      caption: "The strip cycles the Lo Shu columns. Window 1 is the Lo Shu itself — fully magic.",
+      tape: "Window 1: magic",
+      board: STRIP,
+      cols: 11,
+      wr: 0,
+      wc: 0,
+      sheetBoard: "strip",
+      badge: overlapBadge("V.win-0", "window 1 = magic 15"),
+    }),
+    overlapStep("V-2", {
+      caption: "Slide one column, reusing two columns of window 1. Rows and columns still sum to 15, but the diagonals are 24 and 12.",
+      tape: "Window 2: diagonals 24, 12",
+      board: STRIP,
+      cols: 11,
+      wr: 0,
+      wc: 1,
+      sheetBoard: "strip",
+      badge: overlapBadge("V.win-1", "rows = 15 · diagonals = 24, 12"),
+    }),
+    overlapStep("V-3", {
+      caption: "Slide again. Rows and columns still hold at 15; the diagonals are now 6 and 18.",
+      tape: "Window 3: diagonals 6, 18",
+      board: STRIP,
+      cols: 11,
+      wr: 0,
+      wc: 2,
+      sheetBoard: "strip",
+      badge: overlapBadge("V.win-2", "rows = 15 · diagonals = 6, 18"),
+    }),
+    overlapStep("V-4", {
+      caption: "The third slide completes the cycle: window 4 is fully magic again, like windows 1 and 7.",
+      tape: "Window 4: magic again",
+      board: STRIP,
+      cols: 11,
+      wr: 0,
+      wc: 3,
+      sheetBoard: "strip",
+      badge: overlapBadge("V.win-3", "window 4 = magic 15"),
+    }),
+    overlapStep("V-5", {
+      caption: "All 9 windows keep rows and columns of 15. Only windows 1, 4 and 7 are fully magic — the diagonals cycle 15, 24, 6.",
+      tape: "Rows & columns always 15",
+      board: STRIP,
+      cols: 11,
+      wr: 0,
+      wc: 0,
+      all: true,
+      sheetBoard: "strip",
+      badge: overlapBadge("V.lock", "rows = columns = 15 · magic at 1, 4, 7", false),
+    }),
+  ],
+};
+
+export const scriptW = {
+  id: "W",
+  title: "Pandiagonal overlap",
+  steps: [
+    overlapStep("W-1", {
+      caption: "Yang Hui's compound 9×9: the aligned 3×3 block in the corner is magic, with every line summing to 96.",
+      tape: "Aligned block: magic",
+      board: COMPOUND,
+      cols: 9,
+      wr: 0,
+      wc: 0,
+      sheetBoard: "compound",
+      badge: overlapBadge("W.aligned", "aligned block = magic"),
+    }),
+    overlapStep("W-2", {
+      caption: "Shift that window one cell in the compound board and the lines disagree — a shifted window there is not magic.",
+      tape: "Shifted in compound: not magic",
+      board: COMPOUND,
+      cols: 9,
+      wr: 0,
+      wc: 1,
+      sheetBoard: "compound",
+      badge: overlapBadge("W.shift-fail", "shifted window ≠ magic"),
+    }),
+    overlapStep("W-3", {
+      caption: "Now fold instead: mirror the Lo Shu across a 9×9 board. The corner window is a Lo Shu again.",
+      tape: "Folded board: corner window",
+      board: FOLDED,
+      cols: 9,
+      wr: 0,
+      wc: 0,
+      sheetBoard: "folded",
+      badge: overlapBadge("W.fold-0", "folded window (0,0) = magic 15"),
+    }),
+    overlapStep("W-4", {
+      caption: "Shift by two, across the aligned block boundary: this overlapping window is fully magic too.",
+      tape: "Shifted by two: magic",
+      board: FOLDED,
+      cols: 9,
+      wr: 0,
+      wc: 2,
+      sheetBoard: "folded",
+      badge: overlapBadge("W.fold-2", "folded window (0,2) = magic 15"),
+    }),
+    overlapStep("W-5", {
+      caption: "Shift down and across to (2,4): still a full Lo Shu, crossing the fold lines of the tiling.",
+      tape: "Window (2,4): magic",
+      board: FOLDED,
+      cols: 9,
+      wr: 2,
+      wc: 4,
+      sheetBoard: "folded",
+      badge: overlapBadge("W.fold-24", "folded window (2,4) = magic 15"),
+    }),
+    overlapStep("W-6", {
+      caption: "Exactly 16 windows are magic — every offset where both coordinates are even. Odd offsets are not.",
+      tape: "16 magic windows",
+      board: FOLDED,
+      cols: 9,
+      wr: 0,
+      wc: 0,
+      all: true,
+      sheetBoard: "folded",
+      badge: overlapBadge("W.lock", "16 windows = magic 15", false),
+    }),
+  ],
+};
+
 export const demoScripts = {
   construction: constructionScript,
   intro: constructionScript,
@@ -2037,6 +2244,9 @@ export const demoScripts = {
   R: scriptR,
   S: scriptS,
   T: scriptT,
+  U: scriptU,
+  V: scriptV,
+  W: scriptW,
 };
 
 // Multiple animations per property. Each id keeps its default script in
