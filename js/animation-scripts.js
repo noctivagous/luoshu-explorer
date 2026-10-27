@@ -4,7 +4,7 @@
 //
 // Cell indices follow SQUARE = [4,9,2,3,5,7,8,1,6] in js/app.js.
 import { animStep } from "./animation.js";
-import { Z, CENTERS, rowGutter, colGutter, cornerGutter } from "./overlay.js";
+import { Z, CENTERS, rowGutter, colGutter, cornerGutter, antiGutter } from "./overlay.js";
 import { HOLMES_FAMILIES, palaceCells, nestBlocks, centralBoard, stripBoard, foldedBoard, windowAt } from "./verify.js";
 
 // Worked-example tape: derive one ledger line per step from the text the
@@ -60,6 +60,11 @@ const foldMoves = movesBetween(SWAPPED, LOSHU);
 export const constructionScript = {
   id: "construction",
   title: "Build the square",
+  // Pre-play preview: the ordinal matrix before any swap or fold. It is the
+  // settled first frame (step build-1's setValues), shown while the player
+  // still sits un-started at step 0 — the step-1 caption describes exactly
+  // this board, so it stays.
+  preview: { caption: "1 · Write — 1 through 9 in reading order." },
   steps: [
     animStep("build-1", {
       caption: "1 · Write — 1 through 9 in reading order.",
@@ -274,9 +279,8 @@ export const scriptB = {
     }),
     animStep("B-4", {
       caption: "2 + 5 + 8 = 15 — and the other diagonal. Eight lines, one constant.",
-      // The = 15 flashes late, then the beat holds: a brief pause on the
-      // finished square. Same pill as B.tick-2, so the idle end state is
-      // unchanged — only the entrance re-fires.
+      // The = 15 flashes late, then the beat holds. It sits by this
+      // diagonal's own tip, not on the main-diagonal or left-column totals.
       durationMs: 2400,
       overlay: {
         show: ["B.diag-1", "B.ctx-0", "B.ctx-1", "B.ctx-2", "B.ctx-3", "B.tick-3"],
@@ -287,7 +291,7 @@ export const scriptB = {
         faintLine("B.ctx-1", 6, 8),
         faintLine("B.ctx-2", 1, 7),
         faintLine("B.ctx-3", 2, 8),
-        { ...gutterTick("B.tick-3", cornerGutter()), at: 0.75 },
+        { ...gutterTick("B.tick-3", antiGutter()), at: 0.75 },
       ],
       matrix: { highlight: ALL, setValues: null },
     }),
@@ -338,11 +342,12 @@ export const scriptBFamilies = {
     animStep("BF-3", {
       caption: "Diagonals: 4 + 5 + 6 and 2 + 5 + 8 — each 15.",
       durationMs: 1800,
-      overlay: { show: ["BF.diag-a", "BF.diag-b", "BF.tick-d"] },
+      overlay: { show: ["BF.diag-a", "BF.diag-b", "BF.tick-d", "BF.tick-anti"] },
       draw: [
         heroLine("BF.diag-a", 0, 8),
         heroLine("BF.diag-b", 2, 6),
         gutterTick("BF.tick-d", cornerGutter()),
+        { ...gutterTick("BF.tick-anti", antiGutter()), at: 0.7 },
       ],
       matrix: { highlight: ALL, setValues: null },
     }),

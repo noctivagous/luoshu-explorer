@@ -13,7 +13,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
-import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor } from "./animation.js";
+import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor, previewFrameFor } from "./animation.js";
 import { scriptFor, variantsFor, ledgerFor, cellProperties } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
@@ -1229,6 +1229,9 @@ function LoShuApp() {
     [overview, setOverview] = React.useState(false),
     loopRef = React.useRef(false),
     startedRef = React.useRef(false),
+    // How a property should rest: the settled first frame, a predict guess,
+    // or the plain square. The keyboard reset reads this after mount.
+    revealOpeningRef = React.useRef(() => {}),
     autoSelectRef = React.useRef(false),
     autoNextRef = React.useRef(false),
     predictRef = React.useRef(false),
@@ -1287,6 +1290,24 @@ function LoShuApp() {
   };
   // Ref mirror so the mount-once keyboard handler can branch on it.
   startedRef.current = started;
+  // Opening for a list item is the pre-play preview (see previewFrameFor):
+  // the board renders that frame while the player stays un-started at
+  // step 0, elapsed 0 — the slider never advances on load. The only opening
+  // that still touches state is predict mode, which withholds the first
+  // result behind a guess instead of previewing it.
+  revealOpeningRef.current = (p) => {
+    if (!p) return;
+    const first = p.script.steps[0];
+    if (!first) return;
+    if (legend.size > 0 || playground) return;
+    if (predictRef.current && (first.matrix?.highlight || []).length > 0) {
+      setStarted(true);
+      setPredictStep(0);
+      setPredictSel([]);
+      setPredictVerdict(null);
+      setPredictDone(null);
+    }
+  };
   autoSelectRef.current = autoSelect;
   autoNextRef.current = autoNext;
   predictRef.current = predict;
@@ -1306,6 +1327,7 @@ function LoShuApp() {
     // StrictMode remount) is swallowed as progress-only noise.
     lastRenderRef.current = null;
     setStarted(false);
+    setOverview(false);
     setAnimPlaying(false);
     setAnimSpeed(1);
     setHoverStep(null);
@@ -1393,6 +1415,8 @@ function LoShuApp() {
       setAutoplayQueue(null);
       p.play();
       setStarted(true);
+    } else if (!(deep && deep.id === e && deep.step > 1)) {
+      revealOpeningRef.current(p);
     }
     fadeStage();
     return () => p.dispose();
@@ -1430,22 +1454,24 @@ function LoShuApp() {
         }
       } else if (ev.key === "ArrowRight") {
         ev.preventDefault();
-        if (!startedRef.current) setStarted(true);
-        else p.stepNext();
+        // The preview already shows step 1, so Next advances past it.
+        setStarted(true);
+        p.stepNext();
       } else if (ev.key === "ArrowLeft") {
         ev.preventDefault();
-        if (!startedRef.current) setStarted(true);
-        else p.stepPrev();
+        setStarted(true);
+        p.stepPrev();
       } else if (ev.key === "r" || ev.key === "R") {
         p.reset();
         setStarted(false);
+        setOverview(false);
+        revealOpeningRef.current(p);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const animOn = started && frame && script,
-    animPlay = () => {
+  const animPlay = () => {
       if (!playerRef.current) return;
       // Idle overview fades into the first gated frame instead of cutting.
       if (!startedRef.current) fadeStage();
@@ -1455,17 +1481,20 @@ function LoShuApp() {
     animPause = () => playerRef.current?.pause(),
     animNext = () => {
       if (!playerRef.current) return;
-      // From idle, reveal the first step (the player already sits on it);
-      // otherwise advance one step.
-      if (!started) setStarted(true);
-      else playerRef.current.stepNext();
+      // The preview already shows the first step, so Next advances past it.
+      setStarted(true);
+      playerRef.current.stepNext();
     },
     animPrev = () => {
       if (!playerRef.current) return;
-      if (!started) setStarted(true);
-      else playerRef.current.stepPrev();
+      setStarted(true);
+      playerRef.current.stepPrev();
     },
-    animReset = () => playerRef.current?.reset() || setStarted(false),
+    animReset = () => {
+      playerRef.current?.reset();
+      setStarted(false);
+      setOverview(false);
+    },
     // What-breaks playground: entering pauses playback and clears transient
     // attention; exiting keeps the swapped grid (Restore clears it).
     playgroundToggle = () => {
@@ -1586,25 +1615,36 @@ function LoShuApp() {
       };
       requestAnimationFrame(step);
     },
-    // Overlay gate: while a script is playing/stepping, only the keys revealed
-    // so far are shown; idle (or another property) renders everything as before.
+    // Overlay gate: while a script frame is on the board (preview or
+    // playback), only its revealed keys are shown; idle (or another
+    // property) renders everything as before.
     showKey = (id, key) =>
       !(
-        animOn &&
+        boardOn &&
         script &&
         script.id === id &&
-        frame &&
-        !frame.visibleKeys.includes(key)
+        showFrame &&
+        !showFrame.visibleKeys.includes(key)
       );
-  // Predict mode shows the open step with its reveal withheld (see
-  // promptFrameFor): the board, tape, caption and formula sync all read the
-  // shown frame instead of the live one while a guess is open.
+  // Pre-play preview: before Play, the board shows previewFrameFor(script)
+  // while the player itself stays at step 0 / elapsed 0. Correspondences
+  // and the playground suppress it — they keep the plain square. Predict
+  // mode shows the open step with its reveal withheld (see promptFrameFor):
+  // the board, tape, caption and formula sync all read the shown frame
+  // instead of the live one while a guess is open.
+  const previewFrame =
+    script && !started && legend.size === 0 && !playground
+      ? previewFrameFor(script)
+      : null;
   const showFrame =
     predictStep != null && script
       ? promptFrameFor(script, predictStep)
-      : frame;
+      : started
+        ? frame
+        : previewFrame;
+  const boardOn = !!(script && showFrame && (started ? frame : previewFrame));
   const captionFrame =
-    script && (animOn && showFrame ? showFrame : frameFor(script, 0, 1));
+    script && (boardOn && showFrame ? showFrame : frameFor(script, 0, 1));
   const captionText =
     (captionFrame?.caption || "").trim() ||
     (script ? `Play to watch: ${script.title}.` : "");
@@ -1613,9 +1653,9 @@ function LoShuApp() {
       ? `Predict step ${predictStep + 1} of ${script.steps.length}: tap the cells, then Check.`
       : null;
   const drawItems =
-    script && (animOn && showFrame && !overview ? showFrame.draw : frameFor(script, script.steps.length - 1, 1).draw);
+    script && (boardOn && showFrame && !overview ? showFrame.draw : frameFor(script, script.steps.length - 1, 1).draw);
   const ov = renderOverlay(drawItems || [], {
-    enteringKeys: animOn && showFrame && !overview ? showFrame.enteringKeys : [],
+    enteringKeys: boardOn && showFrame && !overview ? showFrame.enteringKeys : [],
   });
   // Tape linking: the hovered row previews its step's cells on the board;
   // the probed cell (keyboard focus or sticky click) picks out its rows.
@@ -1631,12 +1671,12 @@ function LoShuApp() {
   // the Lo Shu.
   const sheetFrame =
     script &&
-    (animOn && showFrame && !overview
+    (boardOn && showFrame && !overview
       ? showFrame
       : frameFor(script, script.steps.length - 1, 1));
   const sheetPayload = sheetFrame?.sheet || null;
   const sheetGrid = (() => {
-    if (animOn && frame?.setValues && showFrame?.setValues) {
+    if (boardOn && frame?.setValues && showFrame?.setValues) {
       const g = Array.from({ length: 9 }, (_, i) => showFrame.setValues[i]);
       if (g.every((n) => typeof n === "number")) return g;
     }
@@ -1650,18 +1690,18 @@ function LoShuApp() {
     // The frame can briefly outlive a property switch (the new player mounts
     // in the effect), so clamp its step to the incoming script.
     syncNums =
-      animOn && showFrame && script && predictStep == null
+      boardOn && showFrame && script && predictStep == null
         ? syncNumbers(
             ledgerFor(
               script.steps[Math.min(showFrame.stepIndex, script.steps.length - 1)],
             ),
           )
         : new Set();
-  const moves = animOn && showFrame?.moves ? showFrame.moves : [];
+  const moves = boardOn && showFrame?.moves ? showFrame.moves : [];
   const moving = new Set(moves.flatMap((m) => [m.from, m.to]));
   // In-board nesting (property T): expand opened cells into their palaces.
   // Values stay derived from the 3×3 sheetGrid; minis are computed at render.
-  const nestMode = animOn && showFrame?.nest ? showFrame.nest : null;
+  const nestMode = boardOn && showFrame?.nest ? showFrame.nest : null;
   const flyers = moves.map((m) =>
     h(
       "span",
@@ -1693,7 +1733,7 @@ function LoShuApp() {
       "aria-label": "Eight forms of the square",
       children: script.steps.map((st, i) => {
         const g = Array.from({ length: 9 }, (_, d) => st.matrix.setValues[d]);
-        const pressed = i === (animOn && showFrame ? showFrame.stepIndex : 0);
+        const pressed = i === (boardOn && showFrame ? showFrame.stepIndex : 0);
         return h(
           "button",
           {
@@ -1886,6 +1926,95 @@ function LoShuApp() {
                       className:
                         "relative bg-white rounded-[22px] shadow-[0_20px_60px_rgba(0,0,0,0.08),0_1px_0_rgba(0,0,0,0.06)_inset] p-5 lg:p-7 border border-[#1a1a1a]/[0.06]",
                       children: [
+                        script &&
+                          _("div", {
+                            className: "panel-playback",
+                            role: "group",
+                            "aria-label": "Playback",
+                            children: [
+                              h("button", {
+                                onClick: animPlaying ? animPause : animPlay,
+                                className: "anim-rail-btn anim-rail-play anim-caption-play",
+                                "aria-label": animPlaying
+                                  ? "Pause animation"
+                                  : "Play animation",
+                                title: animPlaying ? "Pause (Space)" : "Play (Space)",
+                                children: animPlaying ? "❚❚" : "▶",
+                              }),
+                              h("button", {
+                                onClick: () => setOverview((v) => !v),
+                                className: "anim-rail-btn anim-caption-overview",
+                                "aria-label": "Overview diagram",
+                                "aria-pressed": overview ? "true" : "false",
+                                title: "Overview (full diagram)",
+                                children: "▦",
+                              }),
+                              h("button", {
+                                onClick: animPrev,
+                                className: "anim-rail-btn anim-caption-prev",
+                                "aria-label": "Previous animation step",
+                                title: "Previous step (←)",
+                                children: "‹",
+                              }),
+                              h("button", {
+                                onClick: animNext,
+                                className: "anim-rail-btn anim-caption-next",
+                                "aria-label": "Next animation step",
+                                title: "Next step (→)",
+                                children: "›",
+                              }),
+                              h("button", {
+                                onClick: animLoopToggle,
+                                className: "anim-rail-btn anim-caption-loop",
+                                "aria-label": "Loop animation",
+                                "aria-pressed": animLoop ? "true" : "false",
+                                title: "Loop (restart at the last step)",
+                                children: "⟳",
+                              }),
+                            ],
+                          }),
+                        _("div", {
+                          className: "board-rest",
+                          children: [
+                        script &&
+                          h("div", {
+                            className: "anim-caption",
+                            role: "status",
+                            "aria-live": "polite",
+                            children: [
+                              h("span", {
+                                className: "anim-caption-step",
+                                // A preview may suppress its step caption when
+                                // that caption only makes sense in motion.
+                                children:
+                                  captionFrame.captionStep === false
+                                    ? ""
+                                    : `Step ${captionFrame.stepIndex + 1} of ${script.steps.length}`,
+                              }),
+                              h("span", {
+                                className: "anim-caption-text",
+                                children: promptText ?? captionText,
+                              }),
+                              SHOW_ANIMATION_VARIANT_SELECT &&
+                                h("select", {
+                                  value: variant,
+                                  onChange: (ev) => {
+                                    setVariant(ev.target.value);
+                                    playerRef.current?.reset();
+                                    setStarted(false);
+                                  },
+                                  className: "anim-rail-btn anim-caption-variant",
+                                  "aria-label": "Animation",
+                                  title: "Choose animation",
+                                  disabled: variantsFor(e).length < 2,
+                                  children: variantsFor(e).map((v) =>
+                                    h("option", { value: v.key, children: v.label }, v.key),
+                                  ),
+                                }),
+                              formLine &&
+                                h("span", { className: "anim-caption-note", children: formLine }),
+                            ],
+                          }),
                         o?.id === "N" &&
                           h("p", {
                             className: "d4-hint",
@@ -1895,6 +2024,9 @@ function LoShuApp() {
                           className: "d4-row",
                           children: [
                         d4Strip,
+                        _("div", {
+                          className: "board-col",
+                          children: [
                         _("div", {
                           className: "relative",
                           style: { width: Z, height: Z },
@@ -1970,12 +2102,12 @@ function LoShuApp() {
                               // participating values carry the beat. Idle and
                               // focus-empty steps render untouched.
                               const dimmed =
-                                animOn &&
+                                boardOn &&
                                 showFrame?.highlight?.length > 0 &&
                                 !showFrame.highlight.includes(a);
                               if (dimmed) y.opacity = 0.45;
-                              let buildOn = animOn && script?.id === "construction",
-                                valueOn = animOn && frame?.setValues,
+                              let buildOn = boardOn && script?.id === "construction",
+                                valueOn = boardOn && showFrame?.setValues,
                                 cellVal = valueOn ? (showFrame.setValues[a] ?? "") : playBase[a],
                                 hideNum = moving.has(a),
                                 // Nested palace: this cell opens into its 3×3. The
@@ -1998,7 +2130,7 @@ function LoShuApp() {
                                 // Correspondences: independent slots. Selecting one
                                 // resets playback above, so their labels are never
                                 // silently hidden behind an active animation.
-                                legendOn = legend.size > 0 && !animOn,
+                                legendOn = legend.size > 0 && !boardOn,
                                 corr = legendOn ? CORRESPONDENCES[i] : null,
                                 showLayer = (id) =>
                                   legendOn && corr && legend.has(id);
@@ -2178,6 +2310,8 @@ function LoShuApp() {
                         }),
                           ],
                         }),
+                          ],
+                        }),
                         o &&
                           _("div", {
                             className: "board-meta",
@@ -2225,137 +2359,122 @@ function LoShuApp() {
                               }),
                             ],
                           }),
+                                script &&
+                                  _("div", {
+                                    className: "anim-transport",
+                                    children: [
+                                      _("div", {
+                                        className: "anim-transport-row",
+                                        children: [
+                                          h("input", {
+                                            type: "range",
+                                            min: "0",
+                                            max: "1000",
+                                            defaultValue: "0",
+                                            key: `${e}-${variant}`,
+                                            "data-anim-scrub": "true",
+                                            "aria-label": "Animation timeline",
+                                            title: "Scrub the timeline",
+                                            className: "anim-scrub",
+                                            onChange: (ev) => {
+                                              const p = playerRef.current;
+                                              if (!p || !script) return;
+                                              const { stepIndex, elapsedMs } = ratioToTime(
+                                                script,
+                                                Number(ev.target.value) / 1000,
+                                              );
+                                              setStarted(true);
+                                              p.seekAt(stepIndex, elapsedMs);
+                                            },
+                                          }, "scrub"),
+                                          h("select", {
+                                            value: animSpeed,
+                                            onChange: (ev) => {
+                                              const v = parseFloat(ev.target.value);
+                                              try {
+                                                playerRef.current?.setSpeed(v);
+                                              } catch {}
+                                            },
+                                            className: "anim-speed",
+                                            "aria-label": "Playback speed",
+                                            title: "Playback speed (0.25×–3×)",
+                                            children: SPEEDS.map((sd) =>
+                                              h("option", {
+                                                value: String(sd),
+                                                children: `${sd}×`,
+                                              }, String(sd)),
+                                            ),
+                                          }, "speed"),
+                                        ],
+                                      }, "transport-row"),
+                                      h("div", {
+                                        className: "anim-ticks",
+                                        role: "group",
+                                        "aria-label": "Animation steps",
+                                        children: script.steps.map((st, i) => {
+                                          const current =
+                                            (boardOn && showFrame ? showFrame.stepIndex : 0) === i;
+                                          return h("button", {
+                                            type: "button",
+                                            className: `anim-tick${current ? " anim-tick-on" : ""}`,
+                                            "aria-label": `Seek to step ${i + 1}: ${st.caption}`,
+                                            "aria-pressed": current ? "true" : "false",
+                                            title: st.caption,
+                                            onClick: () => {
+                                              if (!playerRef.current) return;
+                                              setStarted(true);
+                                              playerRef.current.seekAt(
+                                                i,
+                                                st.durationMs || DEFAULT_STEP_MS,
+                                              );
+                                            },
+                                            children: `${i + 1}`,
+                                          }, `tick-${i}`);
+                                        }),
+                                      }, "ticks"),
+                                      h("div", {
+                                        className: "anim-auto-row",
+                                        role: "group",
+                                        "aria-label": "Autoplay preferences",
+                                        children: [
+                                          h("button", {
+                                            type: "button",
+                                            className: "anim-rail-btn",
+                                            "aria-label": "Autoplay on select",
+                                            "aria-pressed": autoSelect ? "true" : "false",
+                                            title: "Start playing whenever a property is selected",
+                                            onClick: autoSelectToggle,
+                                            children: "Auto-select",
+                                          }, "auto-select"),
+                                          h("button", {
+                                            type: "button",
+                                            className: "anim-rail-btn",
+                                            "aria-label": "Autoplay next property",
+                                            "aria-pressed": autoNext ? "true" : "false",
+                                            title:
+                                              "Advance to the next property when this one ends (loop keeps looping instead; pause always stops)",
+                                            onClick: autoNextToggle,
+                                            children: "Auto-next",
+                                          }, "auto-next"),
+                                          h("button", {
+                                            type: "button",
+                                            className: "anim-rail-btn",
+                                            "aria-label": "Predict mode",
+                                            "aria-pressed": predict ? "true" : "false",
+                                            title:
+                                              "Pause before each result and guess its cells",
+                                            onClick: predictToggle,
+                                            children: "Predict",
+                                          }, "predict"),
+                                        ],
+                                      }, "auto-row"),
+                                    ],
+                                  }, "transport"),
+                          ],
+                        }),
                       ],
                     }),
                     sheetPayload && renderSheet(sheetPayload, sheetGrid, playBase),
-                    script &&
-                      script.steps &&
-                      _("section", {
-                        className: "tape mt-4 w-full max-w-none",
-                        role: "group",
-                        "aria-label": "Worked-example tape",
-                        children: [
-                          h("div", {
-                            className:
-                              "text-[11px] font-mono uppercase tracking-widest opacity-40 mb-1.5",
-                            children: "Worked example",
-                          }, "tape-title"),
-                          stickyCell != null &&
-                            h("div", {
-                              className: "cell-probe",
-                              role: "group",
-                              "aria-label": "Cell participation",
-                              children: [
-                                h("span", {
-                                  className: "text-[11px] font-mono opacity-60",
-                                  children: `Cell ${playBase[stickyCell]} appears in:`,
-                                }, "cp-label"),
-                                ...CELL_PROPS[stickyCell].map(({ id, n }) => {
-                                  const p = PROPERTIES.find((q) => q.id === id);
-                                  return h("button", {
-                                    type: "button",
-                                    className: "cell-probe-chip",
-                                    "aria-label": `Open ${p ? p.title : id}`,
-                                    title: `${p ? p.title : id} — ${n} step${n === 1 ? "" : "s"} use this cell`,
-                                    onClick: () => s(id),
-                                    children: p ? p.title : id,
-                                  }, `cp-${id}`);
-                                }),
-                              ],
-                            }, "probe"),
-                          ...script.steps.map((st, i) => {
-                            const entries = ledgerFor(st);
-                            const isCaption = !st.tape && entries.length === 0;
-                            // While a guess is open, the prompt step hides its
-                            // equation so the tape cannot leak the answer.
-                            // A step.tape title keeps the row short. Sheet
-                            // figures are not ledger text and are not split.
-                            const hiding = predictStep === i;
-                            const lines = hiding
-                              ? ["Tap the cells, then Check."]
-                              : st.tape
-                                ? [st.tape]
-                                : isCaption
-                                  ? [st.caption]
-                                  : entries.flatMap((en) => String(en).split(" · "));
-                            const isCurrent =
-                              (animOn && showFrame ? showFrame.stepIndex : 0) === i;
-                            const cells = st.matrix.highlight || [];
-                            const related =
-                              probeCell != null && cells.includes(probeCell);
-                            return h(
-                              "button",
-                              {
-                                type: "button",
-                                "aria-label": hiding
-                                  ? `Tape step ${i + 1}: hidden while predicting`
-                                  : `Tape step ${i + 1}: ${st.tape || entries[0] || st.caption}`,
-                                "aria-pressed": isCurrent ? "true" : "false",
-                                onClick: () => {
-                                  if (!playerRef.current) return;
-                                  setStarted(true);
-                                  playerRef.current.seekAt(
-                                    i,
-                                    st.durationMs || DEFAULT_STEP_MS,
-                                  );
-                                },
-                                onMouseEnter: () => setHoverStep(i),
-                                onMouseLeave: () =>
-                                  setHoverStep((s) => (s === i ? null : s)),
-                                onFocus: () => setHoverStep(i),
-                                onBlur: () =>
-                                  setHoverStep((s) => (s === i ? null : s)),
-                                className: isCurrent
-                                  ? "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-[#1a1a1a] bg-[#1a1a1a] text-[#fdf8f0] px-3 py-2 text-left"
-                                  : related
-                                    ? "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-[#1a1a1a]/40 bg-[#1a1a1a]/[0.04] px-3 py-2 text-left hover:bg-[#1a1a1a]/[0.06]"
-                                    : "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-transparent px-3 py-2 text-left hover:bg-[#1a1a1a]/[0.06]",
-                                children: [
-                                  h("div", {
-                                    className:
-                                      "text-[11px] font-mono opacity-40 shrink-0",
-                                    children: `${i + 1}`,
-                                  }, "num"),
-                                  _("div", {
-                                    className: "flex-1 min-w-0",
-                                    children: lines.map((ln, j) => {
-                                      if (isCaption || hiding || st.tape)
-                                        return h("div", {
-                                          className:
-                                            "text-[13px] leading-[1.4] opacity-75",
-                                          style: { overflowWrap: "anywhere" },
-                                          children: ln,
-                                        }, j);
-                                      const { lead, result, sep } = splitLedger(ln);
-                                      return h("div", {
-                                        className: "ledger-line",
-                                        style: { overflowWrap: "anywhere" },
-                                        children: [
-                                          h("span", {
-                                            className: "ledger-eq",
-                                            children: lead,
-                                          }, "lead"),
-                                          result &&
-                                            h("span", {
-                                              className: "ledger-sep",
-                                              children: sep,
-                                            }, "sep"),
-                                          result &&
-                                            h("span", {
-                                              className: "ledger-res",
-                                              children: result,
-                                            }, "res"),
-                                        ],
-                                      }, j);
-                                    }),
-                                  }, "lines"),
-                                ],
-                              },
-                              `tape-row-${i}`,
-                            );
-                          }),
-                        ],
-                      }, "tape"),
                     h("div", {
                       className: "legend-toggles mt-4",
                       children: [
@@ -2510,53 +2629,6 @@ function LoShuApp() {
                                 _("div", {
                                   className: "panel-row",
                                   children: [
-                                script &&
-                                  _("div", {
-                                    className: "panel-playback",
-                                    role: "group",
-                                    "aria-label": "Playback",
-                                    children: [
-                                      h("button", {
-                                        onClick: animPlaying ? animPause : animPlay,
-                                        className: "anim-rail-btn anim-rail-play anim-caption-play",
-                                        "aria-label": animPlaying
-                                          ? "Pause animation"
-                                          : "Play animation",
-                                        title: animPlaying ? "Pause (Space)" : "Play (Space)",
-                                        children: animPlaying ? "❚❚" : "▶",
-                                      }),
-                                      h("button", {
-                                        onClick: () => setOverview((v) => !v),
-                                        className: "anim-rail-btn anim-caption-overview",
-                                        "aria-label": "Overview diagram",
-                                        "aria-pressed": overview ? "true" : "false",
-                                        title: "Overview (full diagram)",
-                                        children: "▦",
-                                      }),
-                                      h("button", {
-                                        onClick: animPrev,
-                                        className: "anim-rail-btn anim-caption-prev",
-                                        "aria-label": "Previous animation step",
-                                        title: "Previous step (←)",
-                                        children: "‹",
-                                      }),
-                                      h("button", {
-                                        onClick: animNext,
-                                        className: "anim-rail-btn anim-caption-next",
-                                        "aria-label": "Next animation step",
-                                        title: "Next step (→)",
-                                        children: "›",
-                                      }),
-                                      h("button", {
-                                        onClick: animLoopToggle,
-                                        className: "anim-rail-btn anim-caption-loop",
-                                        "aria-label": "Loop animation",
-                                        "aria-pressed": animLoop ? "true" : "false",
-                                        title: "Loop (restart at the last step)",
-                                        children: "⟳",
-                                      }),
-                                    ],
-                                  }),
                                 _("div", {
                                   className: "panel-copy",
                                   children: [
@@ -2663,7 +2735,7 @@ function LoShuApp() {
                                       ["Fold", "into Lo Shu"],
                                     ].map(([name, sub], i) => {
                                       const active =
-                                        (animOn && showFrame
+                                        (boardOn && showFrame
                                           ? showFrame.stepIndex
                                           : 0) === i;
                                       return h(
@@ -2713,151 +2785,134 @@ function LoShuApp() {
                                 }),
                                   ],
                                 }),
-                                script &&
+                    script &&
+                      script.steps &&
+                      _("section", {
+                        className: "tape w-full max-w-none",
+                        role: "group",
+                        "aria-label": "Worked-example tape",
+                        children: [
+                          h("div", {
+                            className:
+                              "text-[11px] font-mono uppercase tracking-widest opacity-40 mb-1.5",
+                            children: "Worked example",
+                          }, "tape-title"),
+                          stickyCell != null &&
+                            h("div", {
+                              className: "cell-probe",
+                              role: "group",
+                              "aria-label": "Cell participation",
+                              children: [
+                                h("span", {
+                                  className: "text-[11px] font-mono opacity-60",
+                                  children: `Cell ${playBase[stickyCell]} appears in:`,
+                                }, "cp-label"),
+                                ...CELL_PROPS[stickyCell].map(({ id, n }) => {
+                                  const p = PROPERTIES.find((q) => q.id === id);
+                                  return h("button", {
+                                    type: "button",
+                                    className: "cell-probe-chip",
+                                    "aria-label": `Open ${p ? p.title : id}`,
+                                    title: `${p ? p.title : id} — ${n} step${n === 1 ? "" : "s"} use this cell`,
+                                    onClick: () => s(id),
+                                    children: p ? p.title : id,
+                                  }, `cp-${id}`);
+                                }),
+                              ],
+                            }, "probe"),
+                          ...script.steps.map((st, i) => {
+                            const entries = ledgerFor(st);
+                            const isCaption = !st.tape && entries.length === 0;
+                            // While a guess is open, the prompt step hides its
+                            // equation so the tape cannot leak the answer.
+                            // A step.tape title keeps the row short. Sheet
+                            // figures are not ledger text and are not split.
+                            const hiding = predictStep === i;
+                            const lines = hiding
+                              ? ["Tap the cells, then Check."]
+                              : st.tape
+                                ? [st.tape]
+                                : isCaption
+                                  ? [st.caption]
+                                  : entries.flatMap((en) => String(en).split(" · "));
+                            const isCurrent =
+                              (boardOn && showFrame ? showFrame.stepIndex : 0) === i;
+                            const cells = st.matrix.highlight || [];
+                            const related =
+                              probeCell != null && cells.includes(probeCell);
+                            return h(
+                              "button",
+                              {
+                                type: "button",
+                                "aria-label": hiding
+                                  ? `Tape step ${i + 1}: hidden while predicting`
+                                  : `Tape step ${i + 1}: ${st.tape || entries[0] || st.caption}`,
+                                "aria-pressed": isCurrent ? "true" : "false",
+                                onClick: () => {
+                                  if (!playerRef.current) return;
+                                  setStarted(true);
+                                  playerRef.current.seekAt(
+                                    i,
+                                    st.durationMs || DEFAULT_STEP_MS,
+                                  );
+                                },
+                                onMouseEnter: () => setHoverStep(i),
+                                onMouseLeave: () =>
+                                  setHoverStep((s) => (s === i ? null : s)),
+                                onFocus: () => setHoverStep(i),
+                                onBlur: () =>
+                                  setHoverStep((s) => (s === i ? null : s)),
+                                className: isCurrent
+                                  ? "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-[#1a1a1a] bg-[#1a1a1a] text-[#fdf8f0] px-3 py-2 text-left"
+                                  : related
+                                    ? "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-[#1a1a1a]/40 bg-[#1a1a1a]/[0.04] px-3 py-2 text-left hover:bg-[#1a1a1a]/[0.06]"
+                                    : "tape-row flex w-full items-baseline gap-3 rounded-[10px] border border-transparent px-3 py-2 text-left hover:bg-[#1a1a1a]/[0.06]",
+                                children: [
                                   h("div", {
-                                    className: "anim-caption",
-                                    role: "status",
-                                    "aria-live": "polite",
-                                    children: [
-                                      h("span", {
-                                        className: "anim-caption-step",
-                                        children: `Step ${captionFrame.stepIndex + 1} of ${script.steps.length}`,
-                                      }),
-                                      h("span", {
-                                        className: "anim-caption-text",
-                                        children: promptText ?? captionText,
-                                      }),
-                                      SHOW_ANIMATION_VARIANT_SELECT &&
-                                        h("select", {
-                                          value: variant,
-                                          onChange: (ev) => {
-                                            setVariant(ev.target.value);
-                                            playerRef.current?.reset();
-                                            setStarted(false);
-                                          },
-                                          className: "anim-rail-btn anim-caption-variant",
-                                          "aria-label": "Animation",
-                                          title: "Choose animation",
-                                          disabled: variantsFor(e).length < 2,
-                                          children: variantsFor(e).map((v) =>
-                                            h("option", { value: v.key, children: v.label }, v.key),
-                                          ),
-                                        }),
-                                      formLine &&
-                                        h("span", { className: "anim-caption-note", children: formLine }),
-                                    ],
-                                  }),
-                                script &&
+                                    className:
+                                      "text-[11px] font-mono opacity-40 shrink-0",
+                                    children: `${i + 1}`,
+                                  }, "num"),
                                   _("div", {
-                                    className: "anim-transport",
-                                    children: [
-                                      _("div", {
-                                        className: "anim-transport-row",
+                                    className: "flex-1 min-w-0",
+                                    children: lines.map((ln, j) => {
+                                      if (isCaption || hiding || st.tape)
+                                        return h("div", {
+                                          className:
+                                            "text-[13px] leading-[1.4] opacity-75",
+                                          style: { overflowWrap: "anywhere" },
+                                          children: ln,
+                                        }, j);
+                                      const { lead, result, sep } = splitLedger(ln);
+                                      return h("div", {
+                                        className: "ledger-line",
+                                        style: { overflowWrap: "anywhere" },
                                         children: [
-                                          h("input", {
-                                            type: "range",
-                                            min: "0",
-                                            max: "1000",
-                                            defaultValue: "0",
-                                            key: `${e}-${variant}`,
-                                            "data-anim-scrub": "true",
-                                            "aria-label": "Animation timeline",
-                                            title: "Scrub the timeline",
-                                            className: "anim-scrub",
-                                            onChange: (ev) => {
-                                              const p = playerRef.current;
-                                              if (!p || !script) return;
-                                              const { stepIndex, elapsedMs } = ratioToTime(
-                                                script,
-                                                Number(ev.target.value) / 1000,
-                                              );
-                                              setStarted(true);
-                                              p.seekAt(stepIndex, elapsedMs);
-                                            },
-                                          }, "scrub"),
-                                          h("select", {
-                                            value: animSpeed,
-                                            onChange: (ev) => {
-                                              const v = parseFloat(ev.target.value);
-                                              try {
-                                                playerRef.current?.setSpeed(v);
-                                              } catch {}
-                                            },
-                                            className: "anim-speed",
-                                            "aria-label": "Playback speed",
-                                            title: "Playback speed (0.25×–3×)",
-                                            children: SPEEDS.map((sd) =>
-                                              h("option", {
-                                                value: String(sd),
-                                                children: `${sd}×`,
-                                              }, String(sd)),
-                                            ),
-                                          }, "speed"),
+                                          h("span", {
+                                            className: "ledger-eq",
+                                            children: lead,
+                                          }, "lead"),
+                                          result &&
+                                            h("span", {
+                                              className: "ledger-sep",
+                                              children: sep,
+                                            }, "sep"),
+                                          result &&
+                                            h("span", {
+                                              className: "ledger-res",
+                                              children: result,
+                                            }, "res"),
                                         ],
-                                      }, "transport-row"),
-                                      h("div", {
-                                        className: "anim-ticks",
-                                        role: "group",
-                                        "aria-label": "Animation steps",
-                                        children: script.steps.map((st, i) => {
-                                          const current =
-                                            (animOn && showFrame ? showFrame.stepIndex : 0) === i;
-                                          return h("button", {
-                                            type: "button",
-                                            className: `anim-tick${current ? " anim-tick-on" : ""}`,
-                                            "aria-label": `Seek to step ${i + 1}: ${st.caption}`,
-                                            "aria-pressed": current ? "true" : "false",
-                                            title: st.caption,
-                                            onClick: () => {
-                                              if (!playerRef.current) return;
-                                              setStarted(true);
-                                              playerRef.current.seekAt(
-                                                i,
-                                                st.durationMs || DEFAULT_STEP_MS,
-                                              );
-                                            },
-                                            children: `${i + 1}`,
-                                          }, `tick-${i}`);
-                                        }),
-                                      }, "ticks"),
-                                      h("div", {
-                                        className: "anim-auto-row",
-                                        role: "group",
-                                        "aria-label": "Autoplay preferences",
-                                        children: [
-                                          h("button", {
-                                            type: "button",
-                                            className: "anim-rail-btn",
-                                            "aria-label": "Autoplay on select",
-                                            "aria-pressed": autoSelect ? "true" : "false",
-                                            title: "Start playing whenever a property is selected",
-                                            onClick: autoSelectToggle,
-                                            children: "Auto-select",
-                                          }, "auto-select"),
-                                          h("button", {
-                                            type: "button",
-                                            className: "anim-rail-btn",
-                                            "aria-label": "Autoplay next property",
-                                            "aria-pressed": autoNext ? "true" : "false",
-                                            title:
-                                              "Advance to the next property when this one ends (loop keeps looping instead; pause always stops)",
-                                            onClick: autoNextToggle,
-                                            children: "Auto-next",
-                                          }, "auto-next"),
-                                          h("button", {
-                                            type: "button",
-                                            className: "anim-rail-btn",
-                                            "aria-label": "Predict mode",
-                                            "aria-pressed": predict ? "true" : "false",
-                                            title:
-                                              "Pause before each result and guess its cells",
-                                            onClick: predictToggle,
-                                            children: "Predict",
-                                          }, "predict"),
-                                        ],
-                                      }, "auto-row"),
-                                    ],
-                                  }, "transport"),
+                                      }, j);
+                                    }),
+                                  }, "lines"),
+                                ],
+                              },
+                              `tape-row-${i}`,
+                            );
+                          }),
+                        ],
+                      }, "tape"),
                               ],
                             }),
                           }),

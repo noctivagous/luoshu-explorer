@@ -53,6 +53,13 @@ export function hopLook(from, to) {
     : { color: "#1a1a1a", width: "1.6", dash: null };
 }
 
+// To the left of the anti-diagonal's bottom-left tip (2 → 6), with its top
+// edge on the baseline of the 8, clear of the left-column total underneath.
+export function antiGutter() {
+  const { x2, y2 } = endpoints(2, 6, 12);
+  return { x: x2 - 27, y: y2 + 14.5 };
+}
+
 function endpoints(from, to, extend = 0) {
   const a = CENTERS[from];
   const b = CENTERS[to];

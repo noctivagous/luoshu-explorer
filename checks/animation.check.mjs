@@ -1,7 +1,7 @@
 // Animation checks: the script format and player engine must stay valid.
 // Run: npm run check. No DOM or wall-clock timing: the player takes an
 // injected clock and tick() advances it manually.
-import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio, promptFrameFor } from '../js/animation.js';
+import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio, promptFrameFor, previewFrameFor } from '../js/animation.js';
 import { constructionScript, scriptA, scriptFor, variantsFor, demoScripts } from '../js/animation-scripts.js';
 
 const failures = [];
@@ -253,6 +253,45 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   );
 }
 
+// Preview (pre-play): the settled first frame, rendered statically while
+// the player stays at step 0 / elapsed 0. No entering items, no glides.
+{
+  const gridOf2 = (sv) => Array.from({ length: 9 }, (_, i) => sv[i]);
+  const intro = previewFrameFor(constructionScript);
+  need(intro.isPreview === true && intro.stepIndex === 0, 'preview should sit on step 0');
+  need(
+    JSON.stringify(gridOf2(intro.setValues)) === JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    'Build the square preview should show 1 through 9 in reading order'
+  );
+  need(intro.caption === constructionScript.steps[0].caption, 'Build the square preview should keep the step-1 caption');
+  need(intro.captionStep === true, 'Build the square preview should label Step 1');
+  need(intro.enteringKeys.length === 0 && intro.moves === null, 'preview should be static: no entering items or glides');
+  for (const [id, sc] of Object.entries(demoScripts)) {
+    const pv = previewFrameFor(sc);
+    const settled = frameFor(sc, 0, 1);
+    need(pv.stepIndex === 0 && pv.isPreview === true, `preview ${id} should sit on step 0`);
+    need(
+      JSON.stringify(pv.visibleKeys) === JSON.stringify(settled.visibleKeys) &&
+        JSON.stringify(pv.highlight) === JSON.stringify(settled.highlight),
+      `preview ${id} should match the settled first frame`
+    );
+    need(pv.enteringKeys.length === 0 && pv.moves === null, `preview ${id} should be static`);
+    need(pv.captionStep === (pv.caption.length > 0), `preview ${id} caption step label should follow its caption`);
+  }
+  // A script may opt out of the step-1 caption when that caption only makes
+  // sense once the animation runs; the preview then carries no caption.
+  const quiet = previewFrameFor({
+    id: 'quiet',
+    preview: { caption: null },
+    steps: [animStep('q-1', { caption: 'Only explained by motion.' })],
+  });
+  need(quiet.caption === '' && quiet.captionStep === false, 'preview caption:null should suppress the step-1 caption');
+  need(
+    validateScript({ id: 'bad-preview', preview: { caption: 3 }, steps: [animStep('s1')] }).length > 0,
+    'preview.caption should reject non-string values'
+  );
+}
+
 // Player: manual tick advances, step/reset/speed behave. Durations and the
 // last index come from the script so beat-length edits stay green.
 {
@@ -300,6 +339,13 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   p.reset();
   const r = p.getState();
   need(r.stepIndex === 0 && r.speed === 1 && r.playing === false, 'reset should restore the initial state');
+  p.seekAt(0, firstDur);
+  p.play();
+  need(
+    p.getState().stepIndex === 0 && p.getState().stepElapsed === 0 && p.getState().playing === true,
+    'play on a finished step should replay that step'
+  );
+  p.pause();
   p.setSpeed(0.25);
   need(p.getState().speed === 0.25, 'setSpeed(0.25) should apply');
   p.setSpeed(3);

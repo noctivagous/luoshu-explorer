@@ -36,14 +36,27 @@ const until = async (fn, want, ms) => {
 need(!text.includes('Matrix L'), 'caption header is back');
 need(text.includes('LUO SHU'), 'missing LUO SHU heading');
 
-// Nine square cells with the Lo Shu numbers in order.
-const cells = [...root.querySelectorAll('div.relative.bg-white span.text-\\[42px\\]')].map((el) =>
-  el.textContent.trim()
-);
+// Nine square cells. Build the square opens on its first frame: 1 through 9
+// in reading order, not the finished Lo Shu. The player effect lands that
+// frame after mount, so wait for it.
+const cellText = () =>
+  [...root.querySelectorAll('div.relative.bg-white span.text-\\[42px\\]')]
+    .map((el) => el.textContent.trim())
+    .join(',');
+await until(cellText, '1,2,3,4,5,6,7,8,9', 4000);
 need(
-  JSON.stringify(cells) === JSON.stringify(['4', '9', '2', '3', '5', '7', '8', '1', '6']),
-  `square cells wrong: ${JSON.stringify(cells)}`
+  cellText() === '1,2,3,4,5,6,7,8,9',
+  `square cells wrong: ${JSON.stringify(cellText().split(','))}`
 );
+// Pre-play preview: the board shows frame 0, but the player has not
+// advanced — slider at 0, paused, step-1 caption on show.
+need(root.querySelector('input[data-anim-scrub]')?.value === '0', 'preview should leave the timeline slider at 0');
+need(root.querySelector('.anim-caption-step')?.textContent === 'Step 1 of 3', 'preview should label Step 1 of 3');
+need(
+  (root.querySelector('.anim-caption-text')?.textContent || '').includes('1 through 9 in reading order'),
+  'preview should show the step-1 caption for Build the square'
+);
+need(root.querySelector('.anim-caption-play')?.textContent === '▶', 'preview should start paused');
 
 // Sidebar: 6 category headers + 15 items (intro + A–N), two-column grid,
 // square icon tiles with 26px glyphs. 6 + 15 + 5 caption playback

@@ -56,6 +56,17 @@ export function validateScript(script) {
   if (typeof script.id !== "string" || !script.id) errors.push("script.id must be a non-empty string");
   if (!Array.isArray(script.steps) || script.steps.length === 0)
     errors.push("script.steps must be a non-empty array");
+  if (script.preview !== undefined) {
+    const pv = script.preview;
+    if (!pv || typeof pv !== "object" || Array.isArray(pv))
+      errors.push("script.preview must be an object");
+    else if (
+      pv.caption !== undefined &&
+      pv.caption !== null &&
+      typeof pv.caption !== "string"
+    )
+      errors.push("script.preview.caption must be a string or null");
+  }
   if (errors.length) return errors;
   const seen = new Set();
   script.steps.forEach((s, i) => {
@@ -355,6 +366,28 @@ export function promptFrameFor(script, stepIndex) {
   };
 }
 
+// Preview (pre-play) frame: what a list item shows when its page loads,
+// before Play. It is a display frame only — the player is not advanced
+// (step 0, elapsed 0, slider at 0, paused). Most scripts preview as the
+// settled first frame: frame-0 values, highlights and draw items, rendered
+// statically (no entering items reading --anim-p, no cell glides). A script
+// may declare `preview: { caption }` to override the caption, or
+// `caption: null` when the step-1 caption only makes sense once the
+// animation runs; then the preview carries no step caption at all.
+export function previewFrameFor(script) {
+  const base = frameFor(script, 0, 1);
+  const override = script.preview?.caption;
+  const caption = override === undefined ? base.caption : (override ?? "");
+  return {
+    ...base,
+    isPreview: true,
+    caption,
+    captionStep: caption.length > 0,
+    enteringKeys: [],
+    moves: null,
+  };
+}
+
 // 0–1 position across the whole script, for the rail scrubber.
 export function timelineRatio(script, stepIndex, elapsedMs) {
   const durations = script.steps.map(stepDuration);
@@ -471,9 +504,12 @@ export function createPlayer(script, opts = {}) {
     },
     play() {
       if (playing) return;
-      // Restart from the top when pressing play on the finished last frame.
-      if (stepIndex >= totalSteps - 1 && stepElapsed >= (script.steps[stepIndex].durationMs || DEFAULT_STEP_MS)) {
-        stepIndex = 0;
+      const dur = script.steps[stepIndex].durationMs || DEFAULT_STEP_MS;
+      // A step parked on its finished frame replays from the start of that
+      // beat, so loading the first frame does not skip it. The finished
+      // last step still restarts the whole script.
+      if (stepElapsed >= dur) {
+        if (stepIndex >= totalSteps - 1) stepIndex = 0;
         stepElapsed = 0;
       }
       playing = true;

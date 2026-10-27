@@ -102,11 +102,9 @@ await needSeen(stepText, 'Step 4 of 4', 'ArrowRight should reach the last step')
 key('r');
 await needSeen(stepText, 'Step 1 of 4', 'R should reset to the first step');
 
-// First ArrowRight from idle only reveals the current step; the next advances.
+// The opening frame is already on screen, so the next arrow advances.
 key('ArrowRight');
-await needSeen(stepText, 'Step 1 of 4', 'ArrowRight from idle should reveal step 1');
-key('ArrowRight');
-await needSeen(stepText, 'Step 2 of 4', 'second ArrowRight should advance');
+await needSeen(stepText, 'Step 2 of 4', 'ArrowRight from the opening frame should advance');
 
 key(' ');
 await needSeen(playLabel, '❚❚', 'Space should start playback');
@@ -188,6 +186,8 @@ bTile.click();
 }
 need(dom.window.location.hash.startsWith('#/luoshu/math/introduction/lines-sum-to-15'), `selecting Lines sum to 15 should address its category (hash ${dom.window.location.hash})`);
 await needSeen(stepText, 'Step 1 of 4', 'selecting B should show its first step');
+need(document.querySelector('input[data-anim-scrub]')?.value === '0', 'selecting B should preview with the slider at 0');
+need(playLabel() === '▶', 'selecting B should preview paused, not playing');
 need(document.querySelector('select[aria-label="Animation"]') === null, 'animation select should stay hidden');
 need(document.querySelector('[data-anim-key="BF.rows"]') !== null, 'Family tour should be B’s default animation');
 need(
