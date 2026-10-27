@@ -1053,18 +1053,20 @@ export const scriptI = {
 
 const J_PILL = "text-[11px] font-mono px-2 py-1 rounded-full";
 
-function jLines(key, triples, color) {
+function jLines(key, triples, color, ats = [0.3, 0.5, 0.7]) {
   return {
     key,
     type: "segments",
     opacity: 0.9,
-    parts: triples.map(([from, to]) => ({ from, to, color, width: "2" })),
+    instant: true,
+    parts: triples.map(([from, to], i) => ({ from, to, color, width: "2", at: ats[i] })),
   };
 }
 
-// Property J: rows fuse into horizontal number ribbons in the right margin,
-// columns into ribbons along the bottom margin; each family stacks into
-// 1665, and the payoff step lands the large reduction 1665 = 15 × 111.
+// Property J: each row or column blinks on as a single 3-digit number with
+// its matching margin capsule; "+" chips sit between the capsules in a
+// contrasting color so the addition reads directly on the board, and the
+// payoff step lands 1665 = 15 × 111.
 function jRibbon(key, pos, text, at, color) {
   return {
     key,
@@ -1073,12 +1075,32 @@ function jRibbon(key, pos, text, at, color) {
     x: pos.x,
     y: pos.y,
     text,
-    fill: "white",
-    stroke: color,
-    color: "#1a1a1a",
+    fill: color,
+    stroke: "#1a1a1a",
+    color: "white",
     w: 46,
     h: 20,
     rx: 10,
+    fontSize: 12,
+    weight: "700",
+    textDy: 4,
+  };
+}
+
+function jPlus(key, a, b, at) {
+  return {
+    key,
+    type: "gutter",
+    at,
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+    text: "+",
+    fill: "#1a1a1a",
+    stroke: "#c96442",
+    color: "#fdf8f0",
+    w: 22,
+    h: 18,
+    rx: 9,
     fontSize: 12,
     weight: "700",
     textDy: 4,
@@ -1090,13 +1112,17 @@ export const scriptJ = {
   title: "111 property",
   steps: [
     animStep("J-1", {
-      caption: "Rows read as numbers — 492, 357, 816.",
+      caption: "Rows read as 3-digit numbers — 492 + 357 + 816.",
       durationMs: 1800,
-      overlay: { show: ["J.rows", "J.rib-0", "J.rib-1", "J.rib-2", "J.badge-rows"] },
+      overlay: {
+        show: ["J.rows", "J.rib-0", "J.plus-0", "J.rib-1", "J.plus-1", "J.rib-2", "J.badge-rows"],
+      },
       draw: [
         jLines("J.rows", [[0, 2], [3, 5], [6, 8]], "#b89a5a"),
         jRibbon("J.rib-0", rowGutter(0), "492", 0.3, "#b89a5a"),
+        jPlus("J.plus-0", rowGutter(0), rowGutter(1), 0.4),
         jRibbon("J.rib-1", rowGutter(1), "357", 0.5, "#b89a5a"),
+        jPlus("J.plus-1", rowGutter(1), rowGutter(2), 0.6),
         jRibbon("J.rib-2", rowGutter(2), "816", 0.7, "#b89a5a"),
         {
           key: "J.badge-rows",
@@ -1111,13 +1137,17 @@ export const scriptJ = {
       matrix: { highlight: [0, 1, 2], setValues: null },
     }),
     animStep("J-2", {
-      caption: "Columns read down — 438, 951, 276.",
+      caption: "Columns read as 3-digit numbers — 438 + 951 + 276.",
       durationMs: 1800,
-      overlay: { show: ["J.cols", "J.rib-3", "J.rib-4", "J.rib-5", "J.badge-cols"] },
+      overlay: {
+        show: ["J.cols", "J.rib-3", "J.plus-2", "J.rib-4", "J.plus-3", "J.rib-5", "J.badge-cols"],
+      },
       draw: [
         jLines("J.cols", [[0, 6], [1, 7], [2, 8]], "#4a6741"),
         jRibbon("J.rib-3", colGutter(0), "438", 0.3, "#4a6741"),
+        jPlus("J.plus-2", colGutter(0), colGutter(1), 0.4),
         jRibbon("J.rib-4", colGutter(1), "951", 0.5, "#4a6741"),
+        jPlus("J.plus-3", colGutter(1), colGutter(2), 0.6),
         jRibbon("J.rib-5", colGutter(2), "276", 0.7, "#4a6741"),
         {
           key: "J.badge-cols",

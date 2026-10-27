@@ -152,6 +152,19 @@ function strokeNodes(tag, geom, look, entering, key) {
       ),
     ];
   }
+  if (look.instant) {
+    return h(
+      tag,
+      {
+        ...base,
+        className: "anim-pop",
+        style: { "--anim-at": String(look.at ?? 0) },
+        strokeDasharray: look.dash || undefined,
+        markerEnd: look.marker ? `url(#${look.marker})` : undefined,
+      },
+      key,
+    );
+  }
   return h(
     tag,
     {
@@ -304,6 +317,8 @@ function renderItem(item, entering) {
       width: item.width,
       dash: item.dash,
       marker: item.marker,
+      instant: item.instant,
+      at: item.at,
     };
     return {
       svg: _("g", { ...attrs, children: lineChildren(item, look, item.from, item.to, entering) }, item.key),
@@ -318,8 +333,8 @@ function renderItem(item, entering) {
           ...attrs,
           children: item.parts.flatMap((part, pi) =>
             lineChildren(
-              { ...item, chip: part.chip || null, extend: part.extend || 0 },
-              part,
+              { ...item, at: part.at ?? item.at, chip: part.chip || null, extend: part.extend || 0 },
+              { ...part, instant: part.instant ?? item.instant, at: part.at ?? item.at },
               part.from,
               part.to,
               entering,

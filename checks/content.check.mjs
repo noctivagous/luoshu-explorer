@@ -221,8 +221,10 @@ for (const [id, script] of allScripts) {
 {
   const j = demoScripts.J;
   need(j.steps.length === 3, 'script J should stay at 3 steps');
-  const ribbons = j.steps[0].draw.filter((d) => d.type === 'gutter');
+  const ribbons = j.steps[0].draw.filter((d) => d.type === 'gutter' && d.text !== '+');
   need(ribbons.length === 3, `J rows step should fuse three ribbons (got ${ribbons.length})`);
+  const pluses = j.steps[0].draw.filter((d) => d.type === 'gutter' && d.text === '+');
+  need(pluses.length === 2, `J rows step should place two + chips between the ribbons (got ${pluses.length})`);
   need(
     JSON.stringify(ribbons.map((d) => d.at)) === JSON.stringify([0.3, 0.5, 0.7]),
     'J ribbons should fuse one per beat'
