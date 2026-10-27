@@ -310,10 +310,6 @@ html,body{height:100%;overflow:hidden}
 .anim-auto-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .anim-auto-row .anim-rail-btn{font-size:11px;min-width:0}
 .anim-rail-btn:disabled{opacity:.4;cursor:default}
-/* Cell probe: the sticky cell's cross-property index rides above the tape. */
-.cell-probe{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
-.cell-probe-chip{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1;padding:5px 10px;border-radius:9999px;border:1px solid rgba(26,26,26,.2);background:transparent;color:#1a1a1a}
-.cell-probe-chip:hover{background:#1a1a1a;color:#fdf8f0}
 /* Predict mode: the guessing prompt sits between transport and board. */
 .predict-bar{margin:0 0 12px;width:100%;max-width:none;background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:14px;padding:10px 14px}
 .predict-actions{margin-top:8px;display:flex;gap:6px}

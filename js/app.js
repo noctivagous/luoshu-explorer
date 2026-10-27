@@ -14,7 +14,7 @@ import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
 import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor, previewFrameFor } from "./animation.js";
-import { scriptFor, variantsFor, ledgerFor, cellProperties } from "./animation-scripts.js";
+import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
 
@@ -790,9 +790,6 @@ function storePref(key, on) {
     window.localStorage.setItem(key, on ? "1" : "0");
   } catch {}
 }
-// Cell probe index: per board cell, the properties whose steps highlight or
-// move it. Computed once from the same scripts the player runs.
-const CELL_PROPS = cellProperties();
 const SHEET_PLACE = { hundreds: 0, tens: 1, units: 2 };
 
 function fmtNum(n) {
@@ -2797,29 +2794,6 @@ function LoShuApp() {
                               "text-[11px] font-mono uppercase tracking-widest opacity-40 mb-1.5",
                             children: "Worked example",
                           }, "tape-title"),
-                          stickyCell != null &&
-                            h("div", {
-                              className: "cell-probe",
-                              role: "group",
-                              "aria-label": "Cell participation",
-                              children: [
-                                h("span", {
-                                  className: "text-[11px] font-mono opacity-60",
-                                  children: `Cell ${playBase[stickyCell]} appears in:`,
-                                }, "cp-label"),
-                                ...CELL_PROPS[stickyCell].map(({ id, n }) => {
-                                  const p = PROPERTIES.find((q) => q.id === id);
-                                  return h("button", {
-                                    type: "button",
-                                    className: "cell-probe-chip",
-                                    "aria-label": `Open ${p ? p.title : id}`,
-                                    title: `${p ? p.title : id} — ${n} step${n === 1 ? "" : "s"} use this cell`,
-                                    onClick: () => s(id),
-                                    children: p ? p.title : id,
-                                  }, `cp-${id}`);
-                                }),
-                              ],
-                            }, "probe"),
                           ...script.steps.map((st, i) => {
                             const entries = ledgerFor(st);
                             const isCaption = !st.tape && entries.length === 0;

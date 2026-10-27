@@ -187,21 +187,12 @@ await until(() => (tapeRows2()[1].textContent.includes('Tap the cells') ? 'hidde
 document.querySelector('.anim-caption-play').click();
 await until(() => (document.querySelector('.anim-caption-play')?.textContent || ''), '▶', 4000);
 
-// Cell probe: stickying a cell lists its cross-property index.
+// No cross-property cell index: stickying a cell only probes the tape.
 boardCells()[4].click();
-await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'probe', 4000);
-const probeChips = () => [...document.querySelectorAll('[aria-label="Cell participation"] button')];
-need(probeChips().length === 19, `center cell should list 19 properties (got ${probeChips().length})`);
-need(probeChips().some((b) => b.textContent === 'Central overlap'), 'probe should list U for the center');
-need(probeChips().some((b) => b.textContent === 'Linear overlap'), 'probe should list V for the center');
-need(probeChips().some((b) => b.textContent === 'Pandiagonal overlap'), 'probe should list W for the center');
-need(probeChips().some((b) => b.textContent === 'Nested palaces'), 'probe should list T for the center');
-need(probeChips().some((b) => b.textContent === 'All 3×3 are Lo Shu'), 'probe should list N for the fixed center');
-need(probeChips().some((b) => b.textContent === 'Reversed squares'), 'probe should list R for the center');
-need(probeChips().some((b) => b.textContent === 'Squared matrix'), 'probe should list S for the center');
-need(!probeChips().some((b) => b.textContent === 'Clockwise addition mod10'), 'probe should spare the center from the border clock');
+await until(() => (boardCells()[4].style.boxShadow.includes('inset') ? 'probe' : 'none'), 'probe', 4000);
+need(root.querySelector('[aria-label="Cell participation"]') === null, 'cell participation section should be gone');
+need(!text.includes('appears in:'), 'cell appears-in label should be gone');
 boardCells()[4].click();
-await until(() => (root.querySelector('[aria-label="Cell participation"]') !== null ? 'probe' : 'none'), 'none', 4000);
 
 // Computed status: hidden when the claim holds, shown when broken.
 const aTile = [...root.querySelectorAll('#root aside button')].find((b) =>

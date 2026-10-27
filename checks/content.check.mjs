@@ -3,7 +3,7 @@
 // when a step reveals nothing, or when the property text drifts from the math.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { demoScripts, variantsFor, ledgerFor, cellProperties } from '../js/animation-scripts.js';
+import { demoScripts, variantsFor, ledgerFor } from '../js/animation-scripts.js';
 
 // Every script the app can show: defaults plus non-default variants.
 const allScripts = [...Object.entries(demoScripts)];
@@ -392,26 +392,6 @@ need(
   ledgerFor(demoScripts.construction.steps[1]).length === 0,
   'construction swap beat carries no ledger text'
 );
-
-// Cell probe: the cross-property participation index.
-{
-  const cp = cellProperties();
-  need(cp.length === 9 && cp.every((list) => list.length > 0), 'every cell should participate somewhere');
-  need(
-    cp.every((list) => list.every((p) => /^[A-W]$/.test(p.id))),
-    'probe should list only properties A–W'
-  );
-  const center = cp[4].map((p) => p.id);
-  need(center.includes('N'), 'probe should list N for the fixed center');
-  need(center.includes('O') && center.includes('P'), 'probe should list O and P for the center');
-  need(center.includes('R') && center.includes('S'), 'probe should list R and S for the center');
-  need(center.includes('T'), 'probe should list T for the center');
-  need(!center.includes('Q'), 'probe should spare the center from Q');
-  for (const id of ['C', 'F', 'L'])
-    need(!center.includes(id), `probe should spare the center from ${id}`);
-  const corner = cp[0].find((p) => p.id === 'A');
-  need(corner && corner.n === 2, `cell 0 should join two A beats (got ${JSON.stringify(corner)})`);
-}
 
 // Property K is framed as a computed fact, not a visual proof.
 need(
