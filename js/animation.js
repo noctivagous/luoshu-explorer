@@ -344,28 +344,6 @@ export function stepDuration(step) {
   return (step && step.durationMs) || DEFAULT_STEP_MS;
 }
 
-// Predict mode: the frame shown while the visitor guesses a step. The step
-// stays current (caption, index, elapsed progress) but its own reveal is
-// withheld: no highlight, no glides, previous values, and only earlier
-// steps' annotations. Progress-0 gating alone would still leak at=0 items,
-// so the draw list is rewound to the previous step outright.
-export function promptFrameFor(script, stepIndex) {
-  const i = Math.max(0, Math.min(stepIndex, script.steps.length - 1));
-  const base = frameFor(script, i, 0);
-  const prev = i > 0 ? frameFor(script, i - 1, 1) : null;
-  return {
-    ...base,
-    highlight: [],
-    moves: null,
-    nest: null,
-    setValues: prev ? prev.setValues : null,
-    draw: prev ? prev.draw : [],
-    visibleKeys: prev ? prev.visibleKeys : [],
-    enteringKeys: [],
-    sheet: prev ? prev.sheet : null,
-  };
-}
-
 // Preview (pre-play) frame: what a list item shows when its page loads,
 // before Play. It is a display frame only — the player is not advanced
 // (step 0, elapsed 0, slider at 0, paused). Most scripts preview as the
@@ -454,10 +432,7 @@ export function createPlayer(script, opts = {}) {
   };
 
   // End of the current step: advance, or wrap to the start when looping
-  // instead of stopping dead on the last frame. A natural (unlooped) end
-  // also fires onEnd, so the UI can offer autoplay-next; manual pauses,
-  // seeks and resets never fire it.
-  const onEnd = opts.onEnd || null;
+  // instead of stopping dead on the last frame.
   const advance = (now) => {
     if (stepIndex >= totalSteps - 1) {
       if (loop) {
@@ -468,11 +443,6 @@ export function createPlayer(script, opts = {}) {
       }
       playing = false;
       stepElapsed = script.steps[stepIndex].durationMs || DEFAULT_STEP_MS;
-      if (onEnd) {
-        try {
-          onEnd();
-        } catch {}
-      }
       return false;
     }
     stepIndex += 1;

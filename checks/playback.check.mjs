@@ -47,12 +47,9 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 54, 'expected 54 buttons with the loop toggle, 4 tape rows, 4 ticks, 3 transport toggles and 1 playground toggle');
-need(
-  document.querySelector('button[aria-label="Predict mode"]') !== null &&
-  document.querySelector('button[aria-label="Predict mode"]').getAttribute('aria-pressed') === 'false',
-  'predict should start off'
-);
+need(document.querySelectorAll('#root button').length === 51, 'expected 51 buttons with the loop toggle, 4 tape rows, 4 ticks and 1 playground toggle');
+for (const label of ['Predict mode', 'Autoplay on select', 'Autoplay next property'])
+  need(document.querySelector(`button[aria-label="${label}"]`) === null, `${label} toggle should be gone`);
 need(
   !document.body.textContent.includes('computed:'),
   'holds status should stay hidden on the intact square'
@@ -141,38 +138,13 @@ need(tickBtns().length === 4, `ticks should cover all 4 C steps (got ${tickBtns(
 tickBtns()[2].click();
 await needSeen(stepText, 'Step 3 of 4', 'tick should seek to its step');
 
-// Autoplay-next: arm it, finish C at 3×, and the app should advance to D playing.
-// (Loop keeps looping instead of advancing, so disarm it first.)
+// Loop disarms again, and the speed control still offers 0.25x-3x.
 loopBtn.click();
 await needSeen(() => loopBtn.getAttribute('aria-pressed'), 'false', 'loop toggle should disarm');
 const speedSel = document.querySelector('select[aria-label="Playback speed"]');
 need(speedSel !== null && speedSel.querySelectorAll('option').length === 6, 'speed should offer 0.25×–3×');
-const autoNextBtn = document.querySelector('button[aria-label="Autoplay next property"]');
-need(autoNextBtn !== null && autoNextBtn.getAttribute('aria-pressed') === 'false', 'auto-next should start off');
-autoNextBtn.click();
-await needSeen(() => autoNextBtn.getAttribute('aria-pressed'), 'true', 'auto-next toggle should arm');
-speedSel.value = '3';
-speedSel.dispatchEvent(new window.Event('change', { bubbles: true }));
-tickBtns()[3].click();
-document.querySelector('.anim-caption-play').click();
-{
-  const stop = Date.now() + 15000;
-  for (;;) {
-    if (dom.window.location.hash.startsWith('#/luoshu/math/modular-border/counterclockwise-arms')) break;
-    if (Date.now() > stop) break;
-    await new Promise((r) => setTimeout(r, 100));
-  }
-}
-need(
-  dom.window.location.hash.startsWith('#/luoshu/math/modular-border/counterclockwise-arms'),
-  `auto-next should advance by category and name (hash ${dom.window.location.hash})`
-);
-await needSeen(playLabel, '❚❚', 'auto-next should keep playing the next property');
 
 // Variant UI is hidden, but B still selects Family tour as its default.
-// Pause D's autoplay first so its steps can't satisfy the B assertions.
-document.querySelector('.anim-caption-play').click();
-await needSeen(playLabel, '▶', 'pause should stop the autoplay chain');
 const bTile = [...document.querySelectorAll('#root aside button')].find((btn) =>
   (btn.textContent || '').includes('Lines sum to 15')
 );

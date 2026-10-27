@@ -13,7 +13,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import propertiesData from "../data/properties.json" with { type: "json" };
 import correspondencesData from "../data/correspondences.json" with { type: "json" };
-import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, promptFrameFor, previewFrameFor } from "./animation.js";
+import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SPEEDS, previewFrameFor } from "./animation.js";
 import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
@@ -776,20 +776,6 @@ function tokenLit(tok, nums) {
   const runs = String(tok).match(/\d+/g) || [];
   return runs.some((r) => nums.has(r));
 }
-// Opt-in playback prefs persist across visits; private-mode failures fall
-// back to off.
-function loadPref(key) {
-  try {
-    return window.localStorage.getItem(key) === "1";
-  } catch {
-    return false;
-  }
-}
-function storePref(key, on) {
-  try {
-    window.localStorage.setItem(key, on ? "1" : "0");
-  } catch {}
-}
 const SHEET_PLACE = { hundreds: 0, tens: 1, units: 2 };
 
 function fmtNum(n) {
@@ -1182,14 +1168,80 @@ function renderSheet(payload, grid, baseGrid) {
   return null;
 }
 
+// A reusable compact display mode for dense controls. Consumers supply their
+// grouped options (or checkbox list) while this component owns the common
+// trigger, label, menu placement, and expanded state semantics.
+function CompactDropdown({
+  label,
+  summary,
+  open,
+  onToggle,
+  children,
+  className = "",
+  triggerClassName = "",
+  menuClassName = "",
+  ariaLabel,
+}) {
+  return _("div", {
+    className: `compact-dropdown ${className}`,
+    children: [
+      label &&
+        h("span", {
+          className: "compact-dropdown-label",
+          children: label,
+        }),
+      _("button", {
+        type: "button",
+        className: `compact-dropdown-trigger ${triggerClassName}`,
+        "aria-expanded": open ? "true" : "false",
+        "aria-haspopup": "listbox",
+        "aria-label": ariaLabel || label,
+        onClick: onToggle,
+        children: [
+          summary,
+          h("svg", {
+            className: `compact-dropdown-chevron ${open ? "rotate-180" : ""}`,
+            width: "16",
+            height: "16",
+            viewBox: "0 0 16 16",
+            fill: "none",
+            "aria-hidden": "true",
+            children: h("path", {
+              d: "M3 6 L8 11 L13 6",
+              stroke: "currentColor",
+              strokeWidth: "1.5",
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+            }),
+          }),
+        ],
+      }),
+      open &&
+        _("div", {
+          className: `compact-dropdown-menu ${menuClassName}`,
+          role: "listbox",
+          "aria-label": ariaLabel || label,
+          children,
+        }),
+    ],
+  });
+}
+
 function LoShuApp() {
   let [e, n] = React.useState(() => parseDeepLink()?.id || "intro"),
     // Active animation variant for the selected property. One select in the
     // rail switches it; switching properties resets to that id's default.
     [variant, setVariant] = React.useState(() => parseDeepLink()?.anim || "standard"),
     [t, r] = React.useState(() => new Set(CATEGORIES.map((i) => i.name))),
+    [mobileCatalogOpen, setMobileCatalogOpen] = React.useState(false),
+    [mobileCorrespondencesOpen, setMobileCorrespondencesOpen] = React.useState(false),
+    [mobileView, setMobileView] = React.useState("matrix"),
+    [isMobilePortrait, setIsMobilePortrait] = React.useState(
+      () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 599px) and (orientation: portrait)").matches,
+    ),
     l = React.useRef(null),
     o = React.useMemo(() => PROPERTIES.find((i) => i.id === e) || null, [e]),
+    activeCategory = CATEGORIES.find((i) => i.ids.includes(e)),
     u = (i) => {
       r((a) => {
         let m = new Set(a);
@@ -1200,8 +1252,7 @@ function LoShuApp() {
     },
     s = (i) => {
       setVariant(variantsFor(i)[0]?.key || "standard");
-      // Autoplay-on-select: queue playback for the newly selected property.
-      if (autoSelectRef.current) setAutoplayQueue(i);
+      setMobileCatalogOpen(false);
       if ((n(i), window.innerWidth < 1024))
         setTimeout(() => {
           l.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1221,19 +1272,10 @@ function LoShuApp() {
     // loopRef mirrors the state for the player effect and key handler.
     [animLoop, setAnimLoop] = React.useState(false),
     // Overview shows the accumulated full-script diagram while playback
-    // stays on its step: autoplay keeps one relationship at a time, and
-    // the toggle reveals the whole diagram on demand.
+    // stays on its step; the toggle reveals the whole diagram on demand.
     [overview, setOverview] = React.useState(false),
     loopRef = React.useRef(false),
     startedRef = React.useRef(false),
-    // How a property should rest: the settled first frame, a predict guess,
-    // or the plain square. The keyboard reset reads this after mount.
-    revealOpeningRef = React.useRef(() => {}),
-    autoSelectRef = React.useRef(false),
-    autoNextRef = React.useRef(false),
-    predictRef = React.useRef(false),
-    predictStepRef = React.useRef(null),
-    predictDoneRef = React.useRef(null),
     animLoopToggle = () => {
       const next = !loopRef.current;
       loopRef.current = next;
@@ -1250,21 +1292,25 @@ function LoShuApp() {
     [hoverStep, setHoverStep] = React.useState(null),
     [focusCell, setFocusCell] = React.useState(null),
     [stickyCell, setStickyCell] = React.useState(null),
-    // Playback continuity: queued autoplay target plus the two opt-in prefs.
-    [autoplayQueue, setAutoplayQueue] = React.useState(null),
-    [autoSelect, setAutoSelect] = React.useState(() => loadPref("luoshu:autoplay-select")),
-    [autoNext, setAutoNext] = React.useState(() => loadPref("luoshu:autoplay-next")),
     // What-breaks playground: an idle-mode swapped grid (null = Lo Shu),
     // the armed swap cell, and whether the playground section is open.
     [playground, setPlayground] = React.useState(false),
     [playGrid, setPlayGrid] = React.useState(null),
-    [swapArm, setSwapArm] = React.useState(null),
-    // Predict mode: pause-before-result guessing with a check/continue loop.
-    [predict, setPredict] = React.useState(false),
-    [predictStep, setPredictStep] = React.useState(null),
-    [predictSel, setPredictSel] = React.useState([]),
-    [predictDone, setPredictDone] = React.useState(null),
-    [predictVerdict, setPredictVerdict] = React.useState(null);
+    [swapArm, setSwapArm] = React.useState(null);
+  React.useEffect(() => {
+    const query = window.matchMedia?.("(max-width: 599px) and (orientation: portrait)");
+    if (!query) return undefined;
+    const update = () => {
+      setIsMobilePortrait(query.matches);
+      if (!query.matches) {
+        setMobileCatalogOpen(false);
+        setMobileCorrespondencesOpen(false);
+      }
+    };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const toggleLegend = (id) => {
     // Correspondence labels occupy the same small cells as the animation.
     // Selecting a layer must therefore leave the board in its stable state;
@@ -1287,29 +1333,6 @@ function LoShuApp() {
   };
   // Ref mirror so the mount-once keyboard handler can branch on it.
   startedRef.current = started;
-  // Opening for a list item is the pre-play preview (see previewFrameFor):
-  // the board renders that frame while the player stays un-started at
-  // step 0, elapsed 0 — the slider never advances on load. The only opening
-  // that still touches state is predict mode, which withholds the first
-  // result behind a guess instead of previewing it.
-  revealOpeningRef.current = (p) => {
-    if (!p) return;
-    const first = p.script.steps[0];
-    if (!first) return;
-    if (legend.size > 0 || playground) return;
-    if (predictRef.current && (first.matrix?.highlight || []).length > 0) {
-      setStarted(true);
-      setPredictStep(0);
-      setPredictSel([]);
-      setPredictVerdict(null);
-      setPredictDone(null);
-    }
-  };
-  autoSelectRef.current = autoSelect;
-  autoNextRef.current = autoNext;
-  predictRef.current = predict;
-  predictStepRef.current = predictStep;
-  predictDoneRef.current = predictDone;
   // Deep link frozen at selection time: the player effect re-runs under
   // StrictMode and the hash-sync effect below rewrites the hash, so reading
   // it fresh inside the effect would land on step 1 the second time.
@@ -1330,17 +1353,12 @@ function LoShuApp() {
     setHoverStep(null);
     setFocusCell(null);
     setStickyCell(null);
-    setPredictStep(null);
-    setPredictSel([]);
-    setPredictVerdict(null);
-    setPredictDone(null);
     if (!script) {
       setFrame(null);
       return;
     }
     const p = createPlayer(script, {
       loop: loopRef.current,
-      onEnd: naturalEnd,
       reducedMotion: () =>
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -1371,20 +1389,6 @@ function LoShuApp() {
         if (scrub && document.activeElement !== scrub) {
           scrub.value = String(Math.round(timelineRatio(script, f.stepIndex, f.stepElapsed) * 1000));
         }
-        // Predict mode: pause before a result-bearing step and ask for its
-        // cells. Refs stay fresh inside this effect-long closure.
-        if (
-          predictRef.current &&
-          f.playing &&
-          predictStepRef.current == null &&
-          f.stepIndex !== predictDoneRef.current &&
-          (f.highlight?.length || 0) > 0
-        ) {
-          p.pause();
-          setPredictStep(f.stepIndex);
-          setPredictSel([]);
-          setPredictVerdict(null);
-        }
       },
     });
     playerRef.current = p;
@@ -1404,16 +1408,6 @@ function LoShuApp() {
         p.seekAt(idx, script.steps[idx].durationMs || DEFAULT_STEP_MS);
         setStarted(true);
       }
-    }
-    // Autoplay queue (auto-select / auto-next): start this property playing
-    // on mount. Switching properties also fades the new board in instead of
-    // cutting from the old one.
-    if (autoplayQueue === e) {
-      setAutoplayQueue(null);
-      p.play();
-      setStarted(true);
-    } else if (!(deep && deep.id === e && deep.step > 1)) {
-      revealOpeningRef.current(p);
     }
     fadeStage();
     return () => p.dispose();
@@ -1462,7 +1456,6 @@ function LoShuApp() {
         p.reset();
         setStarted(false);
         setOverview(false);
-        revealOpeningRef.current(p);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -1503,80 +1496,10 @@ function LoShuApp() {
         setFocusCell(null);
         setStickyCell(null);
         setSwapArm(null);
-        // Predicting and swapping fight over the cells; opening one closes
-        // the other.
-        setPredict(false);
-        setPredictStep(null);
-        setPredictSel([]);
-        setPredictVerdict(null);
-        setPredictDone(null);
       } else {
         setSwapArm(null);
       }
       setPlayground(next);
-    },
-    // Predict mode: pause before each result-bearing step and guess its
-    // cells. Enabling restores the Lo Shu so every round starts canonical.
-    predictToggle = () => {
-      const next = !predictRef.current;
-      setPredict(next);
-      setPredictStep(null);
-      setPredictSel([]);
-      setPredictVerdict(null);
-      setPredictDone(null);
-      if (next) {
-        setPlayground(false);
-        setSwapArm(null);
-        setPlayGrid(null);
-      }
-    },
-    // Check the guess against the step's own highlight set.
-    predictCheck = () => {
-      const st = script.steps[predictStepRef.current];
-      if (!st) return;
-      const want = [...new Set(st.matrix.highlight || [])].sort();
-      const got = [...predictSel].sort();
-      const ok =
-        want.length > 0 &&
-        want.length === got.length &&
-        want.every((c, i) => c === got[i]);
-      setPredictVerdict(ok ? "good" : "miss");
-      setPredictDone(predictStepRef.current);
-    },
-    // Reveal the step on the board and resume the show.
-    predictContinue = () => {
-      setPredictStep(null);
-      setPredictSel([]);
-      setPredictVerdict(null);
-      if (playerRef.current) {
-        setStarted(true);
-        playerRef.current.play();
-      }
-    },
-    // Opt-in autoplay prefs. The loop toggle stays the visible loop choice;
-    // pausing never advances the chain, so stop is always one press away.
-    autoSelectToggle = () => {
-      const next = !autoSelectRef.current;
-      autoSelectRef.current = next;
-      setAutoSelect(next);
-      storePref("luoshu:autoplay-select", next);
-    },
-    autoNextToggle = () => {
-      const next = !autoNextRef.current;
-      autoNextRef.current = next;
-      setAutoNext(next);
-      storePref("luoshu:autoplay-next", next);
-    },
-    // Autoplay-next: on a natural end, advance through the catalog in
-    // property order. Loop keeps looping instead; manual pauses, seeks and
-    // resets never reach this handler (see createPlayer onEnd).
-    naturalEnd = () => {
-      if (!autoNextRef.current || loopRef.current) return;
-      const ids = PROPERTIES.map((p) => p.id);
-      const at = ids.indexOf(e);
-      const next = ids[(at + 1 + ids.length) % ids.length];
-      s(next);
-      setAutoplayQueue(next);
     },
     // Playback continuity: player-clock stage fade. The diagram itself stays
     // player-driven; only the stage container eases from 0 to 1 over ~350ms
@@ -1625,30 +1548,18 @@ function LoShuApp() {
       );
   // Pre-play preview: before Play, the board shows previewFrameFor(script)
   // while the player itself stays at step 0 / elapsed 0. Correspondences
-  // and the playground suppress it — they keep the plain square. Predict
-  // mode shows the open step with its reveal withheld (see promptFrameFor):
-  // the board, tape, caption and formula sync all read the shown frame
-  // instead of the live one while a guess is open.
+  // and the playground suppress it — they keep the plain square.
   const previewFrame =
     script && !started && legend.size === 0 && !playground
       ? previewFrameFor(script)
       : null;
-  const showFrame =
-    predictStep != null && script
-      ? promptFrameFor(script, predictStep)
-      : started
-        ? frame
-        : previewFrame;
+  const showFrame = started ? frame : previewFrame;
   const boardOn = !!(script && showFrame && (started ? frame : previewFrame));
   const captionFrame =
     script && (boardOn && showFrame ? showFrame : frameFor(script, 0, 1));
   const captionText =
     (captionFrame?.caption || "").trim() ||
     (script ? `Play to watch: ${script.title}.` : "");
-  const promptText =
-    predictStep != null && script
-      ? `Predict step ${predictStep + 1} of ${script.steps.length}: tap the cells, then Check.`
-      : null;
   const drawItems =
     script && (boardOn && showFrame && !overview ? showFrame.draw : frameFor(script, script.steps.length - 1, 1).draw);
   const ov = renderOverlay(drawItems || [], {
@@ -1687,7 +1598,7 @@ function LoShuApp() {
     // The frame can briefly outlive a property switch (the new player mounts
     // in the effect), so clamp its step to the incoming script.
     syncNums =
-      boardOn && showFrame && script && predictStep == null
+      boardOn && showFrame && script
         ? syncNumbers(
             ledgerFor(
               script.steps[Math.min(showFrame.stepIndex, script.steps.length - 1)],
@@ -1874,50 +1785,110 @@ function LoShuApp() {
             children: [
               h("div", {
                 className: "w-full flex flex-col items-center",
-                children: _("div", {
-                  className: "relative",
-                  children: [
-                    predictStep != null && script && script.steps[predictStep] &&
-                      _("div", {
-                        className: "predict-bar",
-                        role: "group",
-                        "aria-label": "Prediction prompt",
+                children: [
+                  isMobilePortrait &&
+                    h(CompactDropdown, {
+                      className: "mobile-property-select",
+                      label: "LUO SHU",
+                      ariaLabel: "Lo Shu properties",
+                      open: mobileCatalogOpen,
+                      onToggle: () => setMobileCatalogOpen((open) => !open),
+                      triggerClassName: "mobile-property-select-trigger",
+                      menuClassName: "mobile-property-select-menu",
+                      summary: _("span", {
+                        className: "mobile-property-select-current",
                         children: [
-                          h("div", {
-                            className: "text-[13px] font-mono",
-                            children: `Step ${predictStep + 1} of ${script.steps.length}: tap the ${(script.steps[predictStep].matrix.highlight || []).length} cells, then Check. (${predictSel.length} tapped)`,
-                          }, "pq"),
-                          h("div", {
-                            className: "predict-actions",
-                            children: [
-                              predictVerdict == null
-                                ? h("button", {
-                                    type: "button",
-                                    className: "anim-rail-btn",
-                                    "aria-label": "Check prediction",
-                                    disabled: predictSel.length === 0,
-                                    onClick: predictCheck,
-                                    children: "Check",
-                                  }, "check")
-                                : h("button", {
-                                    type: "button",
-                                    className: "anim-rail-btn",
-                                    "aria-label": "Continue playback",
-                                    onClick: predictContinue,
-                                    children: "Continue",
-                                  }, "continue"),
-                            ],
-                          }, "pa"),
-                          predictVerdict != null &&
-                            h("p", {
-                              className: "mt-2 text-[13px] leading-[1.6] opacity-75",
-                              style: { fontFamily: "'Newsreader', Georgia, serif" },
-                              children: predictVerdict === "good"
-                                ? "Correct — nice predicting."
-                                : "Not quite — watch the reveal, then continue.",
-                            }, "pv"),
+                          h("span", {
+                            className: "mobile-property-select-kicker",
+                            children: activeCategory?.name || "Property",
+                          }),
+                          h("span", {
+                            className: "mobile-property-select-title",
+                            children: o?.title || "Choose a property",
+                          }),
                         ],
-                      }, "predict-bar"),
+                      }),
+                      children: CATEGORIES.map((category) =>
+                        _(
+                          "section",
+                          {
+                            className: "mobile-property-select-group",
+                            children: [
+                              h("h2", {
+                                className: "mobile-property-select-group-label",
+                                children: category.name,
+                              }),
+                              _("div", {
+                                className: "mobile-property-select-options",
+                                children: category.ids.map((id) => {
+                                  const property = PROPERTIES.find((item) => item.id === id),
+                                    selected = id === e;
+                                  return _(
+                                    "button",
+                                    {
+                                      type: "button",
+                                      role: "option",
+                                      "aria-selected": selected ? "true" : "false",
+                                      className: `mobile-property-select-option ${selected ? "mobile-property-select-option-active" : ""}`,
+                                      onClick: () => s(id),
+                                      children: [
+                                        h("span", {
+                                          className: "mobile-property-select-icon",
+                                          children: iconGlyphs(id),
+                                        }),
+                                        _("span", {
+                                          className: "mobile-property-select-option-copy",
+                                          children: [
+                                            h("span", {
+                                              className: "mobile-property-select-option-title",
+                                              children: property.title,
+                                            }),
+                                            h("span", {
+                                              className: "mobile-property-select-option-desc",
+                                              children: property.shortDesc,
+                                            }),
+                                          ],
+                                        }),
+                                      ],
+                                    },
+                                    id,
+                                  );
+                                }),
+                              }),
+                            ],
+                          },
+                          category.name,
+                        ),
+                      ),
+                    }),
+                  isMobilePortrait &&
+                    _("div", {
+                      className: "mobile-view-tabs",
+                      role: "tablist",
+                      "aria-label": "Property view",
+                      children: [
+                        h("button", {
+                          type: "button",
+                          role: "tab",
+                          className: mobileView === "matrix" ? "mobile-view-tab-active" : "",
+                          "aria-selected": mobileView === "matrix" ? "true" : "false",
+                          onClick: () => setMobileView("matrix"),
+                          children: "Matrix",
+                        }, "matrix"),
+                        h("button", {
+                          type: "button",
+                          role: "tab",
+                          className: mobileView === "property" ? "mobile-view-tab-active" : "",
+                          "aria-selected": mobileView === "property" ? "true" : "false",
+                          onClick: () => setMobileView("property"),
+                          children: "Property",
+                        }, "property"),
+                      ],
+                    }),
+                  _("div", {
+                    className: "relative",
+                    "data-mobile-view": isMobilePortrait ? mobileView : undefined,
+                    children: [
                     h("div", {
                       ref: l,
                       className:
@@ -1990,7 +1961,7 @@ function LoShuApp() {
                               }),
                               h("span", {
                                 className: "anim-caption-text",
-                                children: promptText ?? captionText,
+                                children: captionText,
                               }),
                               SHOW_ANIMATION_VARIANT_SELECT &&
                                 h("select", {
@@ -2151,8 +2122,6 @@ function LoShuApp() {
                                 y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #1a1a1a`;
                               if (playground && swapArm === a)
                                 y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #c96442`;
-                              if (predictStep != null && predictSel.includes(a))
-                                y.boxShadow = `${y.boxShadow ? y.boxShadow + ", " : ""}inset 0 0 0 3px #1a1a1a`;
                               return _(
                                 "div",
                                 {
@@ -2170,16 +2139,6 @@ function LoShuApp() {
                                   onFocus: () => setFocusCell(a),
                                   onBlur: () => setFocusCell((c) => (c === a ? null : c)),
                                   onClick: () => {
-                                    // Predict prompt open: taps vote for the
-                                    // step's cells instead of probing.
-                                    if (predictStep != null) {
-                                      setPredictSel((sel) =>
-                                        sel.includes(a)
-                                          ? sel.filter((c) => c !== a)
-                                          : [...sel, a],
-                                      );
-                                      return;
-                                    }
                                     // Playground swap: arm one cell, then tap
                                     // a second to exchange their values.
                                     if (playground) {
@@ -2429,42 +2388,6 @@ function LoShuApp() {
                                           }, `tick-${i}`);
                                         }),
                                       }, "ticks"),
-                                      h("div", {
-                                        className: "anim-auto-row",
-                                        role: "group",
-                                        "aria-label": "Autoplay preferences",
-                                        children: [
-                                          h("button", {
-                                            type: "button",
-                                            className: "anim-rail-btn",
-                                            "aria-label": "Autoplay on select",
-                                            "aria-pressed": autoSelect ? "true" : "false",
-                                            title: "Start playing whenever a property is selected",
-                                            onClick: autoSelectToggle,
-                                            children: "Auto-select",
-                                          }, "auto-select"),
-                                          h("button", {
-                                            type: "button",
-                                            className: "anim-rail-btn",
-                                            "aria-label": "Autoplay next property",
-                                            "aria-pressed": autoNext ? "true" : "false",
-                                            title:
-                                              "Advance to the next property when this one ends (loop keeps looping instead; pause always stops)",
-                                            onClick: autoNextToggle,
-                                            children: "Auto-next",
-                                          }, "auto-next"),
-                                          h("button", {
-                                            type: "button",
-                                            className: "anim-rail-btn",
-                                            "aria-label": "Predict mode",
-                                            "aria-pressed": predict ? "true" : "false",
-                                            title:
-                                              "Pause before each result and guess its cells",
-                                            onClick: predictToggle,
-                                            children: "Predict",
-                                          }, "predict"),
-                                        ],
-                                      }, "auto-row"),
                                     ],
                                   }, "transport"),
                           ],
@@ -2475,7 +2398,56 @@ function LoShuApp() {
                     h("div", {
                       className: "legend-toggles mt-4",
                       children: [
-                        _("div", {
+                        isMobilePortrait
+                          ? h(CompactDropdown, {
+                              className: "mobile-correspondence-select",
+                              label: "Correspondences",
+                              ariaLabel: "Correspondence overlays",
+                              open: mobileCorrespondencesOpen,
+                              onToggle: () => setMobileCorrespondencesOpen((open) => !open),
+                              triggerClassName: "mobile-correspondence-select-trigger",
+                              menuClassName: "mobile-correspondence-select-menu",
+                              summary: h("span", {
+                                className: "mobile-correspondence-select-summary",
+                                children:
+                                  legend.size === 0
+                                    ? "None selected"
+                                    : `${legend.size} selected`,
+                              }),
+                              children: [
+                                _("button", {
+                                  type: "button",
+                                  className: "mobile-correspondence-clear",
+                                  onClick: () => setLegend(new Set()),
+                                  children: "Clear all",
+                                }),
+                                ...LEGEND_LAYERS.filter((layer) => layer.id !== "off").map((layer) =>
+                                  _("label", {
+                                    className: "mobile-correspondence-option",
+                                    children: [
+                                      h("input", {
+                                        type: "checkbox",
+                                        checked: legend.has(layer.id),
+                                        onChange: () => toggleLegend(layer.id),
+                                      }),
+                                      _("span", {
+                                        children: [
+                                          h("span", {
+                                            className: "mobile-correspondence-option-label",
+                                            children: layer.label,
+                                          }),
+                                          h("span", {
+                                            className: "mobile-correspondence-option-note",
+                                            children: LEGEND_NOTES[layer.id],
+                                          }),
+                                        ],
+                                      }),
+                                    ],
+                                  }, layer.id),
+                                ),
+                              ],
+                            })
+                          : _("div", {
                           className: "flex flex-wrap items-center gap-1.5",
                           role: "group",
                           "aria-label": "Correspondences legend",
@@ -2797,18 +2769,13 @@ function LoShuApp() {
                           ...script.steps.map((st, i) => {
                             const entries = ledgerFor(st);
                             const isCaption = !st.tape && entries.length === 0;
-                            // While a guess is open, the prompt step hides its
-                            // equation so the tape cannot leak the answer.
                             // A step.tape title keeps the row short. Sheet
                             // figures are not ledger text and are not split.
-                            const hiding = predictStep === i;
-                            const lines = hiding
-                              ? ["Tap the cells, then Check."]
-                              : st.tape
-                                ? [st.tape]
-                                : isCaption
-                                  ? [st.caption]
-                                  : entries.flatMap((en) => String(en).split(" · "));
+                            const lines = st.tape
+                              ? [st.tape]
+                              : isCaption
+                                ? [st.caption]
+                                : entries.flatMap((en) => String(en).split(" · "));
                             const isCurrent =
                               (boardOn && showFrame ? showFrame.stepIndex : 0) === i;
                             const cells = st.matrix.highlight || [];
@@ -2818,9 +2785,7 @@ function LoShuApp() {
                               "button",
                               {
                                 type: "button",
-                                "aria-label": hiding
-                                  ? `Tape step ${i + 1}: hidden while predicting`
-                                  : `Tape step ${i + 1}: ${st.tape || entries[0] || st.caption}`,
+                                "aria-label": `Tape step ${i + 1}: ${st.tape || entries[0] || st.caption}`,
                                 "aria-pressed": isCurrent ? "true" : "false",
                                 onClick: () => {
                                   if (!playerRef.current) return;
@@ -2850,7 +2815,7 @@ function LoShuApp() {
                                   _("div", {
                                     className: "flex-1 min-w-0",
                                     children: lines.map((ln, j) => {
-                                      if (isCaption || hiding || st.tape)
+                                      if (isCaption || st.tape)
                                         return h("div", {
                                           className:
                                             "text-[13px] leading-[1.4] opacity-75",
@@ -2975,8 +2940,9 @@ function LoShuApp() {
                         ],
                       ],
                     }, "playground"),
-                  ],
-                }),
+                    ],
+                  }),
+                ],
               }),
             ],
           }),

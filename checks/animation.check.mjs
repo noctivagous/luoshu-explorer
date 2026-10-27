@@ -1,7 +1,7 @@
 // Animation checks: the script format and player engine must stay valid.
 // Run: npm run check. No DOM or wall-clock timing: the player takes an
 // injected clock and tick() advances it manually.
-import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio, promptFrameFor, previewFrameFor } from '../js/animation.js';
+import { validateScript, createPlayer, frameFor, animStep, ratioToTime, timelineRatio, previewFrameFor } from '../js/animation.js';
 import { constructionScript, scriptA, scriptFor, variantsFor, demoScripts } from '../js/animation-scripts.js';
 
 const failures = [];
@@ -112,7 +112,7 @@ need(
 need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells');
 
 // R and S carry a content sheet. Families accumulate; the latest strike,
-// reveal, and turn note win. Predict rewinds the open step's sheet.
+// reveal, and turn note win.
 {
   const scriptR = scriptFor('R');
   need(scriptR.steps.length === 7, 'R should have 7 steps');
@@ -123,9 +123,6 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   );
   need(frameFor(scriptR, 4).sheet.strike === 'hundreds', 'R then strikes hundreds');
   need(frameFor(scriptR, 6).sheet.strike === 'units', 'R ends on the units strike');
-  need(promptFrameFor(scriptR, 0).sheet === null, 'predict hides the first sheet');
-  need(promptFrameFor(scriptR, 4).sheet.strike == null, 'predict rewinds the strike');
-  need(promptFrameFor(scriptR, 4).sheet.families.length === 4, 'predict keeps the families already shown');
   const scriptS = scriptFor('S');
   need(scriptS.steps.length === 4, 'S should have 4 steps');
   need(
@@ -144,7 +141,7 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   );
   // Property T: the sheet story closes at T-4, then the nesting layer opens
   // in the board: one palace at T-5, all nine at T-6, the 3-7 address at T-7,
-  // and two center-path zooms at T-8/T-9. Predict withholds values and nests.
+  // and two center-path zooms at T-8/T-9.
   const scriptT = scriptFor('T');
   need(validateScript(scriptT).length === 0, 'script T invalid');
   need(scriptT.steps.length === 9, 'T should close with the two center-path zooms');
@@ -185,11 +182,6 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
       JSON.stringify({ kind: 'compound', scope: 'all', palace: null, mark: null, inner: 'base' }),
     'T-9 keeps the zoom sheet on the base inner square'
   );
-  need(promptFrameFor(scriptT, 5).nest == null, 'predict withholds the nesting');
-  need(
-    promptFrameFor(scriptT, 7).setValues === null && promptFrameFor(scriptT, 7).nest == null,
-    'predict withholds the zoom re-basing'
-  );
   need(
     validateScript({
       id: 'bad-nest',
@@ -212,8 +204,6 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
     'sheet.inner should reject unknown squares'
   );
   need(frameFor(scriptS, 3).moves.length > 0, 'S turn glides the cells');
-  need(promptFrameFor(scriptS, 3).setValues === null, 'predict hides the turn');
-  need(promptFrameFor(scriptS, 3).sheet.compareTurn !== true, 'predict hides the turned-pair note');
   need(
     frameFor(scriptFor('A'), 0).sheet == null && frameFor(scriptFor('J'), 0).sheet == null,
     'A and J carry no sheet'
@@ -235,7 +225,6 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
     'U second window should show the top-right Lo Shu on the main board'
   );
   need(frameFor(scriptU, 4).sheet.all === true, 'U overview should mark every magic window');
-  need(promptFrameFor(scriptU, 4).sheet.all === false, 'predict should withhold the U overview');
   const scriptV = scriptFor('V');
   need(scriptV.steps.length === 5, 'V should slide through the cycle and close on the overview');
   need(frameFor(scriptV, 1).sheet.wc === 1 && frameFor(scriptV, 3).sheet.wc === 3, 'V window should slide one column per beat');
@@ -358,53 +347,6 @@ need(frameFor(scriptFor('N'), 1).moves.length > 0, 'N rotation should move cells
   }
   need(threw, 'setSpeed(4) should throw');
   p.dispose();
-}
-
-// onEnd fires on natural ends only: not on pause, seek, reset, or loop wrap.
-{
-  let ended = 0;
-  const last = scriptA.steps.length - 1;
-  const lastDur = scriptA.steps[last].durationMs;
-  const q = createPlayer(scriptA, { ...silent, onEnd: () => { ended += 1; } });
-  q.seek(last);
-  q.tick(lastDur);
-  need(ended === 1, 'natural end should fire onEnd once');
-  q.dispose();
-  const m = createPlayer(scriptA, { ...silent, onEnd: () => { ended += 1; } });
-  m.seek(last);
-  m.pause();
-  need(ended === 1, 'manual pause at the last step should not fire onEnd');
-  m.stepPrev();
-  m.reset();
-  need(ended === 1, 'step and reset should not fire onEnd');
-  m.dispose();
-  const w = createPlayer(scriptA, { ...silent, loop: true, onEnd: () => { ended += 1; } });
-  w.seek(last);
-  w.tick(lastDur);
-  need(ended === 1, 'loop wrap should not fire onEnd');
-  w.dispose();
-}
-
-// Predict mode: the prompt frame withholds the step's own reveal.
-{
-  const pf = promptFrameFor(scriptA, 0);
-  need(pf.stepIndex === 0, 'prompt frame should stay on its step');
-  need(pf.highlight.length === 0 && pf.moves === null, 'prompt frame should hide the answer cells');
-  need(
-    pf.setValues === null && pf.draw.length === 0 && pf.visibleKeys.length === 0,
-    'first-step prompt should show a clean board'
-  );
-  const p2 = promptFrameFor(scriptA, 2);
-  need(
-    JSON.stringify(p2.visibleKeys) ===
-      JSON.stringify(['A.pair-0', 'A.ord-0', 'A.eq-0', 'A.chip-0', 'A.pair-1', 'A.ord-1', 'A.eq-1', 'A.chip-1']),
-    `prompt should rewind annotations to the previous step (got ${JSON.stringify(p2.visibleKeys)})`
-  );
-  need(p2.highlight.length === 0 && p2.moves === null, 'later prompt should also hide the answer');
-  need(
-    promptFrameFor(scriptA, 99).stepIndex === scriptA.steps.length - 1,
-    'prompt frame should clamp to the last step'
-  );
 }
 
 // Validation rejects malformed scripts; the player refuses them.
