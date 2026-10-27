@@ -39,6 +39,7 @@ for (const rule of [
   '--luoshu-type:calc(1 / max(var(--luoshu-fit), .5))',
   '@media(max-width:1366px)',
   '@media(max-width:1023px) and (orientation:landscape)',
+  '#root main>div>.relative>.rounded-\\[22px\\]{width:450px;min-width:0;max-width:100%;justify-self:start;align-self:start}',
   '.anim-chip{transform-box:fill-box;transform-origin:center;scale:var(--luoshu-type, 1)}',
 ]) need(css.includes(rule), `missing responsive rule: ${rule}`);
 

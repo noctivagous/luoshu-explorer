@@ -380,7 +380,7 @@ html,body{height:100%;overflow:hidden}
 #root main>div>.relative{grid-template-columns:minmax(0,1fr) max-content;grid-template-areas:"panel board" "predict predict" "legend legend";align-items:start}
 #root main>div>.relative:has(.sheet){grid-template-areas:"panel board" "sheet sheet" "predict predict" "legend legend"}
 #root main .property-panel{max-height:none;overflow:visible}
-#root main>div>.relative>.rounded-\[22px\]{width:auto;min-width:auto;max-width:none;justify-self:start;align-self:start}
+#root main>div>.relative>.rounded-\[22px\]{width:450px;min-width:0;max-width:100%;justify-self:start;align-self:start}
 #root main .board-meta{width:340px;max-width:340px}
 #root main div[style*="width: 340px"]{--luoshu-fit:1;--luoshu-type:1}
 .anim-caption{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"step text"}
