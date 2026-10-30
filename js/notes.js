@@ -27,6 +27,15 @@ function parseSpans(src) {
   return spans;
 }
 
+// The dev/preview servers fall back to index.html (200, text/html) for
+// unknown paths, so status alone cannot prove a note exists. A fetched body
+// counts as a note only when it is not HTML by header or by shape.
+export function isNoteBody(contentType, text) {
+  if (String(contentType || "").includes("html")) return false;
+  if (typeof text !== "string" || text === "") return false;
+  return !text.trimStart().startsWith("<");
+}
+
 // Parse a note into blocks:
 // {type:"heading",spans} | {type:"para",spans} | {type:"list",items:[spans]}.
 export function parseNoteMarkdown(src) {

@@ -585,7 +585,7 @@ need(Object.values(verifyAll(broken)).some((v) => v === false), 'verifyAll shoul
 // below Correspondences; a property without a file shows no Notes section.
 {
   const { readFileSync, readdirSync } = await import('node:fs');
-  const { parseNoteMarkdown } = await import('../js/notes.js');
+  const { parseNoteMarkdown, isNoteBody } = await import('../js/notes.js');
   const noteFiles = readdirSync(new URL('../public/notes/', import.meta.url)).filter((f) => f.endsWith('.md'));
   need(noteFiles.includes('N.md'), 'N should carry a Nine Heavens note');
   for (const file of noteFiles) {
@@ -611,6 +611,15 @@ need(Object.values(verifyAll(broken)).some((v) => v === false), 'verifyAll shoul
     probe[0].spans.some((s) => s.t === 'link' && s.href === 'https://example.com'),
     'note parser should split bold and link spans'
   );
+  // SPA fallback: the dev/preview servers answer unknown paths with
+  // index.html as 200 text/html, which must never render as a note.
+  const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  need(!isNoteBody('text/html', indexHtml), 'note guard should reject the SPA fallback page');
+  need(!isNoteBody('text/markdown', indexHtml), 'note guard should reject HTML by shape even with a markdown header');
+  need(!isNoteBody('text/html', noteN), 'note guard should reject a markdown note served as HTML');
+  need(isNoteBody('text/markdown', noteN), 'note guard should accept the N note');
+  need(!isNoteBody('text/markdown', ''), 'note guard should reject an empty body');
+  need(!isNoteBody('text/markdown', null), 'note guard should reject a missing body');
 }
 
 if (failures.length) {

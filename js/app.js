@@ -17,7 +17,7 @@ import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SP
 import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
-import { parseNoteMarkdown, renderNoteBlocks } from "./notes.js";
+import { parseNoteMarkdown, renderNoteBlocks, isNoteBody } from "./notes.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -1320,7 +1320,12 @@ function LoShuApp() {
     if (!o || propertyNotes[o.id] !== undefined) return undefined;
     let alive = true;
     fetch(`notes/${o.id}.md`).then(
-      (res) => (res.ok ? res.text() : null),
+      (res) => {
+        if (!res.ok) return null;
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("html")) return null;
+        return res.text().then((text) => (isNoteBody(contentType, text) ? text : null));
+      },
       () => null,
     ).then((text) => {
       if (alive)
