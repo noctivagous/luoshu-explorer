@@ -17,6 +17,7 @@ import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SP
 import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
+import { parseNoteMarkdown, renderNoteBlocks } from "./notes.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -1296,7 +1297,11 @@ function LoShuApp() {
     // the armed swap cell, and whether the playground section is open.
     [playground, setPlayground] = React.useState(false),
     [playGrid, setPlayGrid] = React.useState(null),
-    [swapArm, setSwapArm] = React.useState(null);
+    [swapArm, setSwapArm] = React.useState(null),
+    // Optional property notes, rendered from Markdown files under notes/.
+    // A missing file means the property has no note (cached as null) and
+    // the Notes section stays hidden.
+    [propertyNotes, setPropertyNotes] = React.useState(() => ({}));
   React.useEffect(() => {
     const query = window.matchMedia?.("(max-width: 599px) and (orientation: portrait)");
     if (!query) return undefined;
@@ -1311,6 +1316,22 @@ function LoShuApp() {
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
+  React.useEffect(() => {
+    if (!o || propertyNotes[o.id] !== undefined) return undefined;
+    let alive = true;
+    fetch(`notes/${o.id}.md`).then(
+      (res) => (res.ok ? res.text() : null),
+      () => null,
+    ).then((text) => {
+      if (alive)
+        setPropertyNotes((prev) =>
+          prev[o.id] === undefined ? { ...prev, [o.id]: text } : prev,
+        );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [o, propertyNotes]);
   const toggleLegend = (id) => {
     // Correspondence labels occupy the same small cells as the animation.
     // Selecting a layer must therefore leave the board in its stable state;
@@ -1583,6 +1604,11 @@ function LoShuApp() {
       ? showFrame
       : frameFor(script, script.steps.length - 1, 1));
   const sheetPayload = sheetFrame?.sheet || null;
+  const noteText = o ? propertyNotes[o.id] : null;
+  const noteBlocks =
+    typeof noteText === "string" && noteText !== ""
+      ? parseNoteMarkdown(noteText)
+      : null;
   const sheetGrid = (() => {
     if (boardOn && frame?.setValues && showFrame?.setValues) {
       const g = Array.from({ length: 9 }, (_, i) => showFrame.setValues[i]);
@@ -2856,6 +2882,18 @@ function LoShuApp() {
                             }),
                           }),
                     }),
+                    noteBlocks && h("section", {
+                      className: "property-notes mt-4 w-full max-w-[560px]",
+                      "aria-label": "Notes",
+                      children: [
+                        h("div", {
+                          className:
+                            "text-[11px] font-mono uppercase tracking-widest opacity-40",
+                          children: "Notes",
+                        }, "notes-kicker"),
+                        ...renderNoteBlocks(noteBlocks, h),
+                      ],
+                    }, "notes"),
                     h("section", {
                       className: "mt-4 w-full max-w-[560px] rounded-[18px] border border-dashed border-[#1a1a1a]/20 bg-white/50 p-6",
                       "aria-label": "What breaks playground",

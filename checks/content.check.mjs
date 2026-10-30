@@ -581,6 +581,38 @@ const broken = [...SQUARE];
 // A broken grid must fail at least one claim (predicates are not vacuous).
 need(Object.values(verifyAll(broken)).some((v) => v === false), 'verifyAll should reject a swapped grid');
 
+// Optional property notes: Markdown files under public/notes/<id>.md render
+// below Correspondences; a property without a file shows no Notes section.
+{
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const { parseNoteMarkdown } = await import('../js/notes.js');
+  const noteFiles = readdirSync(new URL('../public/notes/', import.meta.url)).filter((f) => f.endsWith('.md'));
+  need(noteFiles.includes('N.md'), 'N should carry a Nine Heavens note');
+  for (const file of noteFiles) {
+    const id = file.slice(0, -3);
+    need(byId[id] !== undefined, `note ${file} should match a property id`);
+    const md = readFileSync(new URL(`../public/notes/${file}`, import.meta.url), 'utf8');
+    const blocks = parseNoteMarkdown(md);
+    need(blocks.length >= 3, `note ${file} should parse to several blocks`);
+    need(blocks.every((b) => ['heading', 'para', 'list'].includes(b.type)), `note ${file} should use only the supported subset`);
+  }
+  const noteN = readFileSync(new URL('../public/notes/N.md', import.meta.url), 'utf8');
+  for (const star of ['Tianpeng', 'Tianrui', 'Tianchong', 'Tianfu', 'Tianqin', 'Tianxin', 'Tianzhu', 'Tianren', 'Tianying'])
+    need(noteN.includes(star), `N note should name ${star}`);
+  need(noteN.includes('九宮') && noteN.includes('九星'), 'N note should name the Nine Palaces and Nine Stars');
+  // The subset parser must stay structural: no raw HTML passes through.
+  const probe = parseNoteMarkdown('**bold** and [link](https://example.com)\n\n- item\n\n### head');
+  need(
+    JSON.stringify(probe.map((b) => b.type)) === JSON.stringify(['para', 'list', 'heading']),
+    `note parser should split para/list/heading (got ${JSON.stringify(probe.map((b) => b.type))})`
+  );
+  need(
+    probe[0].spans.some((s) => s.t === 'bold' && s.text === 'bold') &&
+    probe[0].spans.some((s) => s.t === 'link' && s.href === 'https://example.com'),
+    'note parser should split bold and link spans'
+  );
+}
+
 if (failures.length) {
   for (const f of failures) console.error(`FAIL ${f}`);
   process.exit(1);
