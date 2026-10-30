@@ -585,14 +585,14 @@ need(Object.values(verifyAll(broken)).some((v) => v === false), 'verifyAll shoul
 // below Correspondences; a property without a file shows no Notes section.
 {
   const { readFileSync, readdirSync } = await import('node:fs');
-  const { parseNoteMarkdown, isNoteBody } = await import('../js/notes.js');
+  const { parseNoteMarkdown, parseNoteFile, isNoteBody } = await import('../js/notes.js');
   const noteFiles = readdirSync(new URL('../public/notes/', import.meta.url)).filter((f) => f.endsWith('.md'));
   need(noteFiles.includes('N.md'), 'N should carry a Nine Heavens note');
   for (const file of noteFiles) {
     const id = file.slice(0, -3);
     need(byId[id] !== undefined, `note ${file} should match a property id`);
     const md = readFileSync(new URL(`../public/notes/${file}`, import.meta.url), 'utf8');
-    const blocks = parseNoteMarkdown(md);
+    const { blocks } = parseNoteFile(md);
     need(blocks.length >= 3, `note ${file} should parse to several blocks`);
     need(blocks.every((b) => ['heading', 'para', 'list'].includes(b.type)), `note ${file} should use only the supported subset`);
   }
@@ -620,6 +620,12 @@ need(Object.values(verifyAll(broken)).some((v) => v === false), 'verifyAll shoul
   need(isNoteBody('text/markdown', noteN), 'note guard should accept the N note');
   need(!isNoteBody('text/markdown', ''), 'note guard should reject an empty body');
   need(!isNoteBody('text/markdown', null), 'note guard should reject a missing body');
+  // Hidden notes stay on disk but never render.
+  const noteNFile = parseNoteFile(noteN);
+  need(noteNFile.hidden === true, 'N note should be hidden for now');
+  need(noteNFile.blocks.length >= 3, 'hidden N note should keep its blocks for later');
+  need(parseNoteFile('### head\n\nbody').hidden === false, 'a note without frontmatter should be visible');
+  need(parseNoteFile('---\nhidden: false\n---\n\nbody').hidden === false, 'hidden:false should stay visible');
 }
 
 if (failures.length) {

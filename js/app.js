@@ -17,7 +17,7 @@ import { createPlayer, DEFAULT_STEP_MS, frameFor, timelineRatio, ratioToTime, SP
 import { scriptFor, variantsFor, ledgerFor } from "./animation-scripts.js";
 import { gn, Tl, Z, CENTERS, renderOverlay } from "./overlay.js";
 import { determinant, verifyAll, holmesFamily, squaredPattern, nestBlocks, palaceCells, centralBoard, stripBoard, foldedBoard, windowAt, windowReport, magicOffsets } from "./verify.js";
-import { parseNoteMarkdown, renderNoteBlocks, isNoteBody } from "./notes.js";
+import { parseNoteFile, renderNoteBlocks, isNoteBody } from "./notes.js";
 
 // Variant scripts remain addressable by deep link, but the in-rail chooser is
 // deliberately hidden until multiple animations are ready for broader use.
@@ -1610,10 +1610,10 @@ function LoShuApp() {
       : frameFor(script, script.steps.length - 1, 1));
   const sheetPayload = sheetFrame?.sheet || null;
   const noteText = o ? propertyNotes[o.id] : null;
+  const noteFile =
+    typeof noteText === "string" && noteText !== "" ? parseNoteFile(noteText) : null;
   const noteBlocks =
-    typeof noteText === "string" && noteText !== ""
-      ? parseNoteMarkdown(noteText)
-      : null;
+    noteFile && !noteFile.hidden && noteFile.blocks.length ? noteFile.blocks : null;
   const sheetGrid = (() => {
     if (boardOn && frame?.setValues && showFrame?.setValues) {
       const g = Array.from({ length: 9 }, (_, i) => showFrame.setValues[i]);

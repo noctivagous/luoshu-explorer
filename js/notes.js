@@ -36,6 +36,23 @@ export function isNoteBody(contentType, text) {
   return !text.trimStart().startsWith("<");
 }
 
+// Optional frontmatter: a leading `---` block with `key: value` lines.
+// Currently only `hidden: true` is read (the note stays on disk but never
+// renders); unknown keys are ignored.
+export function parseNoteFile(src) {
+  const meta = {};
+  let body = String(src);
+  const m = body.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
+  if (m) {
+    for (const line of m[1].split("\n")) {
+      const kv = line.match(/^\s*([A-Za-z0-9_-]+)\s*:\s*(.*?)\s*$/);
+      if (kv) meta[kv[1].toLowerCase()] = kv[2].toLowerCase();
+    }
+    body = body.slice(m[0].length);
+  }
+  return { hidden: meta.hidden === "true", blocks: parseNoteMarkdown(body) };
+}
+
 // Parse a note into blocks:
 // {type:"heading",spans} | {type:"para",spans} | {type:"list",items:[spans]}.
 export function parseNoteMarkdown(src) {

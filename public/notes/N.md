@@ -1,3 +1,7 @@
+---
+hidden: true
+---
+
 ### One square, nine heavens
 
 The math above says there is only one 3×3 magic square: every variant is the
