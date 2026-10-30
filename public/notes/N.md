@@ -3,10 +3,10 @@
 The math above says there is only one 3×3 magic square: every variant is the
 same pattern seen from eight directions. Early Chinese cosmology reads the
 same grid as the **Nine Palaces** (九宮 *jiǔgōng*): eight outer stations plus
-the center. The eight rotations and reflections of property N are one pattern
-visiting eight stations, while the middle cell never moves — and that is
-exactly how the tradition assigns the **Nine Stars** (九星 *jiǔxīng*), one
-guardian to each palace.
+the center. But the tradition goes one step further and uses only one face of
+the square: the grid itself stays fixed, and the **Nine Stars** (九星
+*jiǔxīng*) move through its stations — one guardian per palace, reseated by
+time and chart while the middle cell never moves.
 
 ### The nine stars, palace by palace
 
@@ -26,7 +26,8 @@ Each star's number, direction, element, and trigram match the
 **Correspondences** overlays above — try them on the board. In ritual the
 pattern is walked: *Taiyi bu jiugong*, the walk of the supreme deity through
 the Nine Palaces, which is Taiyi travelling through the Nine Heavens. The
-eight outer stars change stations as the square turns; Tianqin in the middle
-never does, because 5 is the mean of the whole square. The arithmetic fact
-(one square, eight faces) and the cultural image (one court, nine heavens)
-are the same structure described twice.
+eight outer stars change stations with time and chart — the square itself
+never turns; Tianqin in the middle never moves at all, because 5 is the mean
+of the whole square. The arithmetic fact (one square, eight faces) and the
+cultural image (one court, nine heavens) are the same structure described
+twice.
