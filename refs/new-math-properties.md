@@ -32,7 +32,7 @@ U/V/W = overlap tilings.
 
 ## Ranked new-item proposals
 
-### 1. Mod-3 Latin (strongest)
+[x] ### 1. Mod-3 Latin (strongest)
 
 Residues mod 3:
 
@@ -109,17 +109,17 @@ block sums 21, 23, 17, 19 are all distinct).
 
 ## Build checklist per new item
 
-1. [data/properties.json](/Users/jpratt/Developer/luoshu-tests/luoshu-explorer/data/properties.json):
+1. [data/properties.json](/luoshu-explorer/data/properties.json):
    `{id, slug, category, title, shortDesc, formula, longDesc}`.
-2. [js/verify.js](/Users/jpratt/Developer/luoshu-tests/luoshu-explorer/js/verify.js):
+2. [js/verify.js](/luoshu-explorer/js/verify.js):
    a `verify[id]` predicate on the flat 3x3 row-major grid (larger-board
    claims need a standalone board-builder plus `Holds` fn, as U–W do).
-3. [js/animation-scripts.js](/Users/jpratt/Developer/luoshu-tests/luoshu-explorer/js/animation-scripts.js):
+3. [js/animation-scripts.js](/luoshu-explorer/js/animation-scripts.js):
    `script<ID>` with `{id, title, steps[]}`, registered in `demoScripts`.
 4. Captions and formulas must agree with the verify math
    (`checks/content.check.mjs` enforces this).
 5. Steps use existing overlay primitives from
-   [js/overlay.js](/Users/jpratt/Developer/luoshu-tests/luoshu-explorer/js/overlay.js):
+   [js/overlay.js](/luoshu-explorer/js/overlay.js):
    line, segments, path, arc, ring, mark, bar, cellTag, chip, op, gutter,
    badge.
 
