@@ -1739,7 +1739,7 @@ export const scriptQ = {
       matrix: { highlight: [0, 2, 3, 5, 6, 8], setValues: null },
     }),
     animStep("Q-3", {
-      caption: "Each center line is its own complement. The square-sums are 77, 93, 83, and 107.",
+      caption: "Each center line is its own complement: middle row 3²+5²+7² = 83, middle column 9²+5²+1² = 107, main diagonal 4²+5²+6² = 77, anti-diagonal 2²+5²+8² = 93.",
       durationMs: 1800,
       overlay: { show: ["Q.center", "Q.plus-mr0", "Q.plus-mr1", "Q.plus-mc0", "Q.plus-mc1", "Q.plus-md0", "Q.plus-md1", "Q.plus-ad0", "Q.plus-ad1"] },
       draw: [
@@ -1757,7 +1757,7 @@ export const scriptQ = {
           at: 0.4,
           row: "q-center",
           rowStyle: { bottom: -16 },
-          text: "77, 93, 83, 107",
+          text: "83, 107, 77, 93",
           className: "text-[12px] font-mono px-3 py-1 rounded-full bg-[#1a1a1a] text-white pointer-events-none whitespace-nowrap",
         },
       ],

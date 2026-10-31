@@ -159,7 +159,7 @@
     "title": "Opposite squares match",
     "shortDesc": "Outer rows square to 101, columns to 89",
     "formula": "opposite outer line: Σ(10−n)² = Σ n²",
-    "longDesc": "The bottom row is the top row with each cell sent to its complement 10−n, and the right column is the complement of the left. Squaring keeps the total: 4²+9²+2² = 8²+1²+6² = 101, and 4²+3²+8² = 2²+7²+6² = 89. A line through the center is its own complement. Those four square-sums are 77, 93, 83, and 107."
+    "longDesc": "The bottom row is the top row with each cell sent to its complement 10−n, and the right column is the complement of the left. Squaring keeps the total: 4²+9²+2² = 8²+1²+6² = 101, and 4²+3²+8² = 2²+7²+6² = 89. A line through the center is its own complement: the middle row squares to 83 (3²+5²+7²), the middle column to 107 (9²+5²+1²), the main diagonal to 77 (4²+5²+6²), and the anti-diagonal to 93 (2²+5²+8²)."
   },
   {
     "id": "R",
