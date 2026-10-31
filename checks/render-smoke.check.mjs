@@ -64,7 +64,7 @@ need(root.querySelector('.anim-caption-play')?.textContent === '▶', 'preview s
 // correspondences-legend chips = 32, plus 3 construction step cards = 35,
 // plus 3 worked-example tape rows (intro shows construction) = 38,
 // plus 3 step ticks + 3 transport toggles = 44, plus 1 playground toggle = 45.
-need(document.querySelectorAll('#root button').length === 52, 'expected 52 buttons');
+need(document.querySelectorAll('#root button').length === 54, 'expected 54 buttons');
 const overviewBtn = document.querySelector('button[aria-label="Overview diagram"]');
 need(overviewBtn !== null, 'overview toggle should exist');
 need(overviewBtn.getAttribute('aria-pressed') === 'false', 'overview should start off');
@@ -113,11 +113,11 @@ const ticks = [...root.querySelectorAll('[aria-label="Animation steps"] button')
 need(ticks.length === 3, `ticks should cover all 3 construction steps (got ${ticks.length})`);
 for (const label of ['Autoplay on select', 'Autoplay next property', 'Predict mode'])
   need(root.querySelector(`button[aria-label="${label}"]`) === null, `${label} toggle should be gone`);
-need(root.querySelectorAll('.lg\\:grid-cols-2').length === 7, 'sidebar catalog grid missing');
-need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 24, 'square icon tiles missing');
-need(root.querySelectorAll('svg[width="26"]').length === 24, 'icon glyphs missing');
+need(root.querySelectorAll('.lg\\:grid-cols-2').length === 8, 'sidebar catalog grid missing');
+need(root.querySelectorAll('span.rounded-\\[8px\\]').length === 25, 'square icon tiles missing');
+need(root.querySelectorAll('svg[width="26"]').length === 25, 'icon glyphs missing');
 const catalogTiles = [...root.querySelectorAll('button.catalog-tile')];
-need(catalogTiles.length === 24, 'catalog tiles missing');
+need(catalogTiles.length === 25, 'catalog tiles missing');
 need(
   catalogTiles.every((tile) => tile.style.height === '120px'),
   'catalog tiles should keep a uniform 120px height'
@@ -143,7 +143,7 @@ await until(
 const checklist = () => root.querySelector('[aria-label="Property checklist"]');
 need(checklist() !== null, 'playground should open the checklist');
 const chips = () => [...checklist().querySelectorAll('span')];
-need(chips().length === 20, `checklist should cover A–T (got ${chips().length})`);
+need(chips().length === 21, `checklist should cover A–X flat-grid claims (got ${chips().length})`);
 need(chips().every((c) => c.textContent.includes('✓')), 'intact Lo Shu should hold every claim');
 const boardCells = () => [...document.querySelectorAll('#root [data-anim-stage] div.grid > div')];
 const pgSection = () => root.querySelector('[aria-label="What breaks playground"]');

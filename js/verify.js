@@ -1,4 +1,4 @@
-// Executable claims for every Lo Shu property (A–T).
+// Executable claims for every flat-grid Lo Shu property (A–T plus X).
 // Each predicate takes a flat 3×3 grid (indices 0-8, row-major) and reports
 // whether that property holds for it. The UI text in data/properties.json and
 // the captions in js/animation-scripts.js must agree with these predicates;
@@ -273,6 +273,17 @@ export const verify = {
     }
     const deep = nestBlocks(big, g);
     return normalMagic(deep, 27, 9855) && deep[364] === 365;
+  },
+  // X: every row and every column holds each residue mod 3 exactly once.
+  X: (g) => {
+    const key = (cells) =>
+      cells
+        .map((i) => ((g[i] % 3) + 3) % 3)
+        .sort((a, b) => a - b)
+        .join(",");
+    return [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8]].every(
+      (line) => key(line) === "0,1,2",
+    );
   },
 };
 

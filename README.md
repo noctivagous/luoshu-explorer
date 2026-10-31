@@ -24,10 +24,10 @@ The wide two-column layout is unchanged. Shell checks pass.
   `react-dom/client`, and `../data/properties.json`. The `h`/`_` helpers wrap
   `React.createElement` with the original bundle's `(type, props, key)`
   contract — the 3rd argument is the React key, not a child.
-- `js/external-links.js` — small script that forces external links to open in a
+  - `js/external-links.js` — small script that forces external links to open in a
   new tab with `noopener noreferrer`.
-- `data/properties.json` — single source of truth for the 19 properties
-  (ids A–S with title/shortDesc/formula/longDesc), imported by `js/app.js`.
+- `data/properties.json` — single source of truth for the 14 properties
+  (ids A–N with title/shortDesc/formula/longDesc), imported by `js/app.js`.
 - `checks/` — `spa-shell.check.mjs` (viewport-lock shell rules) and
   `render-smoke.check.mjs` (mounts the app in jsdom and asserts the header is
   gone, the 9 cells, 19 buttons, icon tiles, and grid classes). Both run via

@@ -106,6 +106,7 @@ const VISUAL_KEYS = {
   U: [["#c96442", "Active 3×3 window", false], ["#1a1a1a", "Window centre = 5", false]],
   V: [["#c96442", "Sliding window", false], ["#4a6741", "Fully magic window", false]],
   W: [["#c96442", "Shifted magic window", false], ["#b89a5a", "Aligned block", false]],
+  X: [["#b89a5a", "Residue path = {0,1,2}", false], ["#4a6741", "Column path = {0,1,2}", false]],
 };
 
 const CATEGORIES = [
@@ -114,6 +115,7 @@ const CATEGORIES = [
     { name: "Means & Zero", ids: ["G", "I"] },
     { name: "Lines & Totals", ids: ["J", "K", "S", "P", "R"] },
     { name: "Modular Border", ids: ["C", "D", "H"] },
+    { name: "Residues & Classes", ids: ["X"] },
     { name: "Geometry & Universality", ids: ["M", "N", "O", "T"] },
     { name: "Overlapping Luoshu", ids: ["U", "V", "W"] },
   ],
@@ -699,6 +701,23 @@ function iconGlyphs(e) {
         fill: T,
       }),
     ]);
+  if (e === "X")
+    return PropertyIcon(
+      [1, 0, 2, 0, 2, 1, 2, 1, 0].map((r, i) =>
+        h(
+          "rect",
+          {
+            x: 5 + (i % 3) * 6.5,
+            y: 5 + Math.floor(i / 3) * 6.5,
+            width: "5",
+            height: "5",
+            rx: "1",
+            fill: r === 0 ? D : r === 1 ? T : G,
+          },
+          i,
+        ),
+      ),
+    );
   return PropertyIcon([
     h("circle", {
       cx: "14",

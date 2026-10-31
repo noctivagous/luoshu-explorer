@@ -1,7 +1,7 @@
 # Candidate math properties for new list items and groups
 
 Date: 2026-10-30
-Status: research complete, no implementation yet.
+Status: Mod-3 Latin implemented as property X (Residues & Classes); inertia, singular values, and sum-of-squares remain unimplemented.
 Method: three parallel research passes (repo inventory, literature survey,
 grouping/animation feasibility) plus a critic pass that recomputed every
 surviving number and killed duplicates. Top-line numbers below were

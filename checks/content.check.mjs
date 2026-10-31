@@ -442,6 +442,27 @@ need(byId.T.category === 'Geometry & Universality', 'T stays under Geometry & Un
 need(byId.T.slug === 'nested-palaces', 'T slug should be nested-palaces');
 for (const n of ['31', '96', '177', '369', '82', '25', '41', '9855', '365', '265761', '3281', '3285', '29529'])
   need(byId.T.longDesc.includes(n), `T text should record ${n}`);
+
+// Property X: residues mod 3 are Latin across rows and columns.
+{
+  const x = demoScripts.X;
+  need(x.steps.length === 4, 'script X should stay at 4 steps');
+  need(
+    JSON.stringify(frameFor(x, 0, 0).visibleKeys) === JSON.stringify(['X.res']),
+    'X should open on the residue tags'
+  );
+  const idleX = markup(frameFor(x, 3, 1));
+  need(idleX.includes('1+0+2') && idleX.includes('= 3'), 'idle X should carry the residue equation');
+  need(idleX.includes('rows = cols = {0, 1, 2}'), 'idle X should land the Latin lockup');
+  need(byId.X.category === 'Residues & Classes', 'X should open the Residues & Classes group');
+  need(byId.X.slug === 'mod-3-latin', 'X slug should be mod-3-latin');
+  for (const n of ['1,0,2', '0,2,1', '2,1,0', '1+0+2 = 3'])
+    need(byId.X.longDesc.includes(n), `X text should record ${n}`);
+  need(
+    JSON.stringify(ledgerFor(demoScripts.X.steps[1])) === JSON.stringify(['1+0+2 = 3']),
+    `X should ledger the row equation (got ${JSON.stringify(ledgerFor(demoScripts.X.steps[1]))})`
+  );
+}
 for (const [id, sc] of Object.entries(demoScripts)) {
   const hasSheet = sc.steps.some((st) => st.sheet);
   if (id === 'R' || id === 'S' || id === 'T' || id === 'U' || id === 'V' || id === 'W')
@@ -509,6 +530,7 @@ const broken = [...SQUARE];
   );
   need(verifyAll([8, 3, 4, 1, 5, 9, 6, 7, 2]).S === true, 'S should hold after a quarter turn');
   need(verifyAll(broken).R === false && verifyAll(broken).S === false, 'a swapped cell should break R and S');
+  need(verifyAll(broken).X === false, 'a swapped cell should break X');
   for (const id of ['R', 'S', 'T']) {
     need(demoScripts[id].steps.every((st) => ledgerFor(st).length === 0), `${id} keeps its figures off the tape`);
     need(

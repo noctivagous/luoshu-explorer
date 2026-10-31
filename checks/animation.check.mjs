@@ -28,7 +28,7 @@ need(scriptFor('B', 'bogus') === scriptFor('B'), 'unknown variant should fall ba
 need(variantsFor('C').length === 1, 'single-animation properties should list one variant');
 
 // Every property A-W routes to a valid, well-formed script.
-for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']) {
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
   const s = scriptFor(id);
   need(s !== null && s !== undefined, `property ${id} should route to a script`);
   need(validateScript(s).length === 0, `script ${id} invalid`);
@@ -46,7 +46,7 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 
 // Non-default variants meet the same bar as defaults.
-for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W']) {
+for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
   for (const v of variantsFor(id)) {
     if (v.script === scriptFor(id)) continue;
     need(typeof v.key === 'string' && v.key, `variant of ${id} needs a key`);
@@ -68,7 +68,7 @@ for (const id of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 }
 need(
   JSON.stringify(Object.keys(demoScripts).sort()) ===
-    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'construction', 'intro']),
+    JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'construction', 'intro']),
   'demoScripts should export all 23 property scripts plus construction'
 );
 

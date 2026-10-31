@@ -31,6 +31,8 @@ need(at('#/luoshu/math/lines-totals/111-property?speed=5').speed === 1, 'bad spe
 need(at('#/luoshu/math/lines-totals/squared-matrix').id === 'S', 'squared matrix should parse under lines and totals');
 need(at('#/luoshu/math/overlapping-luoshu/central-overlap').id === 'U', 'central overlap should parse under overlapping luoshu');
 need(at('#/luoshu/math/overlapping-luoshu/pandiagonal-overlap?step=3').id === 'W', 'pandiagonal overlap should parse under overlapping luoshu');
+need(at('#/luoshu/math/residues-classes/mod-3-latin').id === 'X', 'mod-3 latin should parse under residues classes');
+need(at('#/luoshu/math/lines-totals/mod-3-latin') === null, 'mod-3 latin under the wrong category should not parse');
 need(at('#/luoshu/math/geometry-universality/central-overlap') === null, 'central overlap under the wrong category should not parse');
 need(at('#/luoshu/math/introduction/clockwise-addition') === null, 'a property under the wrong category should not parse');
 need(at('#/luoshu/C') === null, 'a letter link should not parse');
@@ -47,7 +49,7 @@ const deadline = Date.now() + 8000;
 while (document.querySelectorAll('#root button').length < 33 && Date.now() < deadline) {
   await new Promise((r) => setTimeout(r, 50));
 }
-need(document.querySelectorAll('#root button').length === 51, 'expected 51 buttons with the loop toggle, 4 tape rows, 4 ticks and 1 playground toggle');
+need(document.querySelectorAll('#root button').length === 53, 'expected 53 buttons with the loop toggle, 4 tape rows, 4 ticks and 1 playground toggle');
 for (const label of ['Predict mode', 'Autoplay on select', 'Autoplay next property'])
   need(document.querySelector(`button[aria-label="${label}"]`) === null, `${label} toggle should be gone`);
 need(

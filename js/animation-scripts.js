@@ -2290,6 +2290,126 @@ export const scriptW = {
   ],
 };
 
+// Property X: residues mod 3 are Latin — every row and column holds one of
+// each class. Residue tags land first, then one row demo and one column demo
+// each trace their path with diamonds and resolve 1+0+2 = 3, closing on the
+// lockup that rows and columns agree.
+const X_PILL = "text-[11px] font-mono px-2 py-1 rounded-full";
+export const scriptX = {
+  id: "X",
+  title: "Mod-3 Latin",
+  steps: [
+    animStep("X-1", {
+      caption: "Residues mod 3 — tag every cell with n mod 3.",
+      durationMs: 1800,
+      overlay: { show: ["X.res"] },
+      draw: [
+        {
+          key: "X.res",
+          type: "cellTag",
+          cells: ALL,
+          texts: ["1", "0", "2", "0", "2", "1", "2", "1", "0"],
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+    animStep("X-2", {
+      caption: "Top row: 1 + 0 + 2 = 3 — one of each class.",
+      durationMs: 1800,
+      overlay: { show: ["X.row-0", "X.eq-0", "X.tot-0"] },
+      draw: [
+        { key: "X.row-0", type: "path", cells: [0, 1, 2], color: "#b89a5a", width: "2" },
+        {
+          key: "X.eq-0",
+          type: "chip",
+          at: 0.3,
+          from: 0,
+          to: 2,
+          text: "1+0+2",
+          fill: "white",
+          stroke: "#b89a5a",
+          color: "#1a1a1a",
+          w: 56,
+          h: 20,
+          fontSize: 12,
+        },
+        {
+          key: "X.tot-0",
+          type: "gutter",
+          at: 0.6,
+          x: rowGutter(0).x,
+          y: rowGutter(0).y,
+          text: "= 3",
+          fill: "#1a1a1a",
+          color: "white",
+          w: 44,
+          h: 20,
+          rx: 10,
+          fontSize: 13,
+          weight: "700",
+          textDy: 4,
+        },
+      ],
+      matrix: { highlight: [0, 1, 2], setValues: null },
+    }),
+    animStep("X-3", {
+      caption: "Left column: 1 + 0 + 2 = 3 — columns agree.",
+      durationMs: 1800,
+      overlay: { show: ["X.col-0", "X.eq-1", "X.tot-1"] },
+      draw: [
+        { key: "X.col-0", type: "path", cells: [0, 3, 6], color: "#4a6741", width: "2" },
+        {
+          key: "X.eq-1",
+          type: "chip",
+          at: 0.3,
+          from: 0,
+          to: 6,
+          text: "1+0+2",
+          fill: "white",
+          stroke: "#4a6741",
+          color: "#1a1a1a",
+          w: 56,
+          h: 20,
+          fontSize: 12,
+        },
+        {
+          key: "X.tot-1",
+          type: "gutter",
+          at: 0.6,
+          x: colGutter(0).x,
+          y: colGutter(0).y,
+          text: "= 3",
+          fill: "#1a1a1a",
+          color: "white",
+          w: 44,
+          h: 20,
+          rx: 10,
+          fontSize: 13,
+          weight: "700",
+          textDy: 4,
+        },
+      ],
+      matrix: { highlight: [0, 3, 6], setValues: null },
+    }),
+    animStep("X-4", {
+      caption: "Every row and column holds {0, 1, 2} — the residues are Latin.",
+      durationMs: 1800,
+      overlay: { show: ["X.lock"] },
+      draw: [
+        {
+          key: "X.lock",
+          type: "badge",
+          at: 0.4,
+          text: "rows = cols = {0, 1, 2}",
+          className: `${X_PILL} bg-[#1a1a1a] text-white shadow`,
+          style: { left: "50%", top: -18, transform: "translateX(-50%)" },
+        },
+      ],
+      matrix: { highlight: ALL, setValues: null },
+    }),
+  ],
+};
+
 export const demoScripts = {
   construction: constructionScript,
   intro: constructionScript,
@@ -2316,6 +2436,7 @@ export const demoScripts = {
   U: scriptU,
   V: scriptV,
   W: scriptW,
+  X: scriptX,
 };
 
 // Multiple animations per property. Each id keeps its default script in
