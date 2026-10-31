@@ -1643,6 +1643,24 @@ export const scriptP = {
 
 const Q_PILL = "text-[12px] font-mono px-3 py-1 rounded-full bg-white border pointer-events-none whitespace-nowrap";
 
+// Property Q: the board cells themselves carry the square (see the Q branch
+// of the cell renderer in js/app.js), and bare "+" operators sit in the
+// gutters between the participating cells so each step reads as a sum of
+// squares. Both are transient: each beat shows only its own equation.
+function qPlus(key, from, to, color) {
+  return {
+    key,
+    type: "op",
+    transient: true,
+    at: 0.5,
+    from,
+    to,
+    text: "+",
+    fontSize: 16,
+    color,
+  };
+}
+
 function qTotal(key, x, text, fill) {
   return {
     key,
@@ -1669,13 +1687,17 @@ export const scriptQ = {
     animStep("Q-1", {
       caption: "Top and bottom are complements, and both square-sum to 101.",
       durationMs: 1800,
-      overlay: { show: ["Q.top", "Q.bot", "Q.ch-0", "Q.ch-1", "Q.ch-2", "Q.tot-rows", "Q.eq-rows"] },
+      overlay: { show: ["Q.top", "Q.bot", "Q.ch-0", "Q.ch-1", "Q.ch-2", "Q.plus-t0", "Q.plus-t1", "Q.plus-b0", "Q.plus-b1", "Q.tot-rows", "Q.eq-rows"] },
       draw: [
         { key: "Q.top", type: "line", from: 0, to: 2, color: "#b89a5a", width: "2.2" },
         { key: "Q.bot", type: "line", from: 6, to: 8, color: "#b89a5a", width: "2.2" },
         { key: "Q.ch-0", type: "line", from: 0, to: 8, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
         { key: "Q.ch-1", type: "line", from: 1, to: 7, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
         { key: "Q.ch-2", type: "line", from: 2, to: 6, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
+        qPlus("Q.plus-t0", 0, 1, "#b89a5a"),
+        qPlus("Q.plus-t1", 1, 2, "#b89a5a"),
+        qPlus("Q.plus-b0", 6, 7, "#b89a5a"),
+        qPlus("Q.plus-b1", 7, 8, "#b89a5a"),
         qTotal("Q.tot-rows", 80, "Σ 101", "#b89a5a"),
         {
           key: "Q.eq-rows",
@@ -1693,11 +1715,15 @@ export const scriptQ = {
     animStep("Q-2", {
       caption: "Left and right are complements, and both square-sum to 89.",
       durationMs: 1800,
-      overlay: { show: ["Q.left", "Q.right", "Q.ch-3", "Q.tot-cols", "Q.eq-cols"] },
+      overlay: { show: ["Q.left", "Q.right", "Q.ch-3", "Q.plus-l0", "Q.plus-l1", "Q.plus-r0", "Q.plus-r1", "Q.tot-cols", "Q.eq-cols"] },
       draw: [
         { key: "Q.left", type: "line", from: 0, to: 6, color: "#4a6741", width: "2.2" },
         { key: "Q.right", type: "line", from: 2, to: 8, color: "#4a6741", width: "2.2" },
         { key: "Q.ch-3", type: "line", from: 3, to: 5, color: "#1a1a1a", width: "1.2", dash: "5 4", opacity: 0.45 },
+        qPlus("Q.plus-l0", 0, 3, "#4a6741"),
+        qPlus("Q.plus-l1", 3, 6, "#4a6741"),
+        qPlus("Q.plus-r0", 2, 5, "#4a6741"),
+        qPlus("Q.plus-r1", 5, 8, "#4a6741"),
         qTotal("Q.tot-cols", 260, "Σ 89", "#4a6741"),
         {
           key: "Q.eq-cols",
@@ -1715,8 +1741,16 @@ export const scriptQ = {
     animStep("Q-3", {
       caption: "Each center line is its own complement. The square-sums are 77, 93, 83, and 107.",
       durationMs: 1800,
-      overlay: { show: ["Q.center"] },
+      overlay: { show: ["Q.center", "Q.plus-mr0", "Q.plus-mr1", "Q.plus-mc0", "Q.plus-mc1", "Q.plus-md0", "Q.plus-md1", "Q.plus-ad0", "Q.plus-ad1"] },
       draw: [
+        qPlus("Q.plus-mr0", 3, 4, "#1a1a1a"),
+        qPlus("Q.plus-mr1", 4, 5, "#1a1a1a"),
+        qPlus("Q.plus-mc0", 1, 4, "#1a1a1a"),
+        qPlus("Q.plus-mc1", 4, 7, "#1a1a1a"),
+        qPlus("Q.plus-md0", 0, 4, "#1a1a1a"),
+        qPlus("Q.plus-md1", 4, 8, "#1a1a1a"),
+        qPlus("Q.plus-ad0", 2, 4, "#1a1a1a"),
+        qPlus("Q.plus-ad1", 4, 6, "#1a1a1a"),
         {
           key: "Q.center",
           type: "badge",

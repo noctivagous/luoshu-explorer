@@ -558,6 +558,35 @@ function renderItem(item, entering) {
     };
   }
 
+  if (item.type === "op") {
+    // A bare operator (+, −, ×) pinned to the midpoint of two cells: no
+    // pill, so it reads as sitting in the gutter between the cells.
+    const a = CENTERS[item.from];
+    const b = CENTERS[item.to];
+    const p = { x: (a.x + b.x) / 2 + (item.dx || 0), y: (a.y + b.y) / 2 + (item.dy || 0) };
+    return {
+      svg: _(
+        "g",
+        {
+          ...attrs,
+          className: entering ? "anim-pop" : undefined,
+          style: entering ? { "--anim-at": String(item.at ?? 0.5) } : undefined,
+          children: h("text", {
+            x: p.x,
+            y: p.y + (item.textDy ?? 6),
+            textAnchor: "middle",
+            fontSize: String(item.fontSize || 16),
+            fontFamily: "monospace",
+            fill: item.color || "#1a1a1a",
+            fontWeight: "700",
+            children: item.text,
+          }),
+        },
+        item.key,
+      ),
+    };
+  }
+
   if (item.type === "gutter") {
     // A margin total: same pill as a chip, but pinned to an explicit
     // board-coordinate point from rowGutter/colGutter/cornerGutter instead

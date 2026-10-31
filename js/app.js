@@ -2106,6 +2106,15 @@ function LoShuApp() {
                                 !showFrame.highlight.includes(a);
                               if (dimmed) y.opacity = 0.45;
                               let buildOn = boardOn && script?.id === "construction",
+                                // Opposite-squares proof: participating cells
+                                // show their square in place (n with a
+                                // superscript 2) while the gutters between
+                                // them carry the "+" operators from the
+                                // script's op items.
+                                squareOn =
+                                  boardOn &&
+                                  script?.id === "Q" &&
+                                  showFrame?.highlight?.includes(a),
                                 valueOn = boardOn && showFrame?.setValues,
                                 cellVal = valueOn ? (showFrame.setValues[a] ?? "") : playBase[a],
                                 hideNum = moving.has(a),
@@ -2211,7 +2220,24 @@ function LoShuApp() {
                                             fontWeight: 500,
                                             opacity: hideNum ? 0 : 1,
                                           },
-                                          children: cellVal,
+                                          children: squareOn
+                                            ? [
+                                                h("span", { children: cellVal }, "v"),
+                                                h(
+                                                  "sup",
+                                                  {
+                                                    style: {
+                                                      fontFamily: "'Instrument Serif', serif",
+                                                      fontWeight: 500,
+                                                      fontSize: "22px",
+                                                      marginLeft: "1px",
+                                                    },
+                                                    children: "2",
+                                                  },
+                                                  "e",
+                                                ),
+                                              ]
+                                            : cellVal,
                                         }),
                                     showLayer("trigrams") &&
                                       h("span", {
